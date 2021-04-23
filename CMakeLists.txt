@@ -27,4 +27,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(setup_dependencies)
 
 
+set(MAIN_EXECUTABLE_NAME "contractor")
+
+
 add_subdirectory(src)

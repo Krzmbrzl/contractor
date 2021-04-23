@@ -1,6 +1,3 @@
-
-set(MAIN_EXECUTABLE_NAME "contractor")
-
 add_executable(${MAIN_EXECUTABLE_NAME}
 	main.cpp
 )
