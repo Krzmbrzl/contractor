@@ -5,10 +5,13 @@
 
 namespace Contractor::ExitCodes {
 
-constexpr uint8_t OK                         = 0;
-constexpr uint8_t UNKNOWN_COMMANDLINE_OPTION = 1;
+// clang-format off
+enum ExitCodes {
+	OK = 0,
+	UNKNOWN_COMMANDLINE_OPTION,
+};
+// clang-format on
 
 }; // namespace Contractor::ExitCodes
 
 #endif // CONTRACTOR_EXITCODES_HPP_
-
