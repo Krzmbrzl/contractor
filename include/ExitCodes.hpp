@@ -3,12 +3,12 @@
 
 #include <cstdint>
 
-namespace Contractor {
-namespace ExitCodes {
-	constexpr uint8_t OK                         = 0;
-	constexpr uint8_t UNKNOWN_COMMANDLINE_OPTION = 1;
-}; // namespace ExitCodes
-}; // namespace Contractor
+namespace Contractor::ExitCodes {
+
+constexpr uint8_t OK                         = 0;
+constexpr uint8_t UNKNOWN_COMMANDLINE_OPTION = 1;
+
+}; // namespace Contractor::ExitCodes
 
 #endif // CONTRACTOR_EXITCODES_HPP_
 
