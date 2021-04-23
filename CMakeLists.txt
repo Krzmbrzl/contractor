@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
+option(tests "Whether to build test cases" ON)
+
 project(masters_thesis_program,
 	VERSION "0.1.0"
 	LANGUAGES "CXX"
@@ -31,3 +33,9 @@ set(MAIN_EXECUTABLE_NAME "contractor")
 
 
 add_subdirectory(src)
+
+if (tests)
+	enable_testing()
+
+	add_subdirectory(tests)
+endif()
