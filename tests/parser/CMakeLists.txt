@@ -2,6 +2,7 @@ include(GoogleTest)
 
 add_executable(parser_test
 	AbstractParserTest.cpp
+	GeCCoExportParserTest.cpp
 )
 
 target_link_libraries(parser_test

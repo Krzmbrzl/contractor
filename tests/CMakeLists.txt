@@ -11,5 +11,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
+set(TEST_FILE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/input_files")
+
+add_compile_definitions(TEST_FILE_DIRECTORY=${TEST_FILE_DIRECTORY})
 
 add_subdirectory(parser)
