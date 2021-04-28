@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <istream>
+#include <sstream>
 
 namespace Contractor::Parser {
 
@@ -26,6 +27,14 @@ std::size_t Parser::bufferSize() const {
 	return m_bufferSize;
 }
 
+bool Parser::hasInput() const {
+	if (m_currentPosition < m_buffer.size()) {
+		return true;
+	}
+
+	return m_source && !m_source->eof() && m_source->good();
+}
+
 void Parser::initSource(std::istream &source) {
 	m_source = &source;
 	m_buffer.resize(m_bufferSize);
@@ -37,10 +46,15 @@ void Parser::initSource(std::istream &source) {
 	refillBuffer();
 }
 
+void Parser::clearSource() {
+	m_source = nullptr;
+	m_buffer.clear();
+}
+
 char Parser::peek() {
 	if (m_currentPosition >= m_buffer.size()) {
 		if (!refillBuffer()) {
-			return EOF;
+			throw ParseException("Parser has run out of characters!");
 		} else {
 			return m_buffer[m_currentPosition];
 		}
@@ -52,20 +66,18 @@ char Parser::peek() {
 char Parser::read() {
 	char c = peek();
 
-	if (c != EOF) {
-		m_currentPosition++;
-	}
+	m_currentPosition++;
 
 	return c;
 }
 
 bool Parser::skip(std::size_t amount) {
 	for (std::size_t i = 0; i < amount; i++) {
-		char c = read();
-
-		if (c == EOF) {
+		if (!hasInput()) {
 			return false;
 		}
+
+		read();
 	}
 
 	return true;
@@ -101,13 +113,22 @@ std::size_t Parser::read(char *buffer, std::size_t length) {
 }
 
 std::size_t Parser::skipWS(bool skipNewline) {
+	if (!hasInput()) {
+		return 0;
+	}
+
 	char c = peek();
 
 	std::size_t skippedChars = 0;
-	while (c != EOF && std::isspace(c) && (skipNewline || c != '\n')) {
+	while (std::isspace(c) && (skipNewline || c != '\n')) {
 		skippedChars++;
 		skip();
-		c = peek();
+
+		if (hasInput()) {
+			c = peek();
+		} else {
+			break;
+		}
 	}
 
 	return skippedChars;
@@ -123,7 +144,6 @@ void Parser::expect(const std::string_view sequence) {
 		}
 
 		skip(1);
-		c = peek();
 	}
 }
 
@@ -136,13 +156,13 @@ std::size_t Parser::skipBehind(const std::string_view sequence) {
 
 	bool matched = false;
 	while (!matched) {
+		if (!hasInput()) {
+			throw ParseException(std::string("Unable to find \"").append(sequence) + "\" in input");
+		}
+
 		char c = read();
 
 		skippedChars++;
-
-		if (c == EOF) {
-			throw ParseException(std::string("Unable to find \"").append(sequence) + "\" in input");
-		}
 
 		matched = true;
 		for (std::size_t i = 0; i < sequence.size(); i++) {
@@ -157,11 +177,69 @@ std::size_t Parser::skipBehind(const std::string_view sequence) {
 				skippedChars++;
 			}
 
+			if (!hasInput()) {
+				// At this point we have matched the sequence if we have already compared the last
+				// character in the sequence
+				matched = i == sequence.size() - 1;
+				break;
+			}
+
 			c = peek();
 		}
 	}
 
 	return skippedChars;
+}
+
+int32_t Parser::parseInt() {
+	std::stringstream buffer;
+	std::size_t size = 0;
+
+	while (hasInput() && (std::isdigit(peek()) || (size == 0 && (peek() == '+' || peek() == '-')))) {
+		buffer << read();
+		size++;
+	}
+
+	if (size == 0) {
+		throw ParseException("Attempted to parse int but there were no digits at the current position!");
+	}
+
+	assert(buffer.tellg() == 0);
+
+	int32_t i;
+	buffer >> i;
+
+	assert(buffer.eof());
+
+	return i;
+}
+
+double Parser::parseDouble() {
+	std::stringstream buffer;
+	std::size_t size   = 0;
+	bool matchedPeriod = false;
+
+	while (hasInput()
+		   && (std::isdigit(peek()) || (size == 0 && (peek() == '+' || peek() == '-'))
+			   || (!matchedPeriod && peek() == '.'))) {
+		char c = read();
+		buffer << c;
+		size++;
+		matchedPeriod = matchedPeriod || c == '.';
+	}
+
+	if (size == 0) {
+		throw ParseException("Attempted to parse double but there were no digits at the current position!");
+	}
+
+	assert(buffer.tellg() == 0);
+
+	double f;
+	buffer >> f;
+
+	assert(buffer.eof());
+
+	return f;
 }
 
 std::size_t Parser::refillBuffer() {

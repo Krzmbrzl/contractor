@@ -1,13 +1,12 @@
 #include "Literals.hpp"
-
-#include <gtest/gtest.h>
-
 #include "parser/Parser.hpp"
 
 #include <cstdio>
 #include <cstring>
 #include <istream>
 #include <sstream>
+
+#include <gtest/gtest.h>
 
 // Needed in order to use the _KB and _MB literals here
 using namespace Contractor;
@@ -35,6 +34,10 @@ public:
 	void testExpect(const std::string_view sequence) { expect(sequence); }
 
 	std::size_t testSkipBehind(const std::string_view sequence) { return skipBehind(sequence); }
+
+	int32_t testParseInt() { return parseInt(); }
+
+	double testParseDouble() { return parseDouble(); }
 };
 
 TEST(AbstractParserTest, bufferSize) {
@@ -55,6 +58,29 @@ TEST(AbstractParserTest, bufferSize) {
 
 		ASSERT_EQ(parser.bufferSize(), 1);
 	}
+}
+
+TEST(AbstractParserTest, hasInput) {
+	std::string content = "a";
+	std::stringstream sstream(content);
+
+	TestParser parser;
+
+	ASSERT_FALSE(parser.hasInput());
+
+	parser.testInitSource(sstream);
+
+	ASSERT_TRUE(parser.hasInput());
+
+	parser.testRead();
+
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "b";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_TRUE(parser.hasInput());
 }
 
 TEST(AbstractParserTest, peek) {
@@ -81,7 +107,7 @@ TEST(AbstractParserTest, readChar) {
 	ASSERT_EQ(parser.testRead(), 'b');
 	ASSERT_EQ(parser.testRead(), 'c');
 	// After the end of the stream has been reached, we expect EOF to be returned
-	ASSERT_EQ(parser.testRead(), EOF);
+	ASSERT_FALSE(parser.hasInput());
 
 	ASSERT_FALSE(parser.testSkip(2));
 }
@@ -97,7 +123,7 @@ TEST(AbstractParserTest, skip) {
 
 	ASSERT_EQ(parser.testRead(), 'c');
 	// After the end of the stream has been reached, we expect EOF to be returned
-	ASSERT_EQ(parser.testRead(), EOF);
+	ASSERT_FALSE(parser.hasInput());
 }
 
 TEST(AbstractParserTest, readChunk) {
@@ -154,12 +180,11 @@ TEST(AbstractParserTest, read_all) {
 	for (int i = 0; i < bufLen; i++) {
 		ASSERT_FALSE(i == bufLen - 1) << "Reading didn't stop after String has reached its end";
 
-		char c = parser.testRead();
-		if (c != EOF) {
-			buf[i] = c;
-		} else {
+		if (!parser.hasInput()) {
 			break;
 		}
+
+		buf[i] = parser.testRead();
 	}
 
 	ASSERT_STREQ(buf, content.c_str());
@@ -184,7 +209,7 @@ TEST(AbstractParserTest, bufferRefill) {
 	ASSERT_EQ(parser.testRead(), 'e');
 	ASSERT_EQ(parser.testRead(), 'f');
 	ASSERT_EQ(parser.testRead(), 'g');
-	ASSERT_EQ(parser.testRead(), EOF);
+	ASSERT_FALSE(parser.hasInput());
 }
 
 TEST(AbstractParserTest, bufferRefill_readChunk) {
@@ -232,7 +257,7 @@ TEST(AbstractParserTest, skipWS) {
 	ASSERT_EQ(parser.testSkipWS(false), 0);
 	ASSERT_EQ(parser.testRead(), 'a');
 
-	content = "  \td \n e  \t\n\r f";
+	content = "  \td \n e  \t\n\r f ";
 	sstream = std::stringstream(content);
 
 	parser.testInitSource(sstream);
@@ -249,7 +274,9 @@ TEST(AbstractParserTest, skipWS) {
 	ASSERT_EQ(parser.testSkipWS(true), 6);
 	ASSERT_EQ(parser.testRead(), 'f');
 
-	ASSERT_EQ(parser.testRead(), EOF);
+	ASSERT_EQ(parser.testSkipWS(true), 1);
+
+	ASSERT_FALSE(parser.hasInput());
 };
 
 TEST(AbstractParserTest, expect) {
@@ -266,7 +293,17 @@ TEST(AbstractParserTest, expect) {
 	ASSERT_EQ(parser.testPeek(), 'd');
 
 	ASSERT_THROW(parser.testExpect("defgh"), Parser::ParseException);
-	ASSERT_EQ(parser.testPeek(), EOF);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "/CONTR_STRING/\n  1 2 3 4\n \n/RESULT_STRING/\nAnd so on";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_NO_THROW(parser.testExpect("/CONTR_STRING/"));
+	ASSERT_EQ(parser.testRead(), '\n');
+	ASSERT_EQ(parser.testRead(), ' ');
+	ASSERT_EQ(parser.testRead(), ' ');
+	ASSERT_EQ(parser.testRead(), '1');
 }
 
 TEST(AbstractParserTest, skipBehind) {
@@ -282,5 +319,97 @@ TEST(AbstractParserTest, skipBehind) {
 	ASSERT_EQ(parser.testRead(), 'o');
 
 	ASSERT_THROW(parser.testSkipBehind("dummy"), Parser::ParseException);
-	ASSERT_EQ(parser.testRead(), EOF);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "I am a test";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testSkipBehind("test"), content.size());
+
+	content = "First line\nSecond line\nContent";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testSkipBehind("\n"), 11);
+	ASSERT_EQ(parser.testSkipBehind("\n"), 12);
+	ASSERT_EQ(parser.testRead(), 'C');
+}
+
+TEST(AbstractParserTest, parseInt) {
+	std::string content = "13";
+	std::stringstream sstream(content);
+
+	TestParser parser;
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseInt(), 13);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "-42";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseInt(), -42);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "-113 and so on";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseInt(), -113);
+	ASSERT_EQ(parser.testRead(), ' ');
+
+	content = "0.1 and so on";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseInt(), 0);
+	ASSERT_EQ(parser.testRead(), '.');
+}
+
+TEST(AbstractParserTest, parseDouble) {
+	std::string content = "13";
+	std::stringstream sstream(content);
+
+	TestParser parser;
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseDouble(), 13);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "-42";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseDouble(), -42);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "-113 and so on";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_EQ(parser.testParseDouble(), -113);
+	ASSERT_EQ(parser.testRead(), ' ');
+
+	content = "0.1 and so on";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_DOUBLE_EQ(parser.testParseDouble(), 0.1);
+	ASSERT_EQ(parser.testRead(), ' ');
+
+	content = "1234.5678";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_DOUBLE_EQ(parser.testParseDouble(), 1234.5678);
+	ASSERT_FALSE(parser.hasInput());
+
+	content = "-1234.5678";
+	sstream = std::stringstream(content);
+	parser.testInitSource(sstream);
+
+	ASSERT_DOUBLE_EQ(parser.testParseDouble(), -1234.5678);
+	ASSERT_FALSE(parser.hasInput());
 }

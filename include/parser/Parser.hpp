@@ -13,7 +13,7 @@ namespace Contractor::Parser {
 /**
  * An exception thrown during parsing if an unexpected input is encountered
  */
-class ParseException : std::exception {
+class ParseException : public std::exception {
 public:
 	ParseException(const std::string_view msg);
 
@@ -45,6 +45,8 @@ public:
 
 	/**
 	 * Parses the given input stream
+	 *
+	 * @throws ParseException if invalid input is encountered
 	 */
 	virtual void parse(std::istream &inputStream) = 0;
 
@@ -52,6 +54,11 @@ public:
 	 * @returns The overall size of the used internal buffer (in bytes)
 	 */
 	std::size_t bufferSize() const;
+
+	/**
+	 * @returns Whether there is any input left in the buffer
+	 */
+	bool hasInput() const;
 
 protected:
 	/**
@@ -61,16 +68,22 @@ protected:
 	 */
 	void initSource(std::istream &source);
 	/**
+	 * Clears the currently configured source
+	 */
+	void clearSource();
+	/**
 	 * @returns The next character in the stream. Note this leaves the underlying stream
 	 * unchanged (i.e. consecutive invocations of peek() or read() will return the same
 	 * character again).
-	 * If there are no further characters EOF is returned.
+	 *
+	 * @throws ParseException if there are no further characters to be read
 	 */
 	char peek();
 	/**
 	 * @returns The next character in the stream. The character will be consumed (removed
 	 * from the stream)
-	 * If there are no further characters EOF is returned.
+	 *
+	 * @throws ParseException if there are no further characters to be read
 	 */
 	char read();
 	/**
@@ -118,6 +131,16 @@ protected:
 	 * @throws ParseException If the sequence can't be found
 	 */
 	std::size_t skipBehind(const std::string_view sequence);
+	/**
+	 * Parses an int starting from the current position
+	 *
+	 * @returns The parsed integer
+	 *
+	 * @throws ParseException If there is no integer to be parsed at this position
+	 */
+	int32_t parseInt();
+
+	double parseDouble();
 
 private:
 	std::istream *m_source = nullptr;

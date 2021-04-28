@@ -1,7 +1,7 @@
 include(GoogleTest)
 
 add_executable(parser_test
-	ParserTest.cpp
+	AbstractParserTest.cpp
 )
 
 target_link_libraries(parser_test
