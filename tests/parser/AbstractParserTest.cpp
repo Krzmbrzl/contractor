@@ -130,24 +130,25 @@ TEST(AbstractParserTest, readChunk) {
 	std::string content = "abcdefg";
 	std::stringstream sstream(content);
 
-	constexpr short bufLen = 3;
+	constexpr short readLen = 3;
+	constexpr short bufLen = readLen + 1; // Keep space for terminating null byte
 	char buf[bufLen];
-	std::memset(buf, 0, bufLen);
+	std::memset(buf, 0, bufLen * sizeof(buf[0]));
 
 	TestParser parser;
 	parser.testInitSource(sstream);
 
-	ASSERT_EQ(parser.testRead(buf, bufLen), bufLen);
+	ASSERT_EQ(parser.testRead(buf, readLen), readLen);
 	ASSERT_STREQ(buf, "abc");
 
-	ASSERT_EQ(parser.testRead(buf, bufLen), bufLen);
+	ASSERT_EQ(parser.testRead(buf, readLen), readLen);
 	ASSERT_STREQ(buf, "def");
 
-	std::memset(buf, 0, bufLen);
+	std::memset(buf, 0, bufLen * sizeof(buf[0]));
 
 	// There are fewer characters left that we attempt to read. Thus we expect the read function to return
 	// a smaller amount as well
-	ASSERT_EQ(parser.testRead(buf, bufLen), 1);
+	ASSERT_EQ(parser.testRead(buf, readLen), 1);
 	ASSERT_STREQ(buf, "g");
 }
 
@@ -155,14 +156,15 @@ TEST(AbstractParserTest, readChunk_all) {
 	std::string content = "abcdefg";
 	std::stringstream sstream(content);
 
-	constexpr short bufLen = 10;
+	constexpr short readLen = 10;
+	constexpr short bufLen = readLen + 1; // Keep space for terminating null byte
 	char buf[bufLen];
-	std::memset(buf, 0, bufLen);
+	std::memset(buf, 0, bufLen * sizeof(buf[0]));
 
 	TestParser parser;
 	parser.testInitSource(sstream);
 
-	ASSERT_EQ(parser.testRead(buf, bufLen), content.size());
+	ASSERT_EQ(parser.testRead(buf, readLen), content.size());
 	ASSERT_STREQ(buf, content.c_str());
 }
 
@@ -170,15 +172,16 @@ TEST(AbstractParserTest, read_all) {
 	std::string content = "abcdefg";
 	std::stringstream sstream(content);
 
-	constexpr short bufLen = 10;
+	constexpr short readLen = 10;
+	constexpr short bufLen = readLen + 1; // Keep space for terminating null byte
 	char buf[bufLen];
-	std::memset(buf, 0, bufLen);
+	std::memset(buf, 0, bufLen * sizeof(buf[0]));
 
 	TestParser parser;
 	parser.testInitSource(sstream);
 
-	for (int i = 0; i < bufLen; i++) {
-		ASSERT_FALSE(i == bufLen - 1) << "Reading didn't stop after String has reached its end";
+	for (int i = 0; i < readLen; i++) {
+		ASSERT_FALSE(i == readLen - 1) << "Reading didn't stop after String has reached its end";
 
 		if (!parser.hasInput()) {
 			break;
@@ -216,16 +219,17 @@ TEST(AbstractParserTest, bufferRefill_readChunk) {
 	std::string content = "abc";
 	std::stringstream sstream(content);
 
-	constexpr short bufLen = 2;
+	constexpr short readLen = 2;
+	constexpr short bufLen = readLen + 1; // Keep space for terminating null byte
 	char buf[bufLen];
-	std::memset(buf, 0, bufLen);
+	std::memset(buf, 0, bufLen * sizeof(buf[0]));
 
 	TestParser parser(2);
 	parser.testInitSource(sstream);
 
 	ASSERT_EQ(parser.testRead(), 'a');
 
-	ASSERT_EQ(parser.testRead(buf, bufLen), 2);
+	ASSERT_EQ(parser.testRead(buf, readLen), 2);
 	ASSERT_STREQ(buf, content.c_str() + 1);
 }
 
