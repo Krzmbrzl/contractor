@@ -7,7 +7,7 @@ add_executable(${COMPONENT_NAME}_test
 	IndexTest.cpp
 	TensorTest.cpp
 	TermTest.cpp
-	UnoptimizedTermTest.cpp
+	GeneralTermTest.cpp
 	BinaryTermTest.cpp
 )
 

@@ -4,7 +4,7 @@ set(LIB_NAME "${MAIN_EXECUTABLE_NAME}_${LIB_ALIAS}")
 add_library(${LIB_NAME} STATIC
 	Tensor.cpp
 	Term.cpp
-	UnoptimizedTerm.cpp
+	GeneralTerm.cpp
 	BinaryTerm.cpp
 )
 

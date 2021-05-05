@@ -1,5 +1,5 @@
-#ifndef CONTRACTOR_TERMS_UNOPTIMIZEDTERM_HPP_
-#define CONTRACTOR_TERMS_UNOPTIMIZEDTERM_HPP_
+#ifndef CONTRACTOR_TERMS_GENERALTERM_HPP_
+#define CONTRACTOR_TERMS_GENERALTERM_HPP_
 
 #include "terms/Tensor.hpp"
 #include "terms/Term.hpp"
@@ -11,21 +11,21 @@ namespace Contractor::Terms {
 
 /**
  * This special kind of Term simply describes the contained Terms as a list of Tensors. No information about
- * the optimal order of contracting the different Tensors is contained (hence the name).
+ * the optimal order of factorizing the different Tensors is contained (hence the name).
  */
-class UnoptimizedTerm : public Term {
+class GeneralTerm : public Term {
 public:
 	/**
 	 * Type of the container used to store the Tensors
 	 */
 	using tensor_list_t = std::vector< Tensor >;
 
-	explicit UnoptimizedTerm(const Tensor &parent, Term::factor_t prefactor, const tensor_list_t &tensorList = {});
-	explicit UnoptimizedTerm(const Tensor &parent, Term::factor_t prefactor, tensor_list_t &&tensorList);
-	explicit UnoptimizedTerm(const UnoptimizedTerm &) = default;
-	explicit UnoptimizedTerm(UnoptimizedTerm &&other) = default;
-	UnoptimizedTerm &operator=(const UnoptimizedTerm &other) = default;
-	UnoptimizedTerm &operator=(UnoptimizedTerm &&other) = default;
+	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, const tensor_list_t &tensorList = {});
+	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, tensor_list_t &&tensorList);
+	explicit GeneralTerm(const GeneralTerm &) = default;
+	explicit GeneralTerm(GeneralTerm &&other) = default;
+	GeneralTerm &operator=(const GeneralTerm &other) = default;
+	GeneralTerm &operator=(GeneralTerm &&other) = default;
 
 	virtual std::size_t size() const override;
 
@@ -52,4 +52,4 @@ protected:
 
 }; // namespace Contractor::Terms
 
-#endif // CONTRACTOR_TERMS_UNOPTIMIZEDTERM_HPP_
+#endif // CONTRACTOR_TERMS_GENERALTERM_HPP_

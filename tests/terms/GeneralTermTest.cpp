@@ -1,14 +1,14 @@
-#include "terms/UnoptimizedTerm.hpp"
+#include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
 
 #include <gtest/gtest.h>
 
 namespace ct = Contractor::Terms;
 
-TEST(UnoptimizedTermTest, getter) {
+TEST(GeneralTermTest, getter) {
 	ct::Tensor parent("H");
 	constexpr double prefactor = 1;
-	ct::UnoptimizedTerm term(parent, prefactor);
+	ct::GeneralTerm term(parent, prefactor);
 
 	ASSERT_EQ(term.size(), 0);
 	ASSERT_EQ(term.getParent(), parent);
@@ -16,7 +16,7 @@ TEST(UnoptimizedTermTest, getter) {
 
 	ct::Tensor a("A");
 	ct::Tensor b("B");
-	ct::UnoptimizedTerm term2(parent, prefactor, { ct::Tensor(a), ct::Tensor(b) });
+	ct::GeneralTerm term2(parent, prefactor, { ct::Tensor(a), ct::Tensor(b) });
 
 	ASSERT_EQ(term2.size(), 2);
 	ASSERT_EQ(term2.getParent(), parent);
@@ -30,10 +30,10 @@ TEST(UnoptimizedTermTest, getter) {
 	ASSERT_EQ(it, term2.getTensors().end());
 }
 
-TEST(UnoptimizedTerm, add) {
+TEST(GeneralTerm, add) {
 	ct::Tensor parent("H");
 	constexpr double prefactor = 1;
-	ct::UnoptimizedTerm term(parent, prefactor);
+	ct::GeneralTerm term(parent, prefactor);
 
 	ct::Tensor additional("M");
 	term.add(additional);
@@ -51,10 +51,10 @@ TEST(UnoptimizedTerm, add) {
 	ASSERT_EQ(*it, copy);
 }
 
-TEST(UnoptimizedTerm, remove) {
+TEST(GeneralTerm, remove) {
 	ct::Tensor parent("H");
 	constexpr double prefactor = 1;
-	ct::UnoptimizedTerm term(parent, prefactor);
+	ct::GeneralTerm term(parent, prefactor);
 
 	ct::Tensor a("A");
 	ct::Tensor b("B");
