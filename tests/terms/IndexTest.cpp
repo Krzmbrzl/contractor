@@ -6,49 +6,62 @@ namespace ct = Contractor::Terms;
 
 TEST(IndexTest, getter) {
 	constexpr ct::IndexSpace space(0);
-	constexpr ct::Index::id_t id = 4;
+	constexpr ct::Index::id_t id   = 4;
+	constexpr bool spinAffiliated  = false;
+	constexpr ct::Index::Type type = ct::Index::Type::Annihilator;
 
-	constexpr ct::Index index(space, id);
+	constexpr ct::Index index(space, id, spinAffiliated, type);
 
 	ASSERT_EQ(index.getID(), id);
 	ASSERT_EQ(index.getSpace(), space);
+	ASSERT_EQ(index.isSpinAffiliated(), spinAffiliated);
+	ASSERT_EQ(index.getType(), type);
 }
 
 TEST(IndexTest, equality) {
-	constexpr ct::IndexSpace space1(0);
-	constexpr ct::IndexSpace space2(1);
-	constexpr ct::Index::id_t id1 = 4;
-	constexpr ct::Index::id_t id2 = 7;
+	for (ct::IndexSpace::id_t space1 : { 0, 1 }) {
+		for (ct::IndexSpace::id_t space2 : { 0, 1 }) {
+			for (ct::Index::id_t id1 : { 0, 1 }) {
+				for (ct::Index::id_t id2 : { 0, 1 }) {
+					for (bool spinAffiliated1 : { false, true }) {
+						for (bool spinAffiliated2 : { false, true }) {
+							for (ct::Index::Type type1 : { ct::Index::Type::Creator, ct::Index::Type::Annihilator }) {
+								for (ct::Index::Type type2 :
+									 { ct::Index::Type::Creator, ct::Index::Type::Annihilator }) {
+									bool matches = space1 == space2 && id1 == id2 && spinAffiliated1 == spinAffiliated2
+												   && type1 == type2;
 
-	constexpr ct::Index index_space1_id1(space1, id1);
-	constexpr ct::Index index_space1_id1_copy = index_space1_id1;
-	constexpr ct::Index index_space1_id2(space1, id2);
-	constexpr ct::Index index_space2_id1(space2, id1);
-	constexpr ct::Index index_space2_id2(space2, id2);
+									ct::Index index1(ct::IndexSpace(space1), id1, spinAffiliated1, type1);
+									ct::Index index2(ct::IndexSpace(space2), id2, spinAffiliated2, type2);
 
-	ASSERT_EQ(index_space1_id1, index_space1_id1);
-	ASSERT_EQ(index_space1_id2, index_space1_id2);
-	ASSERT_EQ(index_space2_id1, index_space2_id1);
-	ASSERT_EQ(index_space2_id2, index_space2_id2);
+									if (matches) {
+										ASSERT_EQ(index1, index2);
+									} else {
+										ASSERT_NE(index1, index2);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
-	ASSERT_EQ(index_space1_id1, index_space1_id1_copy);
-	ASSERT_EQ(index_space1_id1_copy, index_space1_id1);
+TEST(IndexTest, copy) {
+	ct::Index index(ct::IndexSpace(0), 1, true, ct::Index::Type::None);
+	ct::Index copy(index);
 
-	ASSERT_NE(index_space1_id1, index_space1_id2);
-	ASSERT_NE(index_space1_id1, index_space2_id1);
-	ASSERT_NE(index_space1_id1, index_space2_id2);
+	ASSERT_EQ(index, copy);
+}
 
-	ASSERT_NE(index_space1_id2, index_space1_id1);
-	ASSERT_NE(index_space1_id2, index_space2_id1);
-	ASSERT_NE(index_space1_id2, index_space2_id2);
+TEST(IndexTest, move) {
+	ct::Index index(ct::IndexSpace(0), 1, true, ct::Index::Type::None);
+	ct::Index copy(index);
+	ct::Index moved(std::move(index));
 
-	ASSERT_NE(index_space2_id1, index_space2_id2);
-	ASSERT_NE(index_space2_id1, index_space1_id1);
-	ASSERT_NE(index_space2_id1, index_space1_id2);
-
-	ASSERT_NE(index_space2_id2, index_space2_id1);
-	ASSERT_NE(index_space2_id2, index_space1_id2);
-	ASSERT_NE(index_space2_id2, index_space1_id1);
+	ASSERT_EQ(copy, moved);
 }
 
 TEST(IndexTest, namedSpaces) {
@@ -57,9 +70,9 @@ TEST(IndexTest, namedSpaces) {
 
 	constexpr ct::Index::id_t id = 0;
 
-	constexpr ct::Index occupiedIndex = ct::Index::occupiedIndex(id);
-	constexpr ct::Index virtualIndex = ct::Index::virtualIndex(id);
-	constexpr ct::Index additionalIndex = ct::Index(ct::IndexSpace::additionalSpace(0), id);
+	constexpr ct::Index occupiedIndex   = ct::Index::occupiedIndex(id, false, ct::Index::Type::Creator);
+	constexpr ct::Index virtualIndex    = ct::Index::virtualIndex(id, false, ct::Index::Type::Creator);
+	constexpr ct::Index additionalIndex = ct::Index(ct::IndexSpace::additionalSpace(0), id, false, ct::Index::Type::Creator);
 
 	ASSERT_EQ(occupiedIndex.getID(), id);
 	ASSERT_EQ(virtualIndex.getID(), id);

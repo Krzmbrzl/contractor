@@ -7,7 +7,7 @@ namespace ct = Contractor::Terms;
 
 TEST(GeneralTermTest, getter) {
 	ct::Tensor parent("H");
-	constexpr double prefactor = 1;
+	constexpr ct::Term::factor_t prefactor = 1;
 	ct::GeneralTerm term(parent, prefactor);
 
 	ASSERT_EQ(term.size(), 0);
@@ -32,7 +32,7 @@ TEST(GeneralTermTest, getter) {
 
 TEST(GeneralTerm, add) {
 	ct::Tensor parent("H");
-	constexpr double prefactor = 1;
+	constexpr ct::Term::factor_t prefactor = 1;
 	ct::GeneralTerm term(parent, prefactor);
 
 	ct::Tensor additional("M");
@@ -53,7 +53,7 @@ TEST(GeneralTerm, add) {
 
 TEST(GeneralTerm, remove) {
 	ct::Tensor parent("H");
-	constexpr double prefactor = 1;
+	constexpr ct::Term::factor_t prefactor = 1;
 	ct::GeneralTerm term(parent, prefactor);
 
 	ct::Tensor a("A");

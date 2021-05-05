@@ -14,6 +14,7 @@ namespace Contractor::Terms {
 class BinaryTerm : public Term {
 public:
 	explicit BinaryTerm(const Tensor &parent, Term::factor_t prefactor, const Tensor &left, const Tensor &right);
+
 	explicit BinaryTerm(const BinaryTerm &other) = default;
 	explicit BinaryTerm(BinaryTerm &&other)      = default;
 	BinaryTerm &operator=(const BinaryTerm &other) = default;

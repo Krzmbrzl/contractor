@@ -30,10 +30,8 @@ public:
 	using const_iterator_t = const IterableView< const index_list_t >;
 
 
-	explicit Tensor(const std::string_view name, const index_list_t &creators, const index_list_t &annihilators);
-	explicit Tensor(const std::string_view name, const index_list_t &creators, index_list_t &&annihilators = {});
-	explicit Tensor(const std::string_view name, index_list_t &&creators, const index_list_t &annihilators);
-	explicit Tensor(const std::string_view name, index_list_t &&creators = {}, index_list_t &&annihilators = {});
+	explicit Tensor(const std::string_view name, const index_list_t &indices);
+	explicit Tensor(const std::string_view name, index_list_t &&indices = {});
 
 	explicit Tensor(const Tensor &other) = default;
 	Tensor(Tensor &&other)               = default;
@@ -47,20 +45,14 @@ public:
 	friend std::ostream &operator<<(std::ostream &out, const Tensor &element);
 
 
-	index_list_t copyCreatorIndices() const;
-	index_list_t copyAnnihilatorIndices() const;
-	index_list_t copyAdditionalIndices() const;
+	index_list_t copyIndices() const;
 
-	const_iterator_t creatorIndices() const;
-	const_iterator_t annihilatorIndices() const;
-	const_iterator_t additionalIndices() const;
+	const_iterator_t indices() const;
 
 	const std::string_view getName() const;
 
 protected:
-	index_list_t m_creators;
-	index_list_t m_annihilators;
-	index_list_t m_additionals;
+	index_list_t m_indices;
 	std::string m_name;
 };
 

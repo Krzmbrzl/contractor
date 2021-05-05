@@ -22,6 +22,7 @@ public:
 
 	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, const tensor_list_t &tensorList = {});
 	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, tensor_list_t &&tensorList);
+
 	explicit GeneralTerm(const GeneralTerm &) = default;
 	explicit GeneralTerm(GeneralTerm &&other) = default;
 	GeneralTerm &operator=(const GeneralTerm &other) = default;

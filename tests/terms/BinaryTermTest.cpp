@@ -9,7 +9,7 @@ TEST(BinaryTermTest, getter) {
 	ct::Tensor parent("P");
 	ct::Tensor left("L");
 	ct::Tensor right("R");
-	constexpr double prefactor = 1;
+	constexpr ct::Term::factor_t prefactor = 1;
 
 	ct::BinaryTerm term(parent, prefactor, left, right);
 
