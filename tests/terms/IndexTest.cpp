@@ -70,9 +70,10 @@ TEST(IndexTest, namedSpaces) {
 
 	constexpr ct::Index::id_t id = 0;
 
-	constexpr ct::Index occupiedIndex   = ct::Index::occupiedIndex(id, false, ct::Index::Type::Creator);
-	constexpr ct::Index virtualIndex    = ct::Index::virtualIndex(id, false, ct::Index::Type::Creator);
-	constexpr ct::Index additionalIndex = ct::Index(ct::IndexSpace::additionalSpace(0), id, false, ct::Index::Type::Creator);
+	constexpr ct::Index occupiedIndex = ct::Index::occupiedIndex(id, false, ct::Index::Type::Creator);
+	constexpr ct::Index virtualIndex  = ct::Index::virtualIndex(id, false, ct::Index::Type::Creator);
+	constexpr ct::Index additionalIndex =
+		ct::Index(ct::IndexSpace::additionalSpace(0), id, false, ct::Index::Type::Creator);
 
 	ASSERT_EQ(occupiedIndex.getID(), id);
 	ASSERT_EQ(virtualIndex.getID(), id);

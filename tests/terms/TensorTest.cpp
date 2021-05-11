@@ -1,4 +1,5 @@
 #include "terms/Tensor.hpp"
+#include "terms/IndexPermutation.hpp"
 
 #include <gtest/gtest.h>
 
@@ -34,6 +35,12 @@ TEST(TensorTest, getter) {
 
 	ASSERT_EQ(annihilatorsOnly.getName(), "H");
 	ASSERT_EQ(annihilatorsOnly.copyIndices(), annihilators);
+
+
+	ct::IndexPermutation p(std::make_pair(creators[0], creators[1]));
+	ct::Tensor::symmetry_list_t permutations = { ct::IndexPermutation(p) };
+	creatorsOnly.setIndexSymmetries(permutations);
+	ASSERT_EQ(creatorsOnly.getIndexSymmetries(), permutations);
 }
 
 ct::Index createIndex(ct::Index::id_t id, bool occupied) {
@@ -55,27 +62,39 @@ TEST(TensorTest, equality) {
 	}
 
 	{
-		ct::Tensor element1("H", {createIndex(0, true)});
+		ct::Tensor element1("H", { createIndex(0, true) });
 		ct::Tensor element2("H");
-		ct::Tensor element3("H", {createIndex(0, true)});
+		ct::Tensor element3("H", { createIndex(0, true) });
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
 	}
 
 	{
-		ct::Tensor element1("H", {createIndex(0, true)});
-		ct::Tensor element2("H", {createIndex(1, true)});
-		ct::Tensor element3("H", {createIndex(0, true)});
+		ct::Tensor element1("H", { createIndex(0, true) });
+		ct::Tensor element2("H", { createIndex(1, true) });
+		ct::Tensor element3("H", { createIndex(0, true) });
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
 	}
 
 	{
-		ct::Tensor element1("H", {createIndex(0, true)});
-		ct::Tensor element2("H", {createIndex(0, false)});
-		ct::Tensor element3("H", {createIndex(0, true)});
+		ct::Tensor element1("H", { createIndex(0, true) });
+		ct::Tensor element2("H", { createIndex(0, false) });
+		ct::Tensor element3("H", { createIndex(0, true) });
+
+		ASSERT_NE(element1, element2);
+		ASSERT_EQ(element1, element3);
+	}
+
+	{
+		ct::IndexPermutation p(std::make_pair(createIndex(0, true), createIndex(1, true)));
+		ct::Tensor::symmetry_list_t permutations = { ct::IndexPermutation(p) };
+
+		ct::Tensor element1("H", { createIndex(0, true), createIndex(1, true) }, permutations);
+		ct::Tensor element2("H", { createIndex(0, false), createIndex(1, true) });
+		ct::Tensor element3("H", { createIndex(0, true), createIndex(1, true) }, permutations);
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
@@ -101,14 +120,14 @@ TEST(TensorTest, helperFunction) {
 
 TEST(TensorTest, copy) {
 	ct::Tensor element = createTensor("H", 3);
-	ct::Tensor copy = ct::Tensor(element);
+	ct::Tensor copy    = ct::Tensor(element);
 
 	ASSERT_EQ(element, copy);
 }
 
 TEST(TensorTest, move) {
 	ct::Tensor element = createTensor("H", 4);
-	ct::Tensor copy = ct::Tensor(element);
+	ct::Tensor copy    = ct::Tensor(element);
 
 	ct::Tensor newTensor = std::move(element);
 

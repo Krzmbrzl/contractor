@@ -9,6 +9,7 @@ add_executable(${COMPONENT_NAME}_test
 	TermTest.cpp
 	GeneralTermTest.cpp
 	BinaryTermTest.cpp
+	IndexPermutationTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test

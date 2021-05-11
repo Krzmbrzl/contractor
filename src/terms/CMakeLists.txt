@@ -6,6 +6,7 @@ add_library(${LIB_NAME} STATIC
 	Term.cpp
 	GeneralTerm.cpp
 	BinaryTerm.cpp
+	IndexPermutation.cpp
 )
 
 add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})

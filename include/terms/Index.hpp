@@ -64,6 +64,8 @@ public:
 			out << "s";
 		}
 
+		out << "}";
+
 		return out;
 	}
 

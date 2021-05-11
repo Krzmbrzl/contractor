@@ -53,8 +53,9 @@ public:
 	friend constexpr bool operator!=(const IndexSpace &lhs, const IndexSpace &rhs) { return !(lhs == rhs); }
 
 	friend std::ostream &operator<<(std::ostream &out, const IndexSpace &space) {
-		// We have to cast the uint8_t in order for it to not get rendered as a char (which uint8_t is usually typedef'd to)
-		return out << "S(" << static_cast<unsigned int>(space.m_id) << ")";
+		// We have to cast the uint8_t in order for it to not get rendered as a char (which uint8_t is usually typedef'd
+		// to)
+		return out << "S(" << static_cast< unsigned int >(space.m_id) << ")";
 	}
 
 	/**

@@ -3,7 +3,7 @@ include(GoogleTest)
 set(COMPONENT_NAME "parser")
 
 add_executable(${COMPONENT_NAME}_test
-	AbstractParserTest.cpp
+	BufferedStreamReaderTest.cpp
 	GeCCoExportParserTest.cpp
 )
 

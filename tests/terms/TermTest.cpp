@@ -10,7 +10,7 @@ namespace ct = Contractor::Terms;
 struct DummyTerm : public ct::Term {
 	static ct::Tensor PARENT;
 	static constexpr Term::factor_t PREFACTOR = 1;
-	static constexpr std::size_t SIZE = 5;
+	static constexpr std::size_t SIZE         = 5;
 
 	DummyTerm(std::size_t size = SIZE) : Term(PARENT, PREFACTOR) {
 		for (std::size_t i = 0; i < size; i++) {
@@ -18,13 +18,9 @@ struct DummyTerm : public ct::Term {
 		}
 	}
 
-	virtual std::size_t size() const override {
-		return m_tensors.size();
-	}
+	virtual std::size_t size() const override { return m_tensors.size(); }
 
-	virtual const ct::Tensor &get(std::size_t index) const override {
-		return m_tensors[index];
-	}
+	virtual const ct::Tensor &get(std::size_t index) const override { return m_tensors[index]; }
 
 	std::vector< ct::Tensor > m_tensors;
 };
@@ -61,7 +57,8 @@ TEST(TermTest, equality) {
 
 	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER), true);
 	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::REQUIRE_SAME_TYPE), false);
-	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER | ct::Term::CompareOption::REQUIRE_SAME_TYPE), false);
+	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER | ct::Term::CompareOption::REQUIRE_SAME_TYPE),
+			  false);
 
 	std::swap(term2.m_tensors[1], term2.m_tensors[2]);
 	// Now that we have changed the order inside term2, when comparing term-by-term (order-aware) the equality

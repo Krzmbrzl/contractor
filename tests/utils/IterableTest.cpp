@@ -1,15 +1,15 @@
 #include "utils/Iterable.hpp"
 
 #include <functional>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 class Dummy {
 public:
 	static constexpr std::size_t SIZE = 10;
-	using container_t = std::vector< std::string >;
+	using container_t                 = std::vector< std::string >;
 
 	Dummy() {
 		for (std::size_t i = 0; i < SIZE; i++) {
@@ -26,10 +26,10 @@ public:
 	}
 
 	Contractor::Iterable< const std::string > objects() const {
-		auto temp =	std::bind(static_cast< const std::string &(container_t::*) (std::size_t) const >(&container_t::at), &m_vec,
-					  std::placeholders::_1);
+		auto temp = std::bind(static_cast< const std::string &(container_t::*) (std::size_t) const >(&container_t::at),
+							  &m_vec, std::placeholders::_1);
 
-		std::function< const std::string & (std::size_t) > func = temp;
+		std::function< const std::string &(std::size_t) > func = temp;
 
 		return Contractor::Iterable< const std::string >(0, m_vec.size(), func, &m_vec);
 	}
