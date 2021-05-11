@@ -11,6 +11,17 @@
 
 namespace Contractor::Parser {
 
+/**
+ * A parser for parsing GeCCo's ".EXPORT" file format that contains information
+ * about the result of its contraction routines.
+ * Thus it effectively contains a list of GeneralTerm specifications that this
+ * parser can extract.
+ *
+ * As we don't extract all information (yet) we differentiate between parse* and
+ * skip* functions. While the former actually extracts information from the parsed
+ * file, the latter only skips over the respective area (potentially verifying the
+ * rough structure of the skipped part).
+ */
 class GeCCoExportParser {
 public:
 	using term_list_t = std::vector< Terms::GeneralTerm >;
@@ -23,6 +34,7 @@ public:
 
 	term_list_t parse(std::istream &inputStream);
 	term_list_t parse();
+
 	Terms::GeneralTerm parseContraction();
 	Terms::Tensor parseResult();
 	double parseFactor();

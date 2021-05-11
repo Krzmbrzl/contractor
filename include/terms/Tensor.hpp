@@ -55,10 +55,26 @@ public:
 	 */
 	index_list_t &getIndices();
 
+	/**
+	 * @returns This Tensor's name
+	 */
 	const std::string_view getName() const;
 
+	/**
+	 * @returns A list of allowed IndexPermutations for this Tensor
+	 */
 	const symmetry_list_t &getIndexSymmetries() const;
+	/**
+	 * Sets the allowed IndexPermutations for this Tensor
+	 *
+	 * @param symmetries The allowed permutations
+	 */
 	void setIndexSymmetries(const symmetry_list_t &symmetries);
+	/**
+	 * Sets the allowed IndexPermutations for this Tensor
+	 *
+	 * @param symmetries The allowed permutations
+	 */
 	void setIndexSymmetries(symmetry_list_t &&symmetries);
 
 protected:

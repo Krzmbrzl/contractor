@@ -7,6 +7,33 @@
 
 namespace Contractor {
 
+/*
+ * In here we basically define an interface for an object of which we only
+ * know/assume that it can be iterated using STL-like iterators.
+ * As iterators are always passed by vale in C++, we have to play a few
+ * tricks to make this work (creating and accessing a virtual function
+ * will most likely lead to "slicing" due to iterators not being used as 
+ * reference or pointer types).
+ *
+ * The trick we play is this: We assume that the object that actually is
+ * holding the items that we want to iterate over can be asked to access
+ * its elements by an index.
+ * Then we instantiate our iterable interface object with a function pointer
+ * to the function that returns the element corresponding to the given index.
+ * By using a function pointer we can achieve our polymorphic requirements
+ * indirectly (in the iterable's internals).
+ * Furthermore we need to know the start and end of the range we want
+ * to iterate over in order to be able to construct the corresponding begin
+ * and end iterators.
+ * The final ingredient to our iterable interface is a pointer identifying
+ * the iterated container. This is needed in order to be able to discriminate
+ * iterators that currently point to the same index but are connected to
+ * different containers. Thus the pointer is meant to be an identification of
+ * the underlaying container (usually just its memory address). This is needed
+ * because function pointers (or std::function to be more precise) can't be
+ * compared with one another.
+ */
+
 template< typename T > struct iterator_impl {
 	using iterator_category = std::forward_iterator_tag;
 	using difference_type   = std::ptrdiff_t;
