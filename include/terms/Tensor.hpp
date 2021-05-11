@@ -27,8 +27,6 @@ public:
 	 * Type that is used for storing the list of attached indices
 	 */
 	using index_list_t     = std::vector< Index >;
-	using iterator_t       = IterableView< index_list_t >;
-	using const_iterator_t = const IterableView< const index_list_t >;
 	using symmetry_list_t  = std::vector< IndexPermutation >;
 
 
@@ -48,11 +46,14 @@ public:
 	friend std::ostream &operator<<(std::ostream &out, const Tensor &element);
 
 
-	index_list_t copyIndices() const;
-
-	const_iterator_t indices() const;
-
-	index_list_t &mutableIndices();
+	/**
+	 * @returns The list of indices of this Tensor
+	 */
+	const index_list_t &getIndices() const;
+	/**
+	 * @returns The list of indices of this Tensor
+	 */
+	index_list_t &getIndices();
 
 	const std::string_view getName() const;
 

@@ -11,8 +11,8 @@ TEST(TensorTest, getter) {
 
 	ASSERT_EQ(empty1.getName(), "H");
 	ASSERT_EQ(empty2.getName(), "T2");
-	ASSERT_EQ(empty1.indices().size(), 0);
-	ASSERT_EQ(empty2.indices().size(), 0);
+	ASSERT_EQ(empty1.getIndices().size(), 0);
+	ASSERT_EQ(empty2.getIndices().size(), 0);
 
 	ct::Tensor::index_list_t creators;
 	creators.push_back(ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator));
@@ -23,7 +23,7 @@ TEST(TensorTest, getter) {
 	ct::Tensor creatorsOnly("H", creators);
 
 	ASSERT_EQ(creatorsOnly.getName(), "H");
-	ASSERT_EQ(creatorsOnly.copyIndices(), creators);
+	ASSERT_EQ(creatorsOnly.getIndices(), creators);
 
 	ct::Tensor::index_list_t annihilators;
 	annihilators.push_back(ct::Index::virtualIndex(0, true, ct::Index::Type::Annihilator));
@@ -34,7 +34,7 @@ TEST(TensorTest, getter) {
 	ct::Tensor annihilatorsOnly("H", annihilators);
 
 	ASSERT_EQ(annihilatorsOnly.getName(), "H");
-	ASSERT_EQ(annihilatorsOnly.copyIndices(), annihilators);
+	ASSERT_EQ(annihilatorsOnly.getIndices(), annihilators);
 
 
 	ct::IndexPermutation p(std::make_pair(creators[0], creators[1]));
@@ -115,7 +115,7 @@ TEST(TensorTest, helperFunction) {
 	ct::Tensor element = createTensor("ABC", 3);
 
 	ASSERT_EQ(element.getName(), "ABC");
-	ASSERT_EQ(element.indices().size(), 3);
+	ASSERT_EQ(element.getIndices().size(), 3);
 }
 
 TEST(TensorTest, copy) {
@@ -135,5 +135,5 @@ TEST(TensorTest, move) {
 	// is now basically an empty hull
 	ASSERT_EQ(newTensor, copy);
 	ASSERT_EQ(element.getName(), "");
-	ASSERT_EQ(element.indices().size(), 0);
+	ASSERT_EQ(element.getIndices().size(), 0);
 }

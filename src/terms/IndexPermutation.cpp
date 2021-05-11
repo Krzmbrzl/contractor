@@ -41,7 +41,7 @@ IndexPermutation::factor_t IndexPermutation::getFactor() const {
 }
 
 IndexPermutation::factor_t IndexPermutation::apply(Tensor &tensor) const {
-	Tensor::index_list_t &indices = tensor.mutableIndices();
+	Tensor::index_list_t &indices = tensor.getIndices();
 	for (const auto &currentPermutation : m_permutations) {
 		auto firstIt  = std::find(indices.begin(), indices.end(), currentPermutation.first);
 		auto secondIt = std::find(indices.begin(), indices.end(), currentPermutation.second);

@@ -32,15 +32,11 @@ std::ostream &operator<<(std::ostream &out, const Tensor &element) {
 	return out << "]";
 }
 
-Tensor::index_list_t Tensor::copyIndices() const {
+const Tensor::index_list_t &Tensor::getIndices() const {
 	return m_indices;
 }
 
-const Tensor::const_iterator_t Tensor::indices() const {
-	return m_indices;
-}
-
-Tensor::index_list_t &Tensor::mutableIndices() {
+Tensor::index_list_t &Tensor::getIndices() {
 	return m_indices;
 }
 
