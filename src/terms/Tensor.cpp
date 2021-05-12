@@ -58,7 +58,7 @@ void Tensor::setIndexSymmetries(Tensor::symmetry_list_t &&symmetries) {
 	m_indexSymmetries = symmetries;
 }
 
-bool Tensor::refersToSameElement(const Tensor &other) {
+bool Tensor::refersToSameElement(const Tensor &other) const {
 	if (m_indices.size() != other.m_indices.size() || getName() != other.getName()) {
 		return false;
 	}

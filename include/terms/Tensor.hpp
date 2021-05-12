@@ -84,7 +84,7 @@ public:
 	 * order and the index space and type. Note however that duplicate indices in either Tensor
 	 * have to have a corresponding counterpart in the other one.
 	 */
-	bool refersToSameElement(const Tensor &other);
+	bool refersToSameElement(const Tensor &other) const;
 
 protected:
 	index_list_t m_indices;
