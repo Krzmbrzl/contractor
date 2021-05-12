@@ -77,6 +77,15 @@ public:
 	 */
 	void setIndexSymmetries(symmetry_list_t &&symmetries);
 
+	/**
+	 * @param other The Tensor to compare to
+	 * @returns Whether both Tensors are actually referring to the same element. This differs
+	 * from equality as the actual index IDs are not important for this, only the relative
+	 * order and the index space and type. Note however that duplicate indices in either Tensor
+	 * have to have a corresponding counterpart in the other one.
+	 */
+	bool refersToSameElement(const Tensor &other);
+
 protected:
 	index_list_t m_indices;
 	std::string m_name;

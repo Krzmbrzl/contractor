@@ -137,3 +137,112 @@ TEST(TensorTest, move) {
 	ASSERT_EQ(element.getName(), "");
 	ASSERT_EQ(element.getIndices().size(), 0);
 }
+
+TEST(TensorTest, refersToSameElement) {
+	{
+		ct::Tensor first("g");
+		ct::Tensor second("g");
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g");
+		ct::Tensor second("p");
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_FALSE(first.refersToSameElement(second));
+		ASSERT_FALSE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::virtualIndex(0, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_FALSE(first.refersToSameElement(second));
+		ASSERT_FALSE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(3, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(21, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Annihilator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_FALSE(first.refersToSameElement(second));
+		ASSERT_FALSE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(7, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Annihilator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_FALSE(first.refersToSameElement(second));
+		ASSERT_FALSE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(10, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_FALSE(first.refersToSameElement(second));
+		ASSERT_FALSE(second.refersToSameElement(first));
+	}
+	{
+		ct::Tensor first("g", { ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(10, true, ct::Index::Type::Creator),
+								ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator) });
+		ct::Tensor second("g", { ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(3, true, ct::Index::Type::Creator),
+								 ct::Index::occupiedIndex(13, true, ct::Index::Type::Creator) });
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
+}
