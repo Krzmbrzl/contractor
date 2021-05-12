@@ -388,3 +388,6 @@ TEST(GeCCoExportParserTest, run) {
 		ASSERT_EQ(terms.size(), 10);
 	}
 }
+
+#undef STRINGIFY
+#undef TOSTRING
