@@ -4,6 +4,7 @@ set(LIB_NAME "${MAIN_EXECUTABLE_NAME}_${LIB_ALIAS}")
 add_library(${LIB_NAME} STATIC
 	BufferedStreamReader.cpp
 	GeCCoExportParser.cpp
+	SymmetryListParser.cpp
 )
 
 add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})
