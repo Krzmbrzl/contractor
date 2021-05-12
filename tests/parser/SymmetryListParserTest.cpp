@@ -4,8 +4,13 @@
 
 #include <sstream>
 #include <string>
+#include <filesystem>
+#include <fstream>
 
 #include <gtest/gtest.h>
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 namespace cp = Contractor::Parser;
 namespace ct = Contractor::Terms;
@@ -162,3 +167,21 @@ TEST(SymmetryListParserTest, parse) {
 	ASSERT_EQ(result[0], tensor1);
 	ASSERT_EQ(result[1], tensor2);
 }
+
+// Assume that the test will never be put on a computer that did not clone the original repo containing the test files
+const std::filesystem::path testFileDirectory = std::filesystem::path(TOSTRING(TEST_FILE_DIRECTORY)) / "parser";
+
+TEST(SymmetryListParserTest, testFiles) {
+	std::filesystem::path testInput = testFileDirectory / "syntax.symmetry";
+
+	ASSERT_TRUE(std::filesystem::exists(testInput)) << "Test input file \"" << testInput << "\"not found!";
+
+	std::fstream input(testInput);
+
+	cp::SymmetryListParser parser;
+
+	ASSERT_NO_THROW(parser.parse(input));
+}
+
+#undef STRINGIFY
+#undef TOSTRING
