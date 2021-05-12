@@ -253,6 +253,8 @@ TEST(BufferedStreamReaderTest, skipWS) {
 	ASSERT_EQ(parser.skipWS(true), 1);
 
 	ASSERT_FALSE(parser.hasInput());
+
+	ASSERT_NO_THROW(parser.skipWS());
 };
 
 TEST(BufferedStreamReaderTest, expect) {
