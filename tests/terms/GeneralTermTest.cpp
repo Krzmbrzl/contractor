@@ -11,7 +11,7 @@ TEST(GeneralTermTest, getter) {
 	ct::GeneralTerm term(parent, prefactor);
 
 	ASSERT_EQ(term.size(), 0);
-	ASSERT_EQ(term.getParent(), parent);
+	ASSERT_EQ(term.getResult(), parent);
 	ASSERT_EQ(term.getPrefactor(), prefactor);
 
 	ct::Tensor a("A");
@@ -19,7 +19,7 @@ TEST(GeneralTermTest, getter) {
 	ct::GeneralTerm term2(parent, prefactor, { ct::Tensor(a), ct::Tensor(b) });
 
 	ASSERT_EQ(term2.size(), 2);
-	ASSERT_EQ(term2.getParent(), parent);
+	ASSERT_EQ(term2.getResult(), parent);
 	ASSERT_EQ(term2.getPrefactor(), prefactor);
 
 	auto it = term2.getTensors().begin();

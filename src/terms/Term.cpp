@@ -5,11 +5,11 @@
 
 namespace Contractor::Terms {
 
-Term::Term(const Tensor &parent, Term::factor_t prefactor) : m_parent(parent), m_prefactor(prefactor) {
+Term::Term(const Tensor &parent, Term::factor_t prefactor) : m_result(parent), m_prefactor(prefactor) {
 }
 
-const Tensor &Term::getParent() const {
-	return m_parent;
+const Tensor &Term::getResult() const {
+	return m_result;
 }
 
 Term::factor_t Term::getPrefactor() const {

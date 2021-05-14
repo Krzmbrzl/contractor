@@ -15,7 +15,7 @@ TEST(BinaryTermTest, getter) {
 
 	ASSERT_EQ(term.size(), 2);
 	ASSERT_EQ(term.getPrefactor(), prefactor);
-	ASSERT_EQ(term.getParent(), parent);
+	ASSERT_EQ(term.getResult(), parent);
 
 	auto it = term.getTensors().begin();
 

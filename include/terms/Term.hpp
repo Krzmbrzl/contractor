@@ -45,9 +45,9 @@ public:
 	Term &operator=(Term &&other) = default;
 
 	/**
-	 * @returns The parent of this Term
+	 * @returns The result Tensor this Term contributes to
 	 */
-	const Tensor &getParent() const;
+	const Tensor &getResult() const;
 	/**
 	 * @returns The prefactor of this Term
 	 */
@@ -74,7 +74,7 @@ public:
 				std::underlying_type_t< CompareOption::Options > options = CompareOption::NONE) const;
 
 protected:
-	Tensor m_parent;
+	Tensor m_result;
 	factor_t m_prefactor;
 
 	/**

@@ -35,7 +35,7 @@ TEST(TermTest, getter) {
 	DummyTerm term;
 
 	ASSERT_EQ(term.size(), DummyTerm::SIZE);
-	ASSERT_EQ(term.getParent(), DummyTerm::PARENT);
+	ASSERT_EQ(term.getResult(), DummyTerm::PARENT);
 	ASSERT_EQ(term.getPrefactor(), DummyTerm::PREFACTOR);
 
 	auto it = term.getTensors().begin();
