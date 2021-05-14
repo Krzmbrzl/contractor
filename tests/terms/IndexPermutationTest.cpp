@@ -76,3 +76,27 @@ TEST(IndexPermutationTest, apply) {
 		ASSERT_EQ(copy, original);
 	}
 }
+
+TEST(IndexPermutationTest, applyWithDuplicateIndices) {
+	ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
+	ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+
+	ct::Tensor original(
+		"H", { ct::Index(firstIndex), ct::Index(firstIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
+
+	{
+		ct::Tensor expected(
+			"H", { ct::Index(thirdIndex), ct::Index(thirdIndex), ct::Index(firstIndex), ct::Index(fourthIndex) });
+
+		constexpr ct::IndexPermutation::factor_t factor = -1;
+		ct::IndexPermutation permutation(ct::IndexPermutation::index_pair_t(firstIndex, thirdIndex), factor);
+
+		ct::Tensor permuted(original);
+		ASSERT_EQ(permutation.apply(permuted), factor);
+		ASSERT_EQ(permuted, expected);
+
+		ASSERT_EQ(permutation.apply(permuted), factor);
+		ASSERT_EQ(permuted, original);
+	}
+}

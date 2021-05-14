@@ -42,17 +42,25 @@ IndexPermutation::factor_t IndexPermutation::getFactor() const {
 
 IndexPermutation::factor_t IndexPermutation::apply(Tensor &tensor) const {
 	Tensor::index_list_t &indices = tensor.getIndices();
-	for (const auto &currentPermutation : m_permutations) {
-		auto firstIt  = std::find(indices.begin(), indices.end(), currentPermutation.first);
-		auto secondIt = std::find(indices.begin(), indices.end(), currentPermutation.second);
+	for (const IndexPermutation::index_pair_t &currentPermutation : m_permutations) {
+		bool foundFirst  = false;
+		bool foundSecond = false;
 
-		if (firstIt == indices.end() || secondIt == indices.end()) {
-			throw std::logic_error(
-				"Index permutation does not apply (participating indices are not contained in Tensor)");
+		for (std::size_t i = 0; i < tensor.getIndices().size(); i++) {
+			// Replace all occurrences of the two indices
+			if (tensor.getIndices()[i] == currentPermutation.first) {
+				foundFirst             = true;
+				tensor.getIndices()[i] = currentPermutation.second;
+			} else if (tensor.getIndices()[i] == currentPermutation.second) {
+				foundSecond            = true;
+				tensor.getIndices()[i] = currentPermutation.first;
+			}
 		}
 
-		// Swap the two indices
-		std::iter_swap(firstIt, secondIt);
+		// If this does not hold, it means that the permutation referenced indices that are not contained
+		// in the given Tensor. In that case there is no way that this action leads to a sensible outcome,
+		// so we forbid that as a precondition.
+		assert(foundFirst && foundSecond);
 	}
 
 	return m_factor;

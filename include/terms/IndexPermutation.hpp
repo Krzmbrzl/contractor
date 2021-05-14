@@ -57,7 +57,8 @@ public:
 	factor_t getFactor() const;
 
 	/**
-	 * Applies this permutation to the given Tensor (in-place)
+	 * Applies this permutation to the given Tensor (in-place). Note that the
+	 * given Tensor must contain all indices referenced by this permutation.
 	 *
 	 * @param tensor The Tensor to work on
 	 * @returns The prefactor resulting from the performed index permutation
