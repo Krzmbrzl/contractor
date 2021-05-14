@@ -42,14 +42,14 @@ TEST(GeCCoExportParserTest, parseContractionStringIndexing) {
 		ct::GeneralTerm::tensor_list_t tensors = parser.parseContractionStringIndexing({ "H", "T2" });
 
 		ASSERT_EQ(tensors.size(), 2);
-		ASSERT_EQ(tensors[0], ct::Tensor("H", { ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator),
-												ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator),
-												ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator),
-												ct::Index::virtualIndex(0, true, ct::Index::Type::Annihilator) }));
-		ASSERT_EQ(tensors[1], ct::Tensor("T2", { ct::Index::virtualIndex(0, true, ct::Index::Type::Creator),
-												 ct::Index::virtualIndex(1, true, ct::Index::Type::Creator),
-												 ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator),
-												 ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator) }));
+		ASSERT_EQ(tensors[0], ct::Tensor("H", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+												ct::Index::occupiedIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
+												ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+												ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both) }));
+		ASSERT_EQ(tensors[1], ct::Tensor("T2", { ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+												 ct::Index::virtualIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
+												 ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+												 ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both) }));
 	}
 }
 
@@ -129,8 +129,8 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		ct::Tensor::index_list_t indices = parser.parseIndexSpec(false);
 
 		ASSERT_EQ(indices.size(), 2);
-		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, true, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
 
 
 		sstream = std::stringstream(content);
@@ -139,8 +139,8 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		indices = parser.parseIndexSpec(true);
 
 		ASSERT_EQ(indices.size(), 2);
-		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
 	}
 	{
 		std::string content = "[HP,PH]";
@@ -152,10 +152,10 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		ct::Tensor::index_list_t indices = parser.parseIndexSpec(false);
 
 		ASSERT_EQ(indices.size(), 4);
-		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[2], ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator));
-		ASSERT_EQ(indices[3], ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[2], ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[3], ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
 
 
 		sstream = std::stringstream(content);
@@ -164,10 +164,10 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		indices = parser.parseIndexSpec(true);
 
 		ASSERT_EQ(indices.size(), 4);
-		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator));
-		ASSERT_EQ(indices[2], ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator));
-		ASSERT_EQ(indices[3], ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[2], ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[3], ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
 	}
 }
 
@@ -195,10 +195,10 @@ TEST(GeCCoExportParserTest, parseTensor) {
 
 		ct::Tensor parsedTensor = parser.parseTensor();
 
-		ct::Tensor expectedTensor("H", { ct::Index::virtualIndex(0, true, ct::Index::Type::Creator),
-										 ct::Index::virtualIndex(1, true, ct::Index::Type::Creator),
-										 ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator),
-										 ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator) });
+		ct::Tensor expectedTensor("H", { ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										 ct::Index::virtualIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										 ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+										 ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both) });
 
 		ASSERT_EQ(parsedTensor, expectedTensor);
 	}
@@ -211,10 +211,10 @@ TEST(GeCCoExportParserTest, parseTensor) {
 
 		ct::Tensor parsedTensor = parser.parseTensor();
 
-		ct::Tensor expectedTensor("H", { ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator),
-										 ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator),
-										 ct::Index::virtualIndex(0, true, ct::Index::Type::Annihilator),
-										 ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator) });
+		ct::Tensor expectedTensor("H", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										 ct::Index::occupiedIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										 ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+										 ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both) });
 
 		ASSERT_EQ(parsedTensor, expectedTensor);
 	}
@@ -291,14 +291,14 @@ TEST(GeCCoExportParserTest, parseContraction) {
 		ct::Tensor parent("LCCD");
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
-			ct::Tensor("T2", { ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator),
-							   ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator),
-							   ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator),
-							   ct::Index::virtualIndex(0, true, ct::Index::Type::Annihilator) }),
-			ct::Tensor("H", { ct::Index::virtualIndex(0, true, ct::Index::Type::Creator),
-							  ct::Index::virtualIndex(1, true, ct::Index::Type::Creator),
-							  ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator),
-							  ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator) })
+			ct::Tensor("T2", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator),
+							   ct::Index::occupiedIndex(1, ct::Index::Type::Creator),
+							   ct::Index::virtualIndex(1, ct::Index::Type::Annihilator),
+							   ct::Index::virtualIndex(0, ct::Index::Type::Annihilator) }),
+			ct::Tensor("H", { ct::Index::virtualIndex(0, ct::Index::Type::Creator),
+							  ct::Index::virtualIndex(1, ct::Index::Type::Creator),
+							  ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator),
+							  ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
@@ -343,16 +343,16 @@ TEST(GeCCoExportParserTest, parseContraction) {
 		ct::GeneralTerm parsedTerm = parser.parseContraction();
 
 
-		ct::Tensor parent("O2", { ct::Index::virtualIndex(0, true, ct::Index::Type::Creator),
-								  ct::Index::virtualIndex(1, true, ct::Index::Type::Creator),
-								  ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator),
-								  ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator) });
+		ct::Tensor parent("O2", { ct::Index::virtualIndex(0, ct::Index::Type::Creator),
+								  ct::Index::virtualIndex(1, ct::Index::Type::Creator),
+								  ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator),
+								  ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator) });
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
-			ct::Tensor("H", { ct::Index::occupiedIndex(2, true, ct::Index::Type::Creator),
-							  ct::Index::occupiedIndex(3, true, ct::Index::Type::Creator) }),
-			ct::Tensor("T2", { ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator),
-							   ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator) })
+			ct::Tensor("H", { ct::Index::occupiedIndex(2, ct::Index::Type::Creator),
+							  ct::Index::occupiedIndex(3, ct::Index::Type::Creator) }),
+			ct::Tensor("T2", { ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator),
+							   ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);

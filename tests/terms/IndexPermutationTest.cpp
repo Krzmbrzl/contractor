@@ -7,8 +7,8 @@
 namespace ct = Contractor::Terms;
 
 TEST(IndexPermutation, getter) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-	ct::Index secondIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator);
+	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
+	ct::Index secondIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Creator);
 
 	auto pair = std::make_pair(firstIndex, secondIndex);
 
@@ -21,10 +21,10 @@ TEST(IndexPermutation, getter) {
 }
 
 TEST(IndexPermutationTest, apply) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-	ct::Index secondIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
+	ct::Index secondIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Creator);
+	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator);
+	ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator);
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
@@ -78,9 +78,9 @@ TEST(IndexPermutationTest, apply) {
 }
 
 TEST(IndexPermutationTest, applyWithDuplicateIndices) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
+	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator);
+	ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator);
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(firstIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });

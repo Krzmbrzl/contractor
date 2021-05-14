@@ -176,11 +176,13 @@ Terms::Tensor::index_list_t GeCCoExportParser::parseIndexSpec(bool adjoint) {
 		switch (creators[i]) {
 			case 'H':
 				// "hole space" -> The space in which holes can be created (occupied space)
-				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, true, Terms::Index::Type::Creator));
+				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, Terms::Index::Type::Creator,
+															  Terms::Index::Spin::Both));
 				break;
 			case 'P':
 				// "particle space" -> The space in which particles can be created (virtual space)
-				indices.push_back(Terms::Index::virtualIndex(virtualIndex++, true, Terms::Index::Type::Creator));
+				indices.push_back(
+					Terms::Index::virtualIndex(virtualIndex++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
 				break;
 			default:
 				throw ParseException(std::string("Unexpected creator index specifier \"") + creators[i] + "\"");
@@ -191,11 +193,13 @@ Terms::Tensor::index_list_t GeCCoExportParser::parseIndexSpec(bool adjoint) {
 		switch (annihilators[i]) {
 			case 'H':
 				// "hole space" -> The space in which holes can be created (occupied space)
-				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, true, Terms::Index::Type::Annihilator));
+				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, Terms::Index::Type::Annihilator,
+															  Terms::Index::Spin::Both));
 				break;
 			case 'P':
 				// "particle space" -> The space in which particles can be created (virtual space)
-				indices.push_back(Terms::Index::virtualIndex(virtualIndex++, true, Terms::Index::Type::Annihilator));
+				indices.push_back(Terms::Index::virtualIndex(virtualIndex++, Terms::Index::Type::Annihilator,
+															 Terms::Index::Spin::Both));
 				break;
 			default:
 				throw ParseException(std::string("Unexpected annihilator index specifier \"") + 'A'
@@ -393,10 +397,11 @@ Terms::GeneralTerm::tensor_list_t
 		}
 
 		if (isCreator[index]) {
-			indexList.push_back(Terms::Index(indexSpaces[index], indexIDs[index], true, Terms::Index::Type::Creator));
+			indexList.push_back(Terms::Index(indexSpaces[index], indexIDs[index], Terms::Index::Type::Creator,
+											 Terms::Index::Spin::Both));
 		} else {
-			indexList.push_back(
-				Terms::Index(indexSpaces[index], indexIDs[index], true, Terms::Index::Type::Annihilator));
+			indexList.push_back(Terms::Index(indexSpaces[index], indexIDs[index], Terms::Index::Type::Annihilator,
+											 Terms::Index::Spin::Both));
 		}
 
 		if (i + 1 == indices.size() || vertexIndices[index] != vertexIndices[indices[i + 1]]) {

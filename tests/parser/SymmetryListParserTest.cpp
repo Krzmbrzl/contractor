@@ -49,10 +49,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		parser.setSource(sstream);
 
 		ct::Tensor expectedTensor("H", {
-										   ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator),
-										   ct::Index::virtualIndex(0, true, ct::Index::Type::Creator),
-										   ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator),
-										   ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator),
+										   ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										   ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
+										   ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+										   ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
 									   });
 
 		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
@@ -64,10 +64,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser;
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, true, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
 
 		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
 
@@ -84,10 +84,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser;
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, true, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
 
 		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
 		ct::IndexPermutation secondPermutation(ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex), 1);
@@ -105,10 +105,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser;
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, true, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
 
 		ct::IndexPermutation firstPermutation({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex),
 												ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex) },
@@ -155,8 +155,8 @@ TEST(SymmetryListParserTest, parse) {
 	std::stringstream sstream(content);
 
 	ct::Tensor tensor1("H");
-	ct::Index index1 = ct::Index::virtualIndex(0, true, ct::Index::Type::Creator);
-	ct::Index index2 = ct::Index::virtualIndex(1, true, ct::Index::Type::Annihilator);
+	ct::Index index1 = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
+	ct::Index index2 = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
 	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) },
 					   { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2), 1) });
 

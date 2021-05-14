@@ -58,10 +58,10 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 		char c = m_reader.read();
 		switch (c) {
 			case 'H':
-				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, true, Terms::Index::Type::Creator));
+				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
 				break;
 			case 'P':
-				indices.push_back(Terms::Index::virtualIndex(virtualID++, true, Terms::Index::Type::Creator));
+				indices.push_back(Terms::Index::virtualIndex(virtualID++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
 				break;
 			default:
 				throw ParseException(std::string("Expected index spec to be either 'H' or 'P' but got '") + c + "'");
@@ -75,10 +75,10 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 		char c = m_reader.read();
 		switch (c) {
 			case 'H':
-				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, true, Terms::Index::Type::Annihilator));
+				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, Terms::Index::Type::Annihilator, Terms::Index::Spin::Both));
 				break;
 			case 'P':
-				indices.push_back(Terms::Index::virtualIndex(virtualID++, true, Terms::Index::Type::Annihilator));
+				indices.push_back(Terms::Index::virtualIndex(virtualID++, Terms::Index::Type::Annihilator, Terms::Index::Spin::Both));
 				break;
 			default:
 				throw ParseException(std::string("Expected index spec to be either 'H' or 'P' but got '") + c + "'");

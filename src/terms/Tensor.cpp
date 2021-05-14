@@ -117,7 +117,7 @@ bool Tensor::refersToSameElement(const Tensor &other) const {
 		if (m_indices[i].getSpace() != other.m_indices[i].getSpace()) {
 			return false;
 		}
-		if (m_indices[i].isSpinAffiliated() != other.m_indices[i].isSpinAffiliated()) {
+		if (m_indices[i].getSpin() != other.m_indices[i].getSpin()) {
 			return false;
 		}
 		// The exact ID does not matter here as that is only a matter of naming convention

@@ -29,10 +29,15 @@ public:
 	};
 
 	/**
+	 * An enum holding different spin states an Index can be in
+	 */
+	enum class Spin { None, Alpha, Beta, Both };
+
+	/**
 	 * Instantiates an Index in the given space with the given ID
 	 */
-	constexpr explicit Index(const IndexSpace &space, id_t id, bool spinAffiliated, Type type)
-		: m_space(space), m_id(id), m_spinAffiliated(spinAffiliated), m_type(type){};
+	constexpr explicit Index(const IndexSpace &space, id_t id, Type type, Spin spin = Spin::None)
+		: m_space(space), m_id(id), m_type(type), m_spin(spin){};
 
 	constexpr explicit Index(const Index &other) = default;
 	constexpr Index(Index &&other)               = default;
@@ -40,7 +45,7 @@ public:
 	Index &operator=(Index &&other) = default;
 
 	friend constexpr bool operator==(const Index &lhs, const Index &rhs) {
-		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spinAffiliated == rhs.m_spinAffiliated
+		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spin == rhs.m_spin
 			   && lhs.m_type == rhs.m_type;
 	}
 
@@ -60,8 +65,18 @@ public:
 				out << "A";
 				break;
 		}
-		if (index.m_spinAffiliated) {
-			out << "s";
+		switch (index.m_spin) {
+			case Spin::None:
+				break;
+			case Spin::Alpha:
+				out << "a";
+				break;
+			case Spin::Beta:
+				out << "b";
+				break;
+			case Spin::Both:
+				out << "ab";
+				break;
 		}
 
 		out << "}";
@@ -79,10 +94,9 @@ public:
 	constexpr IndexSpace getSpace() const { return m_space; }
 
 	/**
-	 * @returns Whether this Index is spin affiliated (implicitly runs over alpha and beta thus effectively doubling
-	 * the value range)
+	 * @returns The spin state of this Index
 	 */
-	constexpr bool isSpinAffiliated() const { return m_spinAffiliated; }
+	constexpr Spin getSpin() const { return m_spin; }
 
 	/**
 	 * @returns The Type of this index (e.g. creator or annihilator)
@@ -92,29 +106,29 @@ public:
 
 	/**
 	 * @param id The ID of the new Index
-	 * @param spinAffiliated Whether this index is spin-affiliated
 	 * @param type The type of this index (e.g. creator/annihilator)
+	 * @param spin The spin of this index (Spin::None by default)
 	 * @returns A new Index in the occupied space
 	 */
-	static constexpr Index occupiedIndex(id_t id, bool spinAffiliated, Type type) {
-		return Index(IndexSpace(IndexSpace::OCCUPIED), id, spinAffiliated, type);
+	static constexpr Index occupiedIndex(id_t id, Type type, Spin spin = Spin::None) {
+		return Index(IndexSpace(IndexSpace::OCCUPIED), id, type, spin);
 	}
 
 	/**
 	 * @params id The ID of the new Index
-	 * @param spinAffiliated Whether this index is spin-affiliated
 	 * @param type The type of this index (e.g. creator/annihilator)
+	 * @param spin The spin of this index (Spin::None by default)
 	 * @returns A new Index in the virtual space
 	 */
-	static constexpr Index virtualIndex(id_t id, bool spinAffiliated, Type type) {
-		return Index(IndexSpace(IndexSpace::VIRTUAL), id, spinAffiliated, type);
+	static constexpr Index virtualIndex(id_t id, Type type, Spin spin = Spin::None) {
+		return Index(IndexSpace(IndexSpace::VIRTUAL), id, type, spin);
 	}
 
 protected:
 	IndexSpace m_space;
 	id_t m_id;
-	bool m_spinAffiliated;
 	Type m_type;
+	Spin m_spin;
 };
 
 }; // namespace Contractor::Terms
