@@ -246,3 +246,114 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_TRUE(second.refersToSameElement(first));
 	}
 }
+
+TEST(TensorTest, transferSymmetry) {
+	{
+		// Nothing to transfer -> no change
+		const ct::Tensor symmetrySource("H");
+		const ct::Tensor original("H");
+		ct::Tensor transformed(original);
+
+		ct::Tensor::transferSymmetry(symmetrySource, transformed);
+
+		ASSERT_EQ(transformed, original);
+	}
+	{
+		ct::Index si1 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+		ct::Index si2 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator);
+		ct::Index si3 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
+		ct::Index si4 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si2));
+		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
+		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+
+		ct::Index i1 = ct::Index::occupiedIndex(10, true, ct::Index::Type::Creator);
+		ct::Index i2 = ct::Index::occupiedIndex(11, true, ct::Index::Type::Creator);
+		ct::Index i3 = ct::Index::occupiedIndex(10, true, ct::Index::Type::Annihilator);
+		ct::Index i4 = ct::Index::occupiedIndex(11, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si2));
+		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
+		const ct::Tensor expected("H", indices, symmetries);
+		ct::Tensor transformed("H", indices);
+
+		ct::Tensor::transferSymmetry(symmetrySource, transformed);
+
+		ASSERT_EQ(transformed, expected);
+	}
+	{
+		ct::Index si1 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+		ct::Index si2 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator);
+		ct::Index si3 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
+		ct::Index si4 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si2));
+		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
+		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+
+		ct::Index i1 = ct::Index::occupiedIndex(23, true, ct::Index::Type::Creator);
+		ct::Index i2 = ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator);
+		ct::Index i3 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index i4 = ct::Index::occupiedIndex(12, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si2));
+		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
+		const ct::Tensor expected("H", indices, symmetries);
+		ct::Tensor transformed("H", indices);
+
+		ct::Tensor::transferSymmetry(symmetrySource, transformed);
+
+		ASSERT_EQ(transformed, expected);
+	}
+	{
+		// Duplicate indices
+		ct::Index si1 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+		ct::Index si2 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+		ct::Index si3 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
+		ct::Index si4 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si3));
+		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
+		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+
+		ct::Index i1 = ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator);
+		ct::Index i2 = ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator);
+		ct::Index i3 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index i4 = ct::Index::occupiedIndex(12, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si3));
+		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
+		const ct::Tensor expected("H", indices, symmetries);
+		ct::Tensor transformed("H", indices);
+
+		ct::Tensor::transferSymmetry(symmetrySource, transformed);
+
+		ASSERT_EQ(transformed, expected);
+	}
+	{
+		// Destination tensor already has some symmetry (which will be overwritten)
+		ct::Index si1 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Creator);
+		ct::Index si2 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Creator);
+		ct::Index si3 = ct::Index::occupiedIndex(0, true, ct::Index::Type::Annihilator);
+		ct::Index si4 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si3));
+		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
+		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+
+		ct::Index i1 = ct::Index::occupiedIndex(8, true, ct::Index::Type::Creator);
+		ct::Index i2 = ct::Index::occupiedIndex(3, true, ct::Index::Type::Creator);
+		ct::Index i3 = ct::Index::occupiedIndex(1, true, ct::Index::Type::Annihilator);
+		ct::Index i4 = ct::Index::occupiedIndex(12, true, ct::Index::Type::Annihilator);
+		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si3));
+		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
+		const ct::Tensor expected("H", indices, symmetries);
+		ct::Tensor transformed("H", indices, { ct::IndexPermutation({ ct::IndexPermutation::index_pair_t(i3, i4) }) });
+
+		ct::Tensor::transferSymmetry(symmetrySource, transformed);
+
+		ASSERT_EQ(transformed, expected);
+	}
+}

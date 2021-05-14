@@ -1,8 +1,54 @@
 #include "terms/Tensor.hpp"
 
 #include <algorithm>
+#include <cassert>
 
 namespace Contractor::Terms {
+
+void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
+	// If these tensors don't refer to the same element, transferring the symmetry does not make
+	// a whole lot of sense
+	assert(source.refersToSameElement(destination));
+	assert(source.getIndices().size() == destination.getIndices().size());
+
+	Tensor::symmetry_list_t symmetries;
+	for (const IndexPermutation &currentPermutation : source.getIndexSymmetries()) {
+		IndexPermutation::permutation_list permutations;
+		for (const IndexPermutation::index_pair_t &currentPair : currentPermutation.getPermutations()) {
+			// Find the indices of the Index objects that are part of the current IndexPermutation
+			bool foundFirst  = false;
+			bool foundSecond = false;
+			std::size_t first, second;
+
+			for (std::size_t i = 0; i < source.getIndices().size(); i++) {
+				// Note that it does not matter if we overwrite a previously found index as that only
+				// happens for equal indices anyways.
+				if (source.getIndices()[i] == currentPair.first) {
+					foundFirst = true;
+					first      = i;
+				}
+				if (source.getIndices()[i] == currentPair.second) {
+					foundSecond = true;
+					second      = i;
+				}
+
+				if (foundFirst && foundSecond) {
+					break;
+				}
+			}
+
+			// Given that the given tensors both refer to the same element, the symmetry operations also
+			// apply to the Index objects at the same indices. Thus we can simply use the indices from
+			// source in order to obtain the corresponding Index objects in destination.
+			permutations.push_back(
+				IndexPermutation::index_pair_t(destination.getIndices()[first], destination.getIndices()[second]));
+		}
+
+		symmetries.push_back(IndexPermutation(std::move(permutations), currentPermutation.getFactor()));
+	}
+
+	destination.setIndexSymmetries(std::move(symmetries));
+}
 
 Tensor::Tensor(const std::string_view name, const Tensor::index_list_t &indices,
 			   const Tensor::symmetry_list_t &indexSymmetries)

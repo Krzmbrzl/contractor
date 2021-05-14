@@ -26,9 +26,21 @@ public:
 	/**
 	 * Type that is used for storing the list of attached indices
 	 */
-	using index_list_t     = std::vector< Index >;
-	using symmetry_list_t  = std::vector< IndexPermutation >;
+	using index_list_t    = std::vector< Index >;
+	using symmetry_list_t = std::vector< IndexPermutation >;
 
+
+	/**
+	 * Transfers the symmetry of the given source Tensor to the given destination. Note that in order for
+	 * this to work, both Tensors have to refer to the same element.
+	 * The symmetry transfer is performed via the indices of the involved Index objects.
+	 *
+	 * If destination already has any kind of symmetry, it will be overwritten by this function.
+	 *
+	 * @param source The Tensor whose symmetry is to be mimicked
+	 * @param destination The Tensor to apply the symmetry to
+	 */
+	static void transferSymmetry(const Tensor &source, Tensor &destination);
 
 	explicit Tensor(const std::string_view name, const index_list_t &indices,
 					const symmetry_list_t &indexSymmetries = {});
