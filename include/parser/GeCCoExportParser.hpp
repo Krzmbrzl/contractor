@@ -4,6 +4,7 @@
 #include "parser/BufferedStreamReader.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <cstdint>
 #include <string>
@@ -26,8 +27,9 @@ class GeCCoExportParser {
 public:
 	using term_list_t = std::vector< Terms::GeneralTerm >;
 
-	GeCCoExportParser(const BufferedStreamReader &reader = BufferedStreamReader());
-	GeCCoExportParser(BufferedStreamReader &&reader);
+	GeCCoExportParser(const Utils::IndexSpaceResolver &resolver,
+					  const BufferedStreamReader &reader = BufferedStreamReader());
+	GeCCoExportParser(const Utils::IndexSpaceResolver &resolver, BufferedStreamReader &&reader);
 	~GeCCoExportParser() = default;
 
 	void setSource(std::istream &inputStream);
@@ -50,6 +52,7 @@ public:
 	void skipResultStringIndexing();
 
 protected:
+	const Utils::IndexSpaceResolver &m_resolver;
 	BufferedStreamReader m_reader;
 };
 

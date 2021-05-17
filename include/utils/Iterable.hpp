@@ -12,7 +12,7 @@ namespace Contractor {
  * know/assume that it can be iterated using STL-like iterators.
  * As iterators are always passed by vale in C++, we have to play a few
  * tricks to make this work (creating and accessing a virtual function
- * will most likely lead to "slicing" due to iterators not being used as 
+ * will most likely lead to "slicing" due to iterators not being used as
  * reference or pointer types).
  *
  * The trick we play is this: We assume that the object that actually is

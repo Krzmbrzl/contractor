@@ -6,15 +6,20 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include <iostream>
 
+namespace ct = Contractor::Terms;
+
 namespace Contractor::Parser {
 
-GeCCoExportParser::GeCCoExportParser(const BufferedStreamReader &reader) : m_reader(reader) {
+GeCCoExportParser::GeCCoExportParser(const Utils::IndexSpaceResolver &resolver, const BufferedStreamReader &reader)
+	: m_resolver(resolver), m_reader(reader) {
 }
 
-GeCCoExportParser::GeCCoExportParser(BufferedStreamReader &&reader) : m_reader(reader) {
+GeCCoExportParser::GeCCoExportParser(const Utils::IndexSpaceResolver &resolver, BufferedStreamReader &&reader)
+	: m_resolver(resolver), m_reader(reader) {
 }
 
 void GeCCoExportParser::setSource(std::istream &inputStream) {
@@ -169,41 +174,25 @@ Terms::Tensor::index_list_t GeCCoExportParser::parseIndexSpec(bool adjoint) {
 	const char *creators        = adjoint ? annihilatorString.c_str() : creatorString.c_str();
 	const char *annihilators    = adjoint ? creatorString.c_str() : annihilatorString.c_str();
 
-	Terms::Index::id_t occupiedIndex = 0;
-	Terms::Index::id_t virtualIndex  = 0;
+	std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
 
 	for (std::size_t i = 0; i < creatorSize; i++) {
-		switch (creators[i]) {
-			case 'H':
-				// "hole space" -> The space in which holes can be created (occupied space)
-				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, Terms::Index::Type::Creator,
-															  Terms::Index::Spin::Both));
-				break;
-			case 'P':
-				// "particle space" -> The space in which particles can be created (virtual space)
-				indices.push_back(
-					Terms::Index::virtualIndex(virtualIndex++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
-				break;
-			default:
-				throw ParseException(std::string("Unexpected creator index specifier \"") + creators[i] + "\"");
+		try {
+			ct::IndexSpace space = m_resolver.resolve(creators[i]);
+			indices.push_back(Terms::Index(space, indexMap[space]++, ct::Index::Type::Creator,
+										   m_resolver.getMeta(space).getDefaultSpin()));
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Unexpected creator index specifier \"") + creators[i] + "\"");
 		}
 	}
 
 	for (std::size_t i = 0; i < annihilatorSize; i++) {
-		switch (annihilators[i]) {
-			case 'H':
-				// "hole space" -> The space in which holes can be created (occupied space)
-				indices.push_back(Terms::Index::occupiedIndex(occupiedIndex++, Terms::Index::Type::Annihilator,
-															  Terms::Index::Spin::Both));
-				break;
-			case 'P':
-				// "particle space" -> The space in which particles can be created (virtual space)
-				indices.push_back(Terms::Index::virtualIndex(virtualIndex++, Terms::Index::Type::Annihilator,
-															 Terms::Index::Spin::Both));
-				break;
-			default:
-				throw ParseException(std::string("Unexpected annihilator index specifier \"") + 'A'
-									 + std::to_string(+creators[i]) + "\"");
+		try {
+			ct::IndexSpace space = m_resolver.resolve(annihilators[i]);
+			indices.push_back(Terms::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
+										   m_resolver.getMeta(space).getDefaultSpin()));
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Unexpected creator index specifier \"") + creators[i] + "\"");
 		}
 	}
 
@@ -316,14 +305,21 @@ Terms::GeneralTerm::tensor_list_t
 	while (m_reader.peek() != '\n') {
 		Terms::IndexSpace::id_t spaceID = m_reader.parseInt();
 
-		// Hole space == 1, particle space == 2
-		// -> As long as the assertions below hold, we can directly convert it to an IndexSpace
-		assert(spaceID > 0);
-		static_assert(Terms::IndexSpace::OCCUPIED == 1, "Occupied space has unexpected ID");
-		static_assert(Terms::IndexSpace::VIRTUAL == 2, "Virtual space has unexpected ID");
-		static_assert(Terms::IndexSpace::FIRST_ADDITIONAL == 3, "Additional spaces start at unexpected ID");
-
-		indexSpaces.push_back(Terms::IndexSpace(spaceID));
+		try {
+			switch (spaceID) {
+				// Hole space == 1, particle space == 2
+				case 1:
+					indexSpaces.push_back(m_resolver.resolve("occupied"));
+					break;
+				case 2:
+					indexSpaces.push_back(m_resolver.resolve("virtual"));
+					break;
+				default:
+					throw ParseException("Invalid index space ID \"" + std::to_string(spaceID) + "\"");
+			}
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Failed at parsing index space ID: ") + e.what());
+		}
 
 		m_reader.skipWS(false);
 	}

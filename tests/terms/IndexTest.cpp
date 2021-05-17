@@ -64,24 +64,3 @@ TEST(IndexTest, move) {
 
 	ASSERT_EQ(copy, moved);
 }
-
-TEST(IndexTest, namedSpaces) {
-	constexpr ct::IndexSpace occupiedSpace(ct::IndexSpace::OCCUPIED);
-	constexpr ct::IndexSpace virtualSpace(ct::IndexSpace::VIRTUAL);
-
-	constexpr ct::Index::id_t id = 0;
-
-	constexpr ct::Index occupiedIndex   = ct::Index::occupiedIndex(id, ct::Index::Type::Creator);
-	constexpr ct::Index virtualIndex    = ct::Index::virtualIndex(id, ct::Index::Type::Creator);
-	constexpr ct::Index additionalIndex = ct::Index(ct::IndexSpace::additionalSpace(0), id, ct::Index::Type::Creator);
-
-	ASSERT_EQ(occupiedIndex.getID(), id);
-	ASSERT_EQ(virtualIndex.getID(), id);
-
-	ASSERT_EQ(occupiedIndex.getSpace(), occupiedSpace);
-	ASSERT_EQ(virtualIndex.getSpace(), virtualSpace);
-
-	ASSERT_NE(occupiedIndex, virtualIndex);
-	ASSERT_NE(occupiedIndex, additionalIndex);
-	ASSERT_NE(virtualIndex, additionalIndex);
-}

@@ -1,11 +1,12 @@
 #include "parser/SymmetryListParser.hpp"
 #include "terms/Index.hpp"
 #include "terms/Tensor.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
-#include <sstream>
-#include <string>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -14,6 +15,16 @@
 
 namespace cp = Contractor::Parser;
 namespace ct = Contractor::Terms;
+namespace cu = Contractor::Utils;
+
+static cu::IndexSpaceResolver resolver({
+	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
+	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
+});
+
+static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id, ct::Index::Type type) {
+	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
+}
 
 TEST(SymmetryListParserTest, parseSymmetrySpec) {
 	{
@@ -21,7 +32,7 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "H[,]:";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
 		ct::Tensor expectedTensor("H");
@@ -33,7 +44,7 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "VeryLongName[,]:";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
 		ct::Tensor expectedTensor("VeryLongName");
@@ -45,14 +56,14 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "H[HP,PH]:";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
 		ct::Tensor expectedTensor("H", {
-										   ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										   ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										   ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
-										   ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
+										   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
+										   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+										   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
+										   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
 									   });
 
 		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
@@ -61,13 +72,13 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "H[HP,PH]: 1-2 -> -2";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
+		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
 		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
 
@@ -81,13 +92,13 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "H[HP,PH]: 1-2 -> -2, 3-4 -> 1";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
+		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
 		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
 		ct::IndexPermutation secondPermutation(ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex), 1);
@@ -102,13 +113,13 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		std::string content = "H[HP,PH]: 1-2&3-4 -> -1";
 		std::stringstream sstream(content);
 
-		cp::SymmetryListParser parser;
+		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index secondIndex = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-		ct::Index thirdIndex  = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
-		ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
+		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
 		ct::IndexPermutation firstPermutation({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex),
 												ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex) },
@@ -126,7 +137,7 @@ TEST(SymmetryListParserTest, whitespaceVariations) {
 	std::string content = "H[HP,PH]: 1-2 -> -2";
 	std::stringstream sstream(content);
 
-	cp::SymmetryListParser parser;
+	cp::SymmetryListParser parser(resolver);
 	parser.setSource(sstream);
 
 	ct::Tensor tensor1 = parser.parseSymmetrySpec();
@@ -155,12 +166,12 @@ TEST(SymmetryListParserTest, parse) {
 	std::stringstream sstream(content);
 
 	ct::Tensor tensor1("H");
-	ct::Index index1 = ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both);
-	ct::Index index2 = ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both);
+	ct::Index index1 = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
+	ct::Index index2 = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
 	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) },
 					   { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2), 1) });
 
-	cp::SymmetryListParser parser;
+	cp::SymmetryListParser parser(resolver);
 	std::vector< ct::Tensor > result = parser.parse(sstream);
 
 	ASSERT_EQ(result.size(), 2);
@@ -178,7 +189,7 @@ TEST(SymmetryListParserTest, testFiles) {
 
 	std::fstream input(testInput);
 
-	cp::SymmetryListParser parser;
+	cp::SymmetryListParser parser(resolver);
 
 	ASSERT_NO_THROW(parser.parse(input));
 }

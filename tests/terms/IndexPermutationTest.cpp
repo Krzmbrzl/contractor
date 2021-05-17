@@ -1,14 +1,25 @@
 #include "terms/IndexPermutation.hpp"
 #include "terms/Index.hpp"
 #include "terms/Tensor.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <gtest/gtest.h>
 
 namespace ct = Contractor::Terms;
+namespace cu = Contractor::Utils;
+
+static cu::IndexSpaceResolver resolver({
+	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
+	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
+});
+
+static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id, ct::Index::Type type) {
+	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
+}
 
 TEST(IndexPermutation, getter) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
-	ct::Index secondIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Creator);
+	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+	ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
 
 	auto pair = std::make_pair(firstIndex, secondIndex);
 
@@ -21,10 +32,10 @@ TEST(IndexPermutation, getter) {
 }
 
 TEST(IndexPermutationTest, apply) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
-	ct::Index secondIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+	ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
+	ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
+	ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
@@ -78,9 +89,9 @@ TEST(IndexPermutationTest, apply) {
 }
 
 TEST(IndexPermutationTest, applyWithDuplicateIndices) {
-	ct::Index firstIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+	ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
+	ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(firstIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });

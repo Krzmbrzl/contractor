@@ -104,26 +104,6 @@ public:
 	constexpr Type getType() const { return m_type; }
 
 
-	/**
-	 * @param id The ID of the new Index
-	 * @param type The type of this index (e.g. creator/annihilator)
-	 * @param spin The spin of this index (Spin::None by default)
-	 * @returns A new Index in the occupied space
-	 */
-	static constexpr Index occupiedIndex(id_t id, Type type, Spin spin = Spin::None) {
-		return Index(IndexSpace(IndexSpace::OCCUPIED), id, type, spin);
-	}
-
-	/**
-	 * @params id The ID of the new Index
-	 * @param type The type of this index (e.g. creator/annihilator)
-	 * @param spin The spin of this index (Spin::None by default)
-	 * @returns A new Index in the virtual space
-	 */
-	static constexpr Index virtualIndex(id_t id, Type type, Spin spin = Spin::None) {
-		return Index(IndexSpace(IndexSpace::VIRTUAL), id, type, spin);
-	}
-
 protected:
 	IndexSpace m_space;
 	id_t m_id;

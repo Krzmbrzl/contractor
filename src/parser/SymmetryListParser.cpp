@@ -1,13 +1,18 @@
 #include "parser/SymmetryListParser.hpp"
 
 #include <type_traits>
+#include <unordered_map>
+
+namespace ct = Contractor::Terms;
 
 namespace Contractor::Parser {
 
-SymmetryListParser::SymmetryListParser(const BufferedStreamReader &reader) : m_reader(reader) {
+SymmetryListParser::SymmetryListParser(const Utils::IndexSpaceResolver &resolver, const BufferedStreamReader &reader)
+	: m_resolver(resolver), m_reader(reader) {
 }
 
-SymmetryListParser::SymmetryListParser(BufferedStreamReader &&reader) : m_reader(reader) {
+SymmetryListParser::SymmetryListParser(const Utils::IndexSpaceResolver &resolver, BufferedStreamReader &&reader)
+	: m_resolver(resolver), m_reader(reader) {
 }
 
 void SymmetryListParser::setSource(std::istream &inputStream) {
@@ -50,21 +55,17 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 
 	Terms::Tensor::index_list_t indices;
 
-	Terms::Index::id_t occupiedID = 0;
-	Terms::Index::id_t virtualID  = 0;
+	std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
 
 	// Creators
 	while (m_reader.peek() != ',') {
 		char c = m_reader.read();
-		switch (c) {
-			case 'H':
-				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
-				break;
-			case 'P':
-				indices.push_back(Terms::Index::virtualIndex(virtualID++, Terms::Index::Type::Creator, Terms::Index::Spin::Both));
-				break;
-			default:
-				throw ParseException(std::string("Expected index spec to be either 'H' or 'P' but got '") + c + "'");
+		try {
+			ct::IndexSpace space = m_resolver.resolve(c);
+			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Creator,
+										m_resolver.getMeta(space).getDefaultSpin()));
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
 		}
 	}
 
@@ -73,15 +74,12 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 	// Annihilators
 	while (m_reader.peek() != ']') {
 		char c = m_reader.read();
-		switch (c) {
-			case 'H':
-				indices.push_back(Terms::Index::occupiedIndex(occupiedID++, Terms::Index::Type::Annihilator, Terms::Index::Spin::Both));
-				break;
-			case 'P':
-				indices.push_back(Terms::Index::virtualIndex(virtualID++, Terms::Index::Type::Annihilator, Terms::Index::Spin::Both));
-				break;
-			default:
-				throw ParseException(std::string("Expected index spec to be either 'H' or 'P' but got '") + c + "'");
+		try {
+			ct::IndexSpace space = m_resolver.resolve(c);
+			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
+										m_resolver.getMeta(space).getDefaultSpin()));
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
 		}
 	}
 

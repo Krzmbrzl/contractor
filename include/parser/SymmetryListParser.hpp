@@ -3,6 +3,7 @@
 
 #include "parser/BufferedStreamReader.hpp"
 #include "terms/Tensor.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <vector>
 
@@ -16,8 +17,9 @@ namespace Contractor::Parser {
  */
 class SymmetryListParser {
 public:
-	SymmetryListParser(const BufferedStreamReader &reader = BufferedStreamReader());
-	SymmetryListParser(BufferedStreamReader &&reader);
+	SymmetryListParser(const Utils::IndexSpaceResolver &resolver,
+					   const BufferedStreamReader &reader = BufferedStreamReader());
+	SymmetryListParser(const Utils::IndexSpaceResolver &resolver, BufferedStreamReader &&reader);
 	~SymmetryListParser() = default;
 
 	/**
@@ -50,6 +52,7 @@ public:
 	Terms::Tensor parseSymmetrySpec();
 
 protected:
+	const Utils::IndexSpaceResolver &m_resolver;
 	BufferedStreamReader m_reader;
 };
 

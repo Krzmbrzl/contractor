@@ -1,4 +1,5 @@
 #include "parser/GeCCoExportParser.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <gtest/gtest.h>
 
@@ -12,12 +13,22 @@
 
 namespace cp = Contractor::Parser;
 namespace ct = Contractor::Terms;
+namespace cu = Contractor::Utils;
+
+static cu::IndexSpaceResolver resolver({
+	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
+	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
+});
+
+static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id, ct::Index::Type type) {
+	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
+}
 
 TEST(GeCCoExportParserTest, parseContractionStringIndexing) {
 	{
 		std::string content = "/CONTR_STRING/\n\n\n\n\n/RESULT_STRING/";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -35,21 +46,27 @@ TEST(GeCCoExportParserTest, parseContractionStringIndexing) {
 							  "1   2   2   1   1   2   2   1\n"
 							  "/RESULT_STRING/";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::GeneralTerm::tensor_list_t tensors = parser.parseContractionStringIndexing({ "H", "T2" });
 
 		ASSERT_EQ(tensors.size(), 2);
-		ASSERT_EQ(tensors[0], ct::Tensor("H", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-												ct::Index::occupiedIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
-												ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
-												ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both) }));
-		ASSERT_EQ(tensors[1], ct::Tensor("T2", { ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-												 ct::Index::virtualIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
-												 ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
-												 ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both) }));
+		ASSERT_EQ(tensors[0],
+				  ct::Tensor("H", {
+									  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
+									  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator),
+									  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
+									  createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator),
+								  }));
+		ASSERT_EQ(tensors[1],
+				  ct::Tensor("T2", {
+									   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+									   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+									   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+									   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+								   }));
 	}
 }
 
@@ -59,7 +76,7 @@ TEST(GeCCoExportParserTest, parseVertices) {
 							  "\n"
 							  "/ARCS/";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -72,7 +89,7 @@ TEST(GeCCoExportParserTest, parseVertices) {
 							  "          H  F [,]\n"
 							  "/ARCS/";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -87,7 +104,7 @@ TEST(GeCCoExportParserTest, parseVertices) {
 							  "         T2  F [PP,HH]\n"
 							  "/ARCS/";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -103,7 +120,7 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 	{
 		std::string content = "[,]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -122,15 +139,15 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 	{
 		std::string content = "[H,P]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::Tensor::index_list_t indices = parser.parseIndexSpec(false);
 
 		ASSERT_EQ(indices.size(), 2);
-		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[0], createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[1], createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator));
 
 
 		sstream = std::stringstream(content);
@@ -139,23 +156,23 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		indices = parser.parseIndexSpec(true);
 
 		ASSERT_EQ(indices.size(), 2);
-		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[0], createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[1], createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator));
 	}
 	{
 		std::string content = "[HP,PH]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::Tensor::index_list_t indices = parser.parseIndexSpec(false);
 
 		ASSERT_EQ(indices.size(), 4);
-		ASSERT_EQ(indices[0], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[1], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[2], ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[3], ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[0], createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[1], createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[2], createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[3], createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator));
 
 
 		sstream = std::stringstream(content);
@@ -164,10 +181,10 @@ TEST(GeCCoExportParserTest, parseIndexSpec) {
 		indices = parser.parseIndexSpec(true);
 
 		ASSERT_EQ(indices.size(), 4);
-		ASSERT_EQ(indices[0], ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[1], ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[2], ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
-		ASSERT_EQ(indices[3], ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both));
+		ASSERT_EQ(indices[0], createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[1], createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator));
+		ASSERT_EQ(indices[2], createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator));
+		ASSERT_EQ(indices[3], createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator));
 	}
 }
 
@@ -176,7 +193,7 @@ TEST(GeCCoExportParserTest, parseTensor) {
 	{
 		std::string content = "LCCD  F [,]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -189,32 +206,32 @@ TEST(GeCCoExportParserTest, parseTensor) {
 	{
 		std::string content = "H  F [PP,HH]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::Tensor parsedTensor = parser.parseTensor();
 
-		ct::Tensor expectedTensor("H", { ct::Index::virtualIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										 ct::Index::virtualIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										 ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
-										 ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both) });
+		ct::Tensor expectedTensor("H", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+										 createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+										 createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+										 createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) });
 
 		ASSERT_EQ(parsedTensor, expectedTensor);
 	}
 	{
 		std::string content = "H  T [PP,HH]";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::Tensor parsedTensor = parser.parseTensor();
 
-		ct::Tensor expectedTensor("H", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										 ct::Index::occupiedIndex(1, ct::Index::Type::Creator, ct::Index::Spin::Both),
-										 ct::Index::virtualIndex(0, ct::Index::Type::Annihilator, ct::Index::Spin::Both),
-										 ct::Index::virtualIndex(1, ct::Index::Type::Annihilator, ct::Index::Spin::Both) });
+		ct::Tensor expectedTensor("H", { createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
+										 createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator),
+										 createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator),
+										 createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator) });
 
 		ASSERT_EQ(parsedTensor, expectedTensor);
 	}
@@ -224,7 +241,7 @@ TEST(GeCCoExportParserTest, parseFactor) {
 	{
 		std::string content = "/FACTOR/         1.00000000000000   1         0.25000000000000\n";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -233,7 +250,7 @@ TEST(GeCCoExportParserTest, parseFactor) {
 	{
 		std::string content = "/FACTOR/         1.00000000000000  -1         0.25000000000000\n";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -242,7 +259,7 @@ TEST(GeCCoExportParserTest, parseFactor) {
 	{
 		std::string content = "/FACTOR/         8.50000000000000  -1         0.50000000000000\n";
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -281,7 +298,7 @@ TEST(GeCCoExportParserTest, parseContraction) {
 							  "[CONTR]";
 
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
@@ -291,14 +308,14 @@ TEST(GeCCoExportParserTest, parseContraction) {
 		ct::Tensor parent("LCCD");
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
-			ct::Tensor("T2", { ct::Index::occupiedIndex(0, ct::Index::Type::Creator),
-							   ct::Index::occupiedIndex(1, ct::Index::Type::Creator),
-							   ct::Index::virtualIndex(1, ct::Index::Type::Annihilator),
-							   ct::Index::virtualIndex(0, ct::Index::Type::Annihilator) }),
-			ct::Tensor("H", { ct::Index::virtualIndex(0, ct::Index::Type::Creator),
-							  ct::Index::virtualIndex(1, ct::Index::Type::Creator),
-							  ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator),
-							  ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator) })
+			ct::Tensor("T2", { createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
+							   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator),
+							   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
+							   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator) }),
+			ct::Tensor("H", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+							  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
@@ -336,23 +353,23 @@ TEST(GeCCoExportParserTest, parseContraction) {
 
 
 		std::stringstream sstream(content);
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 
 		parser.setSource(sstream);
 
 		ct::GeneralTerm parsedTerm = parser.parseContraction();
 
 
-		ct::Tensor parent("O2", { ct::Index::virtualIndex(0, ct::Index::Type::Creator),
-								  ct::Index::virtualIndex(1, ct::Index::Type::Creator),
-								  ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator),
-								  ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator) });
+		ct::Tensor parent("O2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+								  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+								  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+								  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) });
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
-			ct::Tensor("H", { ct::Index::occupiedIndex(2, ct::Index::Type::Creator),
-							  ct::Index::occupiedIndex(3, ct::Index::Type::Creator) }),
-			ct::Tensor("T2", { ct::Index::occupiedIndex(1, ct::Index::Type::Annihilator),
-							   ct::Index::occupiedIndex(0, ct::Index::Type::Annihilator) })
+			ct::Tensor("H", { createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator),
+							  createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator) }),
+			ct::Tensor("T2", { createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+							   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
@@ -368,7 +385,7 @@ TEST(GeCCoExportParserTest, run) {
 
 		ASSERT_TRUE(std::filesystem::exists(testInput)) << "Test input file \"" << testInput << "\"not found!";
 
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 		std::fstream inputStream = std::fstream(testInput);
 
 		cp::GeCCoExportParser::term_list_t terms = parser.parse(inputStream);
@@ -380,7 +397,7 @@ TEST(GeCCoExportParserTest, run) {
 
 		ASSERT_TRUE(std::filesystem::exists(testInput)) << "Test input file \"" << testInput << "\"not found!";
 
-		cp::GeCCoExportParser parser;
+		cp::GeCCoExportParser parser(resolver);
 		std::fstream inputStream = std::fstream(testInput);
 
 		cp::GeCCoExportParser::term_list_t terms = parser.parse(inputStream);
