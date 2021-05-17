@@ -63,25 +63,19 @@ public:
 	 */
 	constexpr id_t getID() const { return m_id; }
 
-
-	/**
-	 * Creates an additional index space with the given additional ID. Note that in the context
-	 * of this function additional spaces start at an ID of 0.
-	 * It is the job of this function to avoid collisions with named index spaces (e.g. virtual
-	 * and occupied).
-	 *
-	 * @param id ID of the additional space (starting at 0)
-	 * @returns An IndexSpace object representing the new index space
-	 */
-	static constexpr IndexSpace additionalSpace(id_t id) {
-		assert(std::numeric_limits< id_t >::max() >= IndexSpace::FIRST_ADDITIONAL + id);
-		return IndexSpace(FIRST_ADDITIONAL + id);
-	}
-
 protected:
 	id_t m_id;
 };
 
 }; // namespace Contractor::Terms
+
+// Provide template specialization of std::hash for the IndexSpace class
+namespace std {
+template<> struct hash< Contractor::Terms::IndexSpace > {
+	std::size_t operator()(const Contractor::Terms::IndexSpace &space) const {
+		return std::hash< Contractor::Terms::IndexSpace::id_t >{}(space.getID());
+	}
+};
+}; // namespace std
 
 #endif // CONTRACTOR_TERMS_INDEXSPACE_HPP_
