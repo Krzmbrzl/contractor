@@ -45,6 +45,11 @@ public:
 	 */
 	bool remove(const Tensor &tensor);
 
+	/**
+	 * @returns A muable reference of the contained Tensor list
+	 */
+	tensor_list_t &accessTensors();
+
 protected:
 	tensor_list_t m_tensors;
 
