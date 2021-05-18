@@ -65,6 +65,14 @@ public:
 	 */
 	factor_t apply(Tensor &tensor) const;
 
+	/**
+	 * Replaces the given index
+	 *
+	 * @param source The index to replace
+	 * @param replacement The index to replace with
+	 */
+	void replaceIndex(const Index &source, const Index &replacement);
+
 protected:
 	permutation_list m_permutations;
 	factor_t m_factor;

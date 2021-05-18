@@ -66,4 +66,14 @@ IndexPermutation::factor_t IndexPermutation::apply(Tensor &tensor) const {
 	return m_factor;
 }
 
+void IndexPermutation::replaceIndex(const Index &source, const Index &replacement) {
+	for (std::size_t i = 0; i < m_permutations.size(); i++) {
+		if (m_permutations[i].first == source) {
+			m_permutations[i] = IndexPermutation::index_pair_t(replacement, m_permutations[i].second);
+		} else if (m_permutations[i].second == source) {
+			m_permutations[i] = IndexPermutation::index_pair_t(m_permutations[i].first, replacement);
+		}
+	}
+}
+
 }; // namespace Contractor::Terms

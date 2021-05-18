@@ -111,3 +111,44 @@ TEST(IndexPermutationTest, applyWithDuplicateIndices) {
 		ASSERT_EQ(permuted, original);
 	}
 }
+
+TEST(IndexPermutationTest, replaceIndex) {
+	{
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+
+		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(thirdIndex, secondIndex) });
+
+		ct::IndexPermutation actual({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex) });
+		actual.replaceIndex(firstIndex, thirdIndex);
+
+		ASSERT_EQ(actual, expected);
+	}
+	{
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+
+		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(firstIndex, thirdIndex) });
+
+		ct::IndexPermutation actual({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex) });
+		actual.replaceIndex(secondIndex, thirdIndex);
+
+		ASSERT_EQ(actual, expected);
+	}
+	{
+		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
+		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
+		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index dummyIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+
+		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex) });
+
+		// Replacing a non-existing index is a no-op
+		ct::IndexPermutation actual({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex) });
+		actual.replaceIndex(dummyIndex, thirdIndex);
+
+		ASSERT_EQ(actual, expected);
+	}
+}
