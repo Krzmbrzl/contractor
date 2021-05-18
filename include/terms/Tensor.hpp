@@ -90,6 +90,14 @@ public:
 	void setIndexSymmetries(symmetry_list_t &&symmetries);
 
 	/**
+	 * Replaces the given index
+	 *
+	 * @param source The index to replace
+	 * @param replacement The index to replace with
+	 */
+	void replaceIndex(const Index &source, const Index &replacement);
+
+	/**
 	 * @param other The Tensor to compare to
 	 * @returns Whether both Tensors are actually referring to the same element. This differs
 	 * from equality as the actual index IDs are not important for this, only the relative

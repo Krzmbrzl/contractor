@@ -104,6 +104,17 @@ void Tensor::setIndexSymmetries(Tensor::symmetry_list_t &&symmetries) {
 	m_indexSymmetries = symmetries;
 }
 
+void Tensor::replaceIndex(const Index &source, const Index &replacement) {
+	for (std::size_t i = 0; i < m_indices.size(); i++) {
+		if (m_indices[i] == source) {
+			m_indices[i] = Index(replacement);
+		}
+	}
+	for (IndexPermutation &currentPermutation : m_indexSymmetries) {
+		currentPermutation.replaceIndex(source, replacement);
+	}
+}
+
 bool Tensor::refersToSameElement(const Tensor &other) const {
 	if (m_indices.size() != other.m_indices.size() || getName() != other.getName()) {
 		return false;

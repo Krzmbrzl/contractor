@@ -368,3 +368,50 @@ TEST(TensorTest, transferSymmetry) {
 		ASSERT_EQ(transformed, expected);
 	}
 }
+
+TEST(TensorTest, replaceIndex) {
+	{
+		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
+		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
+		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
+
+		ct::Tensor expected("H", { ct::Index(index3), ct::Index(index2) },
+							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index3, index2)) });
+
+		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
+						  { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2)) });
+		actual.replaceIndex(index1, index3);
+
+		ASSERT_EQ(actual, expected);
+	}
+	{
+		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
+		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
+		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
+
+		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index3) },
+							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index3)) });
+
+		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
+						  { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2)) });
+		actual.replaceIndex(index2, index3);
+
+		ASSERT_EQ(actual, expected);
+	}
+	{
+		// Replacing a non-existent index is a no-op
+		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
+		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
+		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
+		ct::Index dummy  = createIndex(resolver.resolve("occupied"), 4, ct::Index::Type::Creator);
+
+		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index2) },
+							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2)) });
+
+		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
+						  { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2)) });
+		actual.replaceIndex(dummy, index3);
+
+		ASSERT_EQ(actual, expected);
+	}
+}
