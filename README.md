@@ -7,10 +7,11 @@
 - A cpp17 conform compiler
 - cmake v3.15 or newer
 - Boost (headers + program_options)
+- An active internet connection (only needed for first build)
 
 ### Instructions
 
-Start out that the repository's root directory.
+Start out at the repository's root directory.
 
 1. Create a build directory: `mkdir build`
 2. Switch into that directory: `cd build`
