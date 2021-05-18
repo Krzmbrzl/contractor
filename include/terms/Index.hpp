@@ -87,21 +87,46 @@ public:
 	/**
 	 * @returns This Index's ID
 	 */
-	constexpr id_t getID() const { return m_id; };
+	constexpr id_t getID() const { return m_id; }
+	/**
+	 * Sets the ID of this index to the given value
+	 *
+	 * @param id The new ID to use
+	 */
+	void setID(id_t id) { m_id = id; }
+
 	/**
 	 * @returns This Index's IndexSpace
 	 */
 	constexpr IndexSpace getSpace() const { return m_space; }
+	/**
+	 * Sets the index space of this index
+	 *
+	 * @param space The new IndexSpace to use
+	 */
+	void setSpace(const IndexSpace &space) { m_space = space; }
 
 	/**
 	 * @returns The spin state of this Index
 	 */
 	constexpr Spin getSpin() const { return m_spin; }
+	/**
+	 * Sets the spin of this index
+	 *
+	 * @param spin The new spin to use
+	 */
+	void setSpin(Spin spin) { m_spin = spin; }
 
 	/**
 	 * @returns The Type of this index (e.g. creator or annihilator)
 	 */
 	constexpr Type getType() const { return m_type; }
+	/**
+	 * Sets the Type of this Index
+	 *
+	 * @param type The new Type to use
+	 */
+	void setType(Type type) { m_type = type; }
 
 
 protected:

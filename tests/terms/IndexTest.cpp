@@ -18,6 +18,33 @@ TEST(IndexTest, getter) {
 	ASSERT_EQ(index.getType(), type);
 }
 
+TEST(IndexTest, setter) {
+	ct::Index index(ct::IndexSpace(0), 0, ct::Index::Type::Creator, ct::Index::Spin::None);
+
+	constexpr ct::IndexSpace space(1);
+	constexpr ct::Index::id_t id   = 4;
+	constexpr ct::Index::Spin spin = ct::Index::Spin::Alpha;
+	constexpr ct::Index::Type type = ct::Index::Type::Annihilator;
+
+	// These are needed so that we'll actually be able to observe a change
+	ASSERT_NE(index.getSpace(), space);
+	ASSERT_NE(index.getID(), id);
+	ASSERT_NE(index.getSpin(), spin);
+	ASSERT_NE(index.getType(), type);
+
+	index.setSpace(space);
+	ASSERT_EQ(index.getSpace(), space);
+
+	index.setID(id);
+	ASSERT_EQ(index.getID(), id);
+
+	index.setSpin(spin);
+	ASSERT_EQ(index.getSpin(), spin);
+
+	index.setType(type);
+	ASSERT_EQ(index.getType(), type);
+}
+
 TEST(IndexTest, equality) {
 	for (ct::IndexSpace::id_t space1 : { 0, 1 }) {
 		for (ct::IndexSpace::id_t space2 : { 0, 1 }) {
