@@ -6,6 +6,7 @@
 #include "terms/Term.hpp"
 
 #include <vector>
+#include <ostream>
 
 namespace Contractor::Terms {
 
@@ -39,6 +40,8 @@ public:
 
 	friend bool operator==(const TensorDecomposition &lhs, const TensorDecomposition &rhs);
 	friend bool operator!=(const TensorDecomposition &lhs, const TensorDecomposition &rhs);
+
+	friend std::ostream &operator<<(std::ostream &stream, const TensorDecomposition &decomposition);
 
 	/**
 	 * Apply the decomposition to the given Term

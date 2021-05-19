@@ -25,6 +25,15 @@ bool operator!=(const TensorDecomposition &lhs, const TensorDecomposition &rhs) 
 	return !(lhs == rhs);
 }
 
+std::ostream &operator<<(std::ostream &stream, const TensorDecomposition &decomposition) {
+	stream << "TensorDecomposition:\n";
+	for (const GeneralTerm &currentTerm : decomposition.m_substutions) {
+		stream << "** " << currentTerm << "\n";
+	}
+
+	return stream;
+}
+
 GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term) {
 	// Construct a map holding the highest existing index ID in the given term
 	std::unordered_map< IndexSpace, Index::id_t > indexMap;
