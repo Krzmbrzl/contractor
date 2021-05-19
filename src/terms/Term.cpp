@@ -16,6 +16,16 @@ bool operator!=(const Term &lhs, const Term &rhs) {
 	return !(lhs == rhs);
 }
 
+std::ostream &operator<<(std::ostream &stream, const Term &term) {
+	stream << "Term (" << typeid(term).name() << "):\n";
+	stream << "- Result: " << term.getResult() << "\n";
+	stream << "- Factor: " << term.getPrefactor() << "\n";
+	for (const Tensor &currentTensor : term.getTensors()) {
+		stream << "-> " << currentTensor << "\n";
+	}
+	return stream;
+}
+
 const Tensor &Term::getResult() const {
 	return m_result;
 }

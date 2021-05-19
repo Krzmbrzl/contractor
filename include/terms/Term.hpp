@@ -5,6 +5,7 @@
 #include "utils/Iterable.hpp"
 
 #include <cstdint>
+#include <ostream>
 #include <type_traits>
 
 namespace Contractor::Terms {
@@ -46,6 +47,8 @@ public:
 
 	friend bool operator==(const Term &lhs, const Term &rhs);
 	friend bool operator!=(const Term &lhs, const Term &rhs);
+
+	friend std::ostream &operator<<(std::ostream &stream, const Term &term);
 
 	/**
 	 * @returns The result Tensor this Term contributes to
