@@ -7,6 +7,7 @@ add_executable(${COMPONENT_NAME}_test
 	GeCCoExportParserTest.cpp
 	SymmetryListParserTest.cpp
 	IndexSpaceParserTest.cpp
+	DecompositionParserTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test

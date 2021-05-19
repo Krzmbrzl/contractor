@@ -6,6 +6,7 @@ add_library(${LIB_NAME} STATIC
 	GeCCoExportParser.cpp
 	SymmetryListParser.cpp
 	IndexSpaceParser.cpp
+	DecompositionParser.cpp
 )
 
 add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})
