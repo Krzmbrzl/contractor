@@ -8,6 +8,14 @@ namespace Contractor::Terms {
 Term::Term(const Tensor &parent, Term::factor_t prefactor) : m_result(parent), m_prefactor(prefactor) {
 }
 
+bool operator==(const Term &lhs, const Term &rhs) {
+	return lhs.equals(rhs, Term::CompareOption::NONE);
+}
+
+bool operator!=(const Term &lhs, const Term &rhs) {
+	return !(lhs == rhs);
+}
+
 const Tensor &Term::getResult() const {
 	return m_result;
 }

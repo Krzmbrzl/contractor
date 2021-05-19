@@ -44,6 +44,9 @@ public:
 	Term &operator=(const Term &other) = default;
 	Term &operator=(Term &&other) = default;
 
+	friend bool operator==(const Term &lhs, const Term &rhs);
+	friend bool operator!=(const Term &lhs, const Term &rhs);
+
 	/**
 	 * @returns The result Tensor this Term contributes to
 	 */
