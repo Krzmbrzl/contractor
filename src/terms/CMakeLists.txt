@@ -8,6 +8,7 @@ add_library(${LIB_NAME} STATIC
 	BinaryTerm.cpp
 	IndexPermutation.cpp
 	IndexSpaceMeta.cpp
+	TensorDecomposition.cpp
 )
 
 add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})

@@ -11,6 +11,7 @@ add_executable(${COMPONENT_NAME}_test
 	BinaryTermTest.cpp
 	IndexPermutationTest.cpp
 	IndexSpaceMetaTest.cpp
+	TensorDecompositionTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test
