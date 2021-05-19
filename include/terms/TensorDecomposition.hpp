@@ -37,6 +37,9 @@ public:
 	TensorDecomposition(substitution_list_t &&substitutions);
 	~TensorDecomposition() = default;
 
+	friend bool operator==(const TensorDecomposition &lhs, const TensorDecomposition &rhs);
+	friend bool operator!=(const TensorDecomposition &lhs, const TensorDecomposition &rhs);
+
 	/**
 	 * Apply the decomposition to the given Term
 	 *

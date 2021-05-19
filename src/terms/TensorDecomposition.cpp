@@ -17,6 +17,14 @@ TensorDecomposition::TensorDecomposition(TensorDecomposition::substitution_list_
 	: m_substutions(substitutions) {
 }
 
+bool operator==(const TensorDecomposition &lhs, const TensorDecomposition &rhs) {
+	return lhs.m_substutions == rhs.m_substutions;
+}
+
+bool operator!=(const TensorDecomposition &lhs, const TensorDecomposition &rhs) {
+	return !(lhs == rhs);
+}
+
 GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term) {
 	// Construct a map holding the highest existing index ID in the given term
 	std::unordered_map< IndexSpace, Index::id_t > indexMap;
