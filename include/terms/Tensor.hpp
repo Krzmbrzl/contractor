@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 class IndexSpace;
@@ -105,6 +106,15 @@ public:
 	 * have to have a corresponding counterpart in the other one.
 	 */
 	bool refersToSameElement(const Tensor &other) const;
+
+	/**
+	 * This gets the index mapping from this Tensor to another one. Note that both Tensors
+	 * must refer to the same element.
+	 *
+	 * @param other The Tensor to compare to
+	 * @returns A list of mappings of indices from this Tensor to the other one
+	 */
+	std::vector< std::pair< Index, Index > > getIndexMapping(const Tensor &other) const;
 
 protected:
 	index_list_t m_indices;

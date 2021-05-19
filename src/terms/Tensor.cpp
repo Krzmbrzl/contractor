@@ -161,5 +161,23 @@ bool Tensor::refersToSameElement(const Tensor &other) const {
 	return true;
 }
 
+std::vector< std::pair< Index, Index > > Tensor::getIndexMapping(const Tensor &other) const {
+	assert(this->refersToSameElement(other));
+
+	std::vector< std::pair< Index, Index > > mapping;
+
+	// If both Tensors refer to the same element, then the index mapping is a simple positional one.
+	// Thus the only thing that needs to be taken care of is to not duplicate an index mapping.
+	for (std::size_t i = 0; i < m_indices.size(); i++) {
+		std::pair< Index, Index > currentPair = std::make_pair(m_indices[i], other.m_indices[i]);
+
+		if (std::find(mapping.begin(), mapping.end(), currentPair) == mapping.end()) {
+			mapping.push_back(std::move(currentPair));
+		}
+	}
+
+	return mapping;
+}
+
 
 }; // namespace Contractor::Terms

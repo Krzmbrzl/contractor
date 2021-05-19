@@ -2,6 +2,8 @@
 #include "terms/IndexPermutation.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 namespace ct = Contractor::Terms;
@@ -414,4 +416,39 @@ TEST(TensorTest, replaceIndex) {
 
 		ASSERT_EQ(actual, expected);
 	}
+}
+
+TEST(TensorTest, getIndexMapping) {
+	ct::Index i(ct::IndexSpace(0), 0, ct::Index::Type::Annihilator);
+	ct::Index j(ct::IndexSpace(0), 1, ct::Index::Type::Annihilator);
+	ct::Index a(ct::IndexSpace(1), 0, ct::Index::Type::Creator);
+	ct::Index b(ct::IndexSpace(1), 1, ct::Index::Type::Creator);
+
+	ct::Index k(i);
+	k.setID(5);
+	ct::Index l(j);
+	l.setID(6);
+	ct::Index c(a);
+	c.setID(5);
+	ct::Index d(b);
+	d.setID(6);
+
+	ASSERT_NE(i, k);
+	ASSERT_NE(j, l);
+	ASSERT_NE(a, c);
+	ASSERT_NE(b, d);
+
+	ct::Tensor one("H", { ct::Index(i), ct::Index(j), ct::Index(a), ct::Index(a), ct::Index(b) });
+	ct::Tensor two("H", { ct::Index(k), ct::Index(l), ct::Index(c), ct::Index(c), ct::Index(d) });
+
+	ASSERT_TRUE(one.refersToSameElement(two));
+
+	std::vector< std::pair< ct::Index, ct::Index > > expectedMapping = {
+		std::make_pair(i, k),
+		std::make_pair(j, l),
+		std::make_pair(a, c),
+		std::make_pair(b, d),
+	};
+
+	ASSERT_EQ(one.getIndexMapping(two), expectedMapping);
 }
