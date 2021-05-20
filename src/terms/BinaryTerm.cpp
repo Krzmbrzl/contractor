@@ -4,8 +4,8 @@
 
 namespace Contractor::Terms {
 
-BinaryTerm::BinaryTerm(const Tensor &parent, Term::factor_t prefactor, const Tensor &left, const Tensor &right)
-	: Term(parent, prefactor), m_left(left), m_right(right) {
+BinaryTerm::BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left, const Tensor &right)
+	: Term(result, prefactor), m_left(left), m_right(right) {
 }
 
 std::size_t BinaryTerm::size() const {

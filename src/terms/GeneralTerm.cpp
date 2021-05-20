@@ -6,12 +6,12 @@
 
 namespace Contractor::Terms {
 
-GeneralTerm::GeneralTerm(const Tensor &parent, Term::factor_t prefactor, const tensor_list_t &tensorList)
-	: Term(parent, prefactor), m_tensors(tensorList) {
+GeneralTerm::GeneralTerm(const Tensor &result, Term::factor_t prefactor, const tensor_list_t &tensorList)
+	: Term(result, prefactor), m_tensors(tensorList) {
 }
 
-GeneralTerm::GeneralTerm(const Tensor &parent, Term::factor_t prefactor, tensor_list_t &&tensorList)
-	: Term(parent, prefactor), m_tensors(tensorList) {
+GeneralTerm::GeneralTerm(const Tensor &result, Term::factor_t prefactor, tensor_list_t &&tensorList)
+	: Term(result, prefactor), m_tensors(tensorList) {
 }
 
 std::size_t GeneralTerm::size() const {

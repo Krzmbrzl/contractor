@@ -5,7 +5,7 @@
 
 namespace Contractor::Terms {
 
-Term::Term(const Tensor &parent, Term::factor_t prefactor) : m_result(parent), m_prefactor(prefactor) {
+Term::Term(const Tensor &result, Term::factor_t prefactor) : m_result(result), m_prefactor(prefactor) {
 }
 
 bool operator==(const Term &lhs, const Term &rhs) {

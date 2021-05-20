@@ -20,8 +20,8 @@ public:
 	 */
 	using tensor_list_t = std::vector< Tensor >;
 
-	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, const tensor_list_t &tensorList = {});
-	explicit GeneralTerm(const Tensor &parent, Term::factor_t prefactor, tensor_list_t &&tensorList);
+	explicit GeneralTerm(const Tensor &result, Term::factor_t prefactor, const tensor_list_t &tensorList = {});
+	explicit GeneralTerm(const Tensor &result, Term::factor_t prefactor, tensor_list_t &&tensorList);
 
 	explicit GeneralTerm(const GeneralTerm &) = default;
 	explicit GeneralTerm(GeneralTerm &&other) = default;
