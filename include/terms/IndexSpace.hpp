@@ -17,7 +17,7 @@ public:
 	/**
 	 * The type used for storing the ID of an IndexSpace
 	 */
-	using id_t = int;
+	using id_t = unsigned int;
 
 	/**
 	 * Instantiates an IndexSpace with the given ID

@@ -17,7 +17,7 @@ public:
 	/**
 	 * The type used for storing the ID of an Index
 	 */
-	using id_t = uint32_t;
+	using id_t = unsigned int;
 
 	/**
 	 * An enum holding different Index types
