@@ -452,3 +452,89 @@ TEST(TensorTest, getIndexMapping) {
 
 	ASSERT_EQ(one.getIndexMapping(two), expectedMapping);
 }
+
+TEST(TensorTest, contract) {
+	ct::Index i(ct::IndexSpace(0), 0, ct::Index::Type::Annihilator);
+	ct::Index j(ct::IndexSpace(0), 1, ct::Index::Type::Annihilator);
+	ct::Index a(ct::IndexSpace(1), 0, ct::Index::Type::Creator);
+	ct::Index b(ct::IndexSpace(1), 1, ct::Index::Type::Creator);
+
+	{
+		// Contraction over a single common index
+		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t2("T2", { ct::Index(i) });
+
+		ct::Tensor expectedResult("T1_T2", {});
+		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize();
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+	{
+		// No contraction possible
+		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t2("T2", { ct::Index(j) });
+
+		ct::Tensor expectedResult("T1_T2", { ct::Index(i), ct::Index(j) });
+		unsigned int expectedCost = 0;
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+	{
+		// Contraction over a single common index with other indices present as well
+		ct::Tensor t1("T1", { ct::Index(a), ct::Index(i) });
+		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b) });
+
+		ct::Tensor expectedResult("T1_T2", { ct::Index(a), ct::Index(b) });
+		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize();
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+	{
+		// Contraction over two common indices
+		ct::Tensor t1("T1", { ct::Index(a), ct::Index(i) });
+		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b), ct::Index(a) });
+
+		ct::Tensor expectedResult("T1_T2", { ct::Index(b) });
+		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize() * resolver.getMeta(a.getSpace()).getSize();
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+	{
+		// "Contraction" with scalar
+		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t2("T2", {});
+
+		ct::Tensor expectedResult("T1_T2", { ct::Index(i) });
+		unsigned int expectedCost = 1;
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+	{
+		// "Contraction" with scalar (reversed)
+		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t2("T2", {});
+
+		ct::Tensor expectedResult("T2_T1", { ct::Index(i) });
+		unsigned int expectedCost = 1;
+
+		ct::ContractionResult result = t2.contract(t1, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.cost, expectedCost);
+	}
+}

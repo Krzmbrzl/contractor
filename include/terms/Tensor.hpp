@@ -13,7 +13,13 @@
 
 class IndexSpace;
 
+namespace Contractor::Utils {
+class IndexSpaceResolver;
+};
+
 namespace Contractor::Terms {
+
+class ContractionResult;
 
 /**
  * A class representing an element formally holding a value. An element may be attached to
@@ -116,11 +122,38 @@ public:
 	 */
 	std::vector< std::pair< Index, Index > > getIndexMapping(const Tensor &other) const;
 
+	/**
+	 * Contracts this Tensor with the given one
+	 *
+	 * @param other The Tensor to contract with
+	 * @param resolver The IndexSpaceResolver providing access to the underlaying IndexSpaceMeta
+	 * objects (required to calculate the contraction's cost)
+	 * @returns A ContractionResult object representing the result of this contraction
+	 */
+	ContractionResult contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const;
+
 protected:
 	index_list_t m_indices;
 	std::string m_name;
 	symmetry_list_t m_indexSymmetries;
 };
+
+/**
+ * Struct holding the result of a contraction
+ */
+struct ContractionResult {
+	/**
+	 * The Tensor representing the contracted result
+	 */
+	Tensor result;
+	/**
+	 * The cost of the contraction. The cost equals the amount of iterations that are
+	 * needed to contract all common indices (with all their possible values).
+	 * A cost of zero means that no (real) contraction was possible.
+	 */
+	unsigned int cost;
+};
+
 
 }; // namespace Contractor::Terms
 

@@ -1,4 +1,6 @@
 #include "terms/Tensor.hpp"
+#include "terms/IndexSpaceMeta.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -177,6 +179,58 @@ std::vector< std::pair< Index, Index > > Tensor::getIndexMapping(const Tensor &o
 	}
 
 	return mapping;
+}
+
+ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const {
+	unsigned int cost = 0;
+
+	std::vector< Index > contractedIndices;
+	Tensor::index_list_t resultIndices;
+
+	for (const Index &currentIndex : m_indices) {
+		auto it = std::find(other.m_indices.begin(), other.m_indices.end(), currentIndex);
+
+		if (it != other.m_indices.end()) {
+			// The tensors share an index
+			if (cost == 0) {
+				// Init cost
+				cost = resolver.getMeta(currentIndex.getSpace()).getSize();
+			} else {
+				// There has been an index that is being contracted before. From now on the costs
+				// are multiplicative
+				cost *= resolver.getMeta(currentIndex.getSpace()).getSize();
+			}
+
+			contractedIndices.push_back(currentIndex);
+		} else {
+			resultIndices.push_back(currentIndex);
+		}
+	}
+
+	// Gather result indices from the other Tensor
+	if (contractedIndices.size() != other.m_indices.size()) {
+		for (const Index &currentIndex : other.m_indices) {
+			auto it = std::find(contractedIndices.begin(), contractedIndices.end(), currentIndex);
+
+			if (it == contractedIndices.end()) {
+				// This index has not been contracted
+				resultIndices.push_back(currentIndex);
+			}
+		}
+	}
+
+	std::string resultName(getName());
+	resultName.append("_");
+	resultName.append(other.getName());
+
+	Tensor result(resultName, std::move(resultIndices));
+
+	if (cost == 0 && (m_indices.size() == 0 || other.m_indices.size() == 0)) {
+		// A scalar can always be "contracted" in a single step
+		cost = 1;
+	}
+
+	return { std::move(result), cost };
 }
 
 
