@@ -1,13 +1,14 @@
 #include "utils/PairingGenerator.hpp"
 
-#include <numeric>
 #include <cassert>
+#include <numeric>
 #include <utility>
 
 namespace Contractor::Utils {
 
 PairingGenerator::PairingGenerator(std::size_t size, std::size_t startIndex) {
 	assert(size > 1);
+	assert(size % 2 == 0);
 
 	// Fill the index vector with the respective indices
 	m_indices.resize(size);
@@ -26,7 +27,7 @@ PairingGenerator::pairing_t PairingGenerator::nextPairing() {
 	PairingGenerator::pairing_t pairing;
 
 	for (std::size_t i = 0; i < m_indices.size(); i += 2) {
-		pairing.push_back(std::make_pair(m_indices[i], m_indices[i+1]));
+		pairing.push_back(std::make_pair(m_indices[i], m_indices[i + 1]));
 	}
 
 	if (m_loopVars.top() == m_indices.size()) {

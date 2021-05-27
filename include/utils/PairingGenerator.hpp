@@ -2,9 +2,9 @@
 #define CONTRACTOR_UTILS_PAIRINGGENERATOR_HPP_
 
 #include <cstdint>
+#include <stack>
 #include <utility>
 #include <vector>
-#include <stack>
 
 namespace Contractor::Utils {
 
@@ -23,12 +23,18 @@ public:
 	/**
 	 * The type for storing a pair of indices
 	 */
-	using pair_t    = std::pair< std::size_t, std::size_t >;
+	using pair_t = std::pair< std::size_t, std::size_t >;
 	/**
 	 * Type used for representing a pairing (e.g. a list of pairs)
 	 */
 	using pairing_t = std::vector< pair_t >;
 
+	/**
+	 * @size The size of the collection to generate pairings of. Note that the size is expected to be an
+	 * even number and not zero
+	 * @param startIndex The index to start at. The index range covered by the generated pairings
+	 * will be startIndex + size - 1
+	 */
 	PairingGenerator(std::size_t size, std::size_t startIndex = 0);
 
 	/**
@@ -45,7 +51,7 @@ public:
 protected:
 	std::vector< std::size_t > m_indices;
 	std::size_t m_currentPairIndex = 0;
-	std::stack<std::size_t> m_loopVars;
+	std::stack< std::size_t > m_loopVars;
 	bool m_completed = false;
 
 	void step();
