@@ -50,7 +50,6 @@ public:
 
 protected:
 	std::vector< std::size_t > m_indices;
-	std::size_t m_currentPairIndex = 0;
 	std::stack< std::size_t > m_loopVars;
 	bool m_completed = false;
 
