@@ -1,11 +1,11 @@
 #include "utils/PairingGenerator.hpp"
 
 #include <algorithm>
+#include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include <gtest/gtest.h>
-
-#include <iostream>
 
 namespace cu = Contractor::Utils;
 
@@ -29,41 +29,67 @@ static bool equalPairings(const cu::PairingGenerator::pairing_t &lhs, const cu::
 	return true;
 }
 
-TEST(PairingGeneratorTest, test) {
-	{
-		cu::PairingGenerator generator(2);
+static std::vector< cu::PairingGenerator::pairing_t > generatePairings(std::size_t size) {
+	std::vector< cu::PairingGenerator::pairing_t > pairings;
 
-		std::vector< cu::PairingGenerator::pairing_t > expectedPairings = { { { 0, 1 } } };
+	cu::PairingGenerator generator(size);
 
-		std::size_t i = 0;
-		while (generator.hasNext()) {
-			cu::PairingGenerator::pairing_t pairing = generator.nextPairing();
-			auto it = std::find_if(expectedPairings.begin(), expectedPairings.end(), [&](const cu::PairingGenerator::pairing_t &current) { return equalPairings(current, pairing); });
+	while (generator.hasNext()) {
+		cu::PairingGenerator::pairing_t currentPairing = generator.nextPairing();
 
-			if (it == expectedPairings.end()) {
-				FAIL() << i << "th generated pairing is not contained in the expected pairings";
-			}
+		if (std::find_if(pairings.begin(), pairings.end(),
+						 [currentPairing](const cu::PairingGenerator::pairing_t &current) {
+							 return equalPairings(current, currentPairing);
+						 })
+			!= pairings.end()) {
+			throw std::runtime_error("Generated pairings are not unique!");
+		}
+
+		pairings.push_back(std::move(currentPairing));
+	}
+
+	return pairings;
+}
+
+static bool pairingsAreEqual(const std::vector< cu::PairingGenerator::pairing_t > &actual,
+							 const std::vector< cu::PairingGenerator::pairing_t > &expected) {
+	if (actual.size() != expected.size()) {
+		std::cerr << "Amount of generated pairings does not equal the expetected amount (" << actual.size() << " vs. "
+				  << expected.size() << ")" << std::endl;
+		return false;
+	}
+
+	for (std::size_t i = 0; i < actual.size(); ++i) {
+		auto it = std::find_if(expected.begin(), expected.end(), [&](const cu::PairingGenerator::pairing_t &current) {
+			return equalPairings(current, actual[i]);
+		});
+
+		if (it == expected.end()) {
+			std::cerr << "The " << i << "th generated pairing is not contained in the expected ones" << std::endl;
+			return false;
 		}
 	}
+
+	return true;
+}
+
+TEST(PairingGeneratorTest, pairingGeneration) {
 	{
-		cu::PairingGenerator generator(4);
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(2);
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = { { { 0, 1 } } };
 
-		std::vector< cu::PairingGenerator::pairing_t > expectedPairings = { { { 0, 1 }, { 2, 3 } },
-																			{ { 0, 2 }, { 1, 3 } },
-																			{ { 0, 3 }, { 1, 2 } } };
-
-		std::size_t i = 0;
-		while (generator.hasNext()) {
-			cu::PairingGenerator::pairing_t pairing = generator.nextPairing();
-			auto it = std::find_if(expectedPairings.begin(), expectedPairings.end(), [&](const cu::PairingGenerator::pairing_t &current) { return equalPairings(current, pairing); });
-
-			if (it == expectedPairings.end()) {
-				FAIL() << i << "th generated pairing is not contained in the expected pairings";
-			}
-		}
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
 	}
 	{
-		cu::PairingGenerator generator(6);
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(4);
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = { { { 0, 1 }, { 2, 3 } },
+                                                                            { { 0, 2 }, { 1, 3 } },
+                                                                            { { 0, 3 }, { 1, 2 } } };
+
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
+	}
+	{
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(6);
 
 		// clang-format off
 		std::vector< cu::PairingGenerator::pairing_t > expectedPairings = {
@@ -85,14 +111,6 @@ TEST(PairingGeneratorTest, test) {
 		};
 		// clang-format on
 
-		std::size_t i = 0;
-		while (generator.hasNext()) {
-			cu::PairingGenerator::pairing_t pairing = generator.nextPairing();
-			auto it = std::find_if(expectedPairings.begin(), expectedPairings.end(), [&](const cu::PairingGenerator::pairing_t &current) { return equalPairings(current, pairing); });
-
-			if (it == expectedPairings.end()) {
-				FAIL() << i << "th generated pairing is not contained in the expected pairings";
-			}
-		}
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
 	}
 }
