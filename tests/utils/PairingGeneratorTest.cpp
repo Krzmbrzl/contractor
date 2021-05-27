@@ -21,7 +21,6 @@ static bool equalPairings(const cu::PairingGenerator::pairing_t &lhs, const cu::
 									|| (current.second == lhs[i].first && current.first == lhs[i].second);
 						 })
 			== rhs.end()) {
-			std::cout << "Missing " << lhs[i].first << "," << lhs[i].second << " - " << i << std::endl;
 			return false;
 		}
 	}
@@ -42,7 +41,8 @@ static std::vector< cu::PairingGenerator::pairing_t > generatePairings(std::size
 							 return equalPairings(current, currentPairing);
 						 })
 			!= pairings.end()) {
-			throw std::runtime_error("Generated pairings are not unique!");
+			throw std::runtime_error(std::string("Generated pairings are not unique for size of ")
+									 + std::to_string(size) + "!");
 		}
 
 		pairings.push_back(std::move(currentPairing));
@@ -75,16 +75,63 @@ static bool pairingsAreEqual(const std::vector< cu::PairingGenerator::pairing_t 
 
 TEST(PairingGeneratorTest, pairingGeneration) {
 	{
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(1);
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = { { { 0, 0, true } } };
+
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
+	}
+	{
 		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(2);
 		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = { { { 0, 1 } } };
 
 		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
 	}
 	{
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(3);
+		// clang-format off
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = {
+			{ { 0, 1 }, { 2, 2, true } },
+			{ { 0, 2 }, { 1, 1, true } },
+			{ { 1, 2 }, { 0, 0, true } }
+		};
+		// clang-format on
+
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
+	}
+	{
 		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(4);
-		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = { { { 0, 1 }, { 2, 3 } },
-                                                                            { { 0, 2 }, { 1, 3 } },
-                                                                            { { 0, 3 }, { 1, 2 } } };
+		// clang-format off
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings  = {
+			{ { 0, 1 }, { 2, 3 } },
+            { { 0, 2 }, { 1, 3 } },
+            { { 0, 3 }, { 1, 2 } }
+		};
+		// clang-format on
+
+		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
+	}
+	{
+		std::vector< cu::PairingGenerator::pairing_t > generatedPairings = generatePairings(5);
+
+		// clang-format off
+		std::vector< cu::PairingGenerator::pairing_t > expectedPairings = {
+			{ { 0, 1 }, { 2, 3 }, { 4, 4, true } },
+			{ { 0, 1 }, { 2, 4 }, { 3, 3, true } },
+			{ { 0, 1 }, { 2, 2, true }, { 4, 3 } },
+			{ { 0, 2 }, { 1, 3 }, { 4, 4, true } },
+			{ { 0, 2 }, { 1, 4 }, { 3, 3, true } },
+			{ { 0, 2 }, { 1, 1, true }, { 4, 3 } },
+			{ { 0, 3 }, { 2, 1 }, { 4, 4, true } },
+			{ { 0, 3 }, { 2, 4 }, { 1, 1, true } },
+			{ { 0, 3 }, { 2, 2, true }, { 4, 1 } },
+			{ { 0, 4 }, { 2, 3 }, { 1, 1, true } },
+			{ { 0, 4 }, { 2, 1 }, { 3, 3, true } },
+			{ { 0, 4 }, { 2, 2, true }, { 1, 3 } },
+			{ { 0, 0, true }, { 2, 3 }, { 4, 1 } },
+			{ { 0, 0, true }, { 2, 4 }, { 3, 1 } },
+			{ { 0, 0, true }, { 2, 1 }, { 4, 3 } },
+		};
+		// clang-format on
 
 		ASSERT_TRUE(pairingsAreEqual(generatedPairings, expectedPairings));
 	}
