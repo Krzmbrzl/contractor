@@ -52,7 +52,7 @@ public:
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
 
 	friend std::ostream &operator<<(std::ostream &out, const Index &index) {
-		out << "I{" << index.m_space << "," << index.m_id;
+		out  << index.m_space.getID() << "-" << index.m_id;
 
 		switch (index.m_type) {
 			case Type::None:
@@ -78,8 +78,6 @@ public:
 				out << "ab";
 				break;
 		}
-
-		out << "}";
 
 		return out;
 	}

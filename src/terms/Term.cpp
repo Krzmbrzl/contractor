@@ -1,7 +1,6 @@
 #include "terms/Term.hpp"
 
 #include <algorithm>
-#include <typeinfo>
 
 namespace Contractor::Terms {
 
@@ -17,11 +16,9 @@ bool operator!=(const Term &lhs, const Term &rhs) {
 }
 
 std::ostream &operator<<(std::ostream &stream, const Term &term) {
-	stream << "Term (" << typeid(term).name() << "):\n";
-	stream << "- Result: " << term.getResult() << "\n";
-	stream << "- Factor: " << term.getPrefactor() << "\n";
+	stream << term.getResult() << " = " << term.getPrefactor() << " * ";
 	for (const Tensor &currentTensor : term.getTensors()) {
-		stream << "-> " << currentTensor << "\n";
+		stream << currentTensor << " ";
 	}
 	return stream;
 }
