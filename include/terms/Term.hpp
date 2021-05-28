@@ -55,9 +55,18 @@ public:
 	 */
 	const Tensor &getResult() const;
 	/**
+	 * @param result The new result Tensor to use
+	 */
+	void setResult(const Tensor &result);
+
+	/**
 	 * @returns The prefactor of this Term
 	 */
 	factor_t getPrefactor() const;
+	/**
+	 * @param prefactor The new prefactor to use
+	 */
+	void setPrefactor(factor_t prefactor);
 
 	/**
 	 * @returns The size of this Term. The size equals the amount of Tensors contained in this Term.

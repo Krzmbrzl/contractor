@@ -30,8 +30,16 @@ const Tensor &Term::getResult() const {
 	return m_result;
 }
 
+void Term::setResult(const Tensor &result) {
+	m_result = result;
+}
+
 Term::factor_t Term::getPrefactor() const {
 	return m_prefactor;
+}
+
+void Term::setPrefactor(Term::factor_t prefactor) {
+	m_prefactor = prefactor;
 }
 
 Iterable< const Tensor > Term::getTensors() const {
