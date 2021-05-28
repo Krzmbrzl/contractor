@@ -530,7 +530,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t1("T1", { ct::Index(i) });
 		ct::Tensor t2("T2", {});
 
-		ct::Tensor expectedResult("T2_T1", { ct::Index(i) });
+		ct::Tensor expectedResult("T1_T2", { ct::Index(i) });
 		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t2.contract(t1, resolver);

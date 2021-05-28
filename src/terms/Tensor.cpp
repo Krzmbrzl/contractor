@@ -226,9 +226,18 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 		}
 	}
 
-	std::string resultName(getName());
-	resultName.append("_");
-	resultName.append(other.getName());
+	// Auto-generate the name in such a way that it will result in the same name regardless of the order
+	// of the contraction. In order to achieve that, we sort the name parts alphabetically.
+	std::string resultName;
+	if (getName().compare(other.getName()) > 0) {
+		resultName.append(other.getName());
+		resultName.append("_");
+		resultName.append(getName());
+	} else {
+		resultName.append(getName());
+		resultName.append("_");
+		resultName.append(other.getName());
+	}
 
 	Tensor result(resultName, std::move(resultIndices));
 
