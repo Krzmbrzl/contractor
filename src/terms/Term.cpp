@@ -61,34 +61,14 @@ bool Term::equals(const Term &other, std::underlying_type_t< CompareOption::Opti
 		return false;
 	}
 
-	if (options & CompareOption::IGNORE_ORDER) {
-		return commutativeEquals(other);
-	} else {
-		return nonCommutativeEquals(other);
-	}
-}
-
-bool Term::commutativeEquals(const Term &other) const {
-	auto otherTerms = other.getTensors();
-
-	for (const Tensor &currentTerm : getTensors()) {
-		if (std::find(otherTerms.begin(), otherTerms.end(), currentTerm) == otherTerms.end()) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool Term::nonCommutativeEquals(const Term &other) const {
-	if (size() != other.size()) {
-		return false;
-	}
-
 	auto iterable1 = getTensors();
 	auto iterable2 = other.getTensors();
 
-	return std::equal(iterable1.begin(), iterable1.end(), iterable2.begin());
+	if (options & CompareOption::REQUIRE_SAME_ORDER) {
+		return std::equal(iterable1.begin(), iterable1.end(), iterable2.begin());
+	} else {
+		return std::is_permutation(iterable1.begin(), iterable1.end(), iterable2.begin());
+	}
 }
 
 }; // namespace Contractor::Terms

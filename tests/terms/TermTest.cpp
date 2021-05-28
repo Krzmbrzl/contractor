@@ -55,14 +55,13 @@ TEST(TermTest, equality) {
 	ASSERT_EQ(term1.equals(term3), false);
 	ASSERT_EQ(term2.equals(term3), false);
 
-	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER), true);
+	ASSERT_EQ(term1.equals(term2), true);
 	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::REQUIRE_SAME_TYPE), false);
-	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER | ct::Term::CompareOption::REQUIRE_SAME_TYPE),
-			  false);
+	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::REQUIRE_SAME_TYPE), false);
 
 	std::swap(term2.m_tensors[1], term2.m_tensors[2]);
 	// Now that we have changed the order inside term2, when comparing term-by-term (order-aware) the equality
 	// no longer holds, whereas a order-unaware compare still has to result in equality
-	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::IGNORE_ORDER), true);
-	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::NONE), false);
+	ASSERT_EQ(term1.equals(term2), true);
+	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::REQUIRE_SAME_ORDER), false);
 }

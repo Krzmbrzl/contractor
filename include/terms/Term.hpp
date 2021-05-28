@@ -32,9 +32,9 @@ public:
 	struct CompareOption {
 		// The struct is necessary to serve as a namespace since plain enums don't provide that
 		enum Options : uint8_t {
-			NONE              = 0b00000000,
-			IGNORE_ORDER      = 0b00000001,
-			REQUIRE_SAME_TYPE = 0b00000010,
+			NONE               = 0b00000000,
+			REQUIRE_SAME_ORDER = 0b00000001,
+			REQUIRE_SAME_TYPE  = 0b00000010,
 		};
 	};
 
@@ -85,24 +85,12 @@ public:
 	 * @returns Whether this Term and the given one are considered equal under the application of the given
 	 * options
 	 */
-	bool equals(const Term &other,
-				std::underlying_type_t< CompareOption::Options > options = CompareOption::NONE) const;
+	virtual bool equals(const Term &other,
+						std::underlying_type_t< CompareOption::Options > options = CompareOption::NONE) const;
 
 protected:
 	Tensor m_result;
 	factor_t m_prefactor;
-
-	/**
-	 * @returns Whether this and the given Term are considered equal if the order of the Tensors inside
-	 * each Term does NOT matter. This means that this comparison can be seen as mathmetically comparing
-	 * two Terms consistsing of fully commuting terms. This means that AB == BA.
-	 */
-	virtual bool commutativeEquals(const Term &other) const;
-	/**
-	 * @returns Whether this and the given Term are consider equal if the order of the Tensors inside
-	 * each Term DOES matter. This means that AB != BA.
-	 */
-	virtual bool nonCommutativeEquals(const Term &other) const;
 
 	/**
 	 * @returns A reference to the Tensor at the given index. This helper function is used for making
