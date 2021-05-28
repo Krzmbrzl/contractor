@@ -192,13 +192,20 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 
 		if (it != other.m_indices.end()) {
 			// The tensors share an index
+			unsigned int currentCost = resolver.getMeta(currentIndex.getSpace()).getSize();
+
+			if (currentIndex.getSpin() == Index::Spin::Both) {
+				// The index implicitly runs over alpha and beta cases which effectively doubles its size
+				currentCost *= 2;
+			}
+
 			if (cost == 0) {
 				// Init cost
-				cost = resolver.getMeta(currentIndex.getSpace()).getSize();
+				cost = currentCost;
 			} else {
 				// There has been an index that is being contracted before. From now on the costs
 				// are multiplicative
-				cost *= resolver.getMeta(currentIndex.getSpace()).getSize();
+				cost *= currentCost;
 			}
 
 			contractedIndices.push_back(currentIndex);
