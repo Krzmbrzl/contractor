@@ -63,7 +63,11 @@ Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, Tens
 
 
 bool operator==(const Tensor &lhs, const Tensor &rhs) {
-	return lhs.m_name == rhs.m_name && lhs.m_indices == rhs.m_indices && lhs.m_indexSymmetries == rhs.m_indexSymmetries;
+	return lhs.m_name == rhs.m_name
+		   // Don't care about the order of indices in this Tensor
+		   && std::is_permutation(lhs.m_indices.begin(), lhs.m_indices.end(), rhs.m_indices.begin(),
+								  rhs.m_indices.end())
+		   && lhs.m_indexSymmetries == rhs.m_indexSymmetries;
 }
 
 bool operator!=(const Tensor &lhs, const Tensor &rhs) {
