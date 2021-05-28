@@ -465,7 +465,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { ct::Index(i) });
 
 		ct::Tensor expectedResult("T1_T2", {});
-		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize();
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(i.getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -478,7 +478,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { ct::Index(j) });
 
 		ct::Tensor expectedResult("T1_T2", { ct::Index(i), ct::Index(j) });
-		unsigned int expectedCost = 0;
+		ct::ContractionResult::cost_t expectedCost = 0;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -491,7 +491,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b) });
 
 		ct::Tensor expectedResult("T1_T2", { ct::Index(a), ct::Index(b) });
-		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize();
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(i.getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -504,7 +504,8 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b), ct::Index(a) });
 
 		ct::Tensor expectedResult("T1_T2", { ct::Index(b) });
-		unsigned int expectedCost = resolver.getMeta(i.getSpace()).getSize() * resolver.getMeta(a.getSpace()).getSize();
+		ct::ContractionResult::cost_t expectedCost =
+			resolver.getMeta(i.getSpace()).getSize() * resolver.getMeta(a.getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -517,7 +518,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", {});
 
 		ct::Tensor expectedResult("T1_T2", { ct::Index(i) });
-		unsigned int expectedCost = 1;
+		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -530,7 +531,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", {});
 
 		ct::Tensor expectedResult("T2_T1", { ct::Index(i) });
-		unsigned int expectedCost = 1;
+		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t2.contract(t1, resolver);
 

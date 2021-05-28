@@ -182,7 +182,7 @@ std::vector< std::pair< Index, Index > > Tensor::getIndexMapping(const Tensor &o
 }
 
 ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const {
-	unsigned int cost = 0;
+	ContractionResult::cost_t cost = 0;
 
 	std::vector< Index > contractedIndices;
 	Tensor::index_list_t resultIndices;

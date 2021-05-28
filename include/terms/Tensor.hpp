@@ -5,6 +5,8 @@
 #include "terms/IndexPermutation.hpp"
 #include "utils/IterableView.hpp"
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -142,16 +144,25 @@ protected:
  * Struct holding the result of a contraction
  */
 struct ContractionResult {
+#ifdef NDEBUG
+	using cost_t = boost::multiprecision::uint512_t;
+#else
+	// The checked version does perform (overflow) checks and throws exceptions
+	// if there is something odd going on with this number (e.g. overflows).
+	using cost_t = boost::multiprecision::checked_uint512_t;
+#endif
+
 	/**
 	 * The Tensor representing the contracted result
 	 */
 	Tensor result;
 	/**
-	 * The cost of the contraction. The cost equals the amount of iterations that are
-	 * needed to contract all common indices (with all their possible values).
-	 * A cost of zero means that no (real) contraction was possible.
+	 * The cost of the contraction. The cost equals the amount of iterations that
+	 * are needed to contract all common indices (with all their possible values).
+	 *
+	 * A cost of 0  means that no (real) contraction was possible.
 	 */
-	unsigned int cost;
+	cost_t cost;
 };
 
 
