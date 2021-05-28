@@ -39,9 +39,9 @@ public:
 	};
 
 	explicit Term(const Tensor &resul, factor_t prefactor);
-	explicit Term(const Term &) = default;
-	explicit Term(Term &&)      = default;
-	virtual ~Term()             = default;
+	Term(const Term &) = default;
+	Term(Term &&)      = default;
+	virtual ~Term()    = default;
 	Term &operator=(const Term &other) = default;
 	Term &operator=(Term &&other) = default;
 

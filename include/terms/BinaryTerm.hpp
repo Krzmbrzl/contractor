@@ -15,8 +15,8 @@ class BinaryTerm : public Term {
 public:
 	explicit BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left, const Tensor &right);
 
-	explicit BinaryTerm(const BinaryTerm &other) = default;
-	explicit BinaryTerm(BinaryTerm &&other)      = default;
+	BinaryTerm(const BinaryTerm &other) = default;
+	BinaryTerm(BinaryTerm &&other)      = default;
 	BinaryTerm &operator=(const BinaryTerm &other) = default;
 	BinaryTerm &operator=(BinaryTerm &&other) = default;
 
