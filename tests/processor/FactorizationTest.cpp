@@ -112,4 +112,31 @@ TEST(FactorizationTest, factorize) {
 		ASSERT_EQ(resultingTerms[0], expectedTerm);
 		ASSERT_EQ(factorizationCost, 0);
 	}
+	{
+		// BinaryTerm for which factorization doesn't do anything
+		ct::Tensor resultTensor("Res");
+		std::vector< ct::Tensor > tensors = { ct::Tensor("T1", { ct::Index(i), ct::Index(a) }),
+											  ct::Tensor("T2", { ct::Index(j), ct::Index(a) }) };
+
+		ct::ContractionResult::cost_t expectedContractionCost = resolver.getMeta(a.getSpace()).getSize() * 2;
+
+		for (std::size_t ii = 0; ii < tensors.size(); ++ii) {
+			for (std::size_t jj = 0; jj < tensors.size(); ++jj) {
+				if (ii == jj) {
+					continue;
+				}
+
+				ct::GeneralTerm inTerm(resultTensor, -3.0, { ct::Tensor(tensors[ii]), ct::Tensor(tensors[jj]) });
+				// Given that the order does not make a difference, we expect the Tensors to remain in their original order
+				ct::BinaryTerm expectedTerm(resultTensor, -3.0, ct::Tensor(tensors[ii]), ct::Tensor(tensors[jj]));
+
+				ct::ContractionResult::cost_t factorizationCost = 0;
+				std::vector< ct::BinaryTerm > resultingTerms    = cp::factorize(inTerm, resolver, &factorizationCost);
+
+				ASSERT_EQ(resultingTerms.size(), 1);
+				ASSERT_EQ(resultingTerms[0], expectedTerm);
+				ASSERT_EQ(factorizationCost, expectedContractionCost);
+			}
+		}
+	}
 }
