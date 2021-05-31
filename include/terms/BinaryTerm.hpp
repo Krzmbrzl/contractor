@@ -13,7 +13,15 @@ namespace Contractor::Terms {
  */
 class BinaryTerm : public Term {
 public:
-	explicit BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left, const Tensor &right);
+	/**
+	 * A Tensor object used as the rhs in a BinaryTerm expression when that expression is actually only
+	 * meant to represent a single Tensor that is not multiplied with another Tensor.
+	 * Essentially this is a crutch used to represent a "UnaryTerm" object in the shape of a BinaryTerm.
+	 */
+	static const Tensor DummyRHS;
+
+	explicit BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left,
+						const Tensor &right = DummyRHS);
 
 	BinaryTerm(const BinaryTerm &other) = default;
 	BinaryTerm(BinaryTerm &&other)      = default;

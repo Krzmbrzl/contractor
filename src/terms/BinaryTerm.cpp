@@ -4,12 +4,14 @@
 
 namespace Contractor::Terms {
 
+const Tensor BinaryTerm::DummyRHS("DummyRHS (Should never be actually visible to the user)");
+
 BinaryTerm::BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left, const Tensor &right)
 	: Term(result, prefactor), m_left(left), m_right(right) {
 }
 
 std::size_t BinaryTerm::size() const {
-	return 2;
+	return m_right != DummyRHS ? 2 : 1;
 }
 
 const Tensor &BinaryTerm::get(std::size_t index) const {
