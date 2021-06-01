@@ -17,3 +17,18 @@ Start out at the repository's root directory.
 2. Switch into that directory: `cd build`
 3. Invoke cmake: `cmake ..`
 4. Build from the generated build files: `cmake --build .` (or use native build system directly, e.g. on Unix `make`)
+
+
+## Testing
+
+Build the application with tests enabled:
+```bash
+cmake -Dtests=ON ..
+cmake --build .
+```
+
+Then run the test cases:
+```bash
+ctest --output-on-failure
+```
+
