@@ -117,15 +117,17 @@ public:
 	bool hasS() const;
 
 	/**
-	 * @returns The Delta S_z property (change in the M_s quantum number) of this Tensor
+	 * @returns The Delta S_z property (change in the M_s quantum number) of this Tensor. The returned number
+	 * is twice the actual M_s QN in order to also make half-integer values representable as integers
 	 */
-	int getMs() const;
+	int getDoubleMs() const;
 	/**
 	 * Sets the Delta S_z property (change in the M_s quantum number) of this Tensor
 	 *
-	 * @param Ms The new property to use
+	 * @param Ms The new property to use. This is to be twice the actual M_s QN in order to
+	 * make half-integer values be representable as ints as well
 	 */
-	void setMs(int Ms);
+	void setDoubleMs(int doubleMs);
 
 	/**
 	 * @returns Whether this Tensor is describing an anti-symmetrized quantity
@@ -179,7 +181,7 @@ protected:
 	std::string m_name;
 	symmetry_list_t m_indexSymmetries;
 	int m_S                = std::numeric_limits< int >::max();
-	int m_Ms               = 0;
+	int m_doubleMs         = 0;
 	bool m_antisymmetrized = true;
 };
 

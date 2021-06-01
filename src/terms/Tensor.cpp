@@ -122,12 +122,12 @@ bool Tensor::hasS() const {
 	return m_S != std::numeric_limits< int >::max();
 }
 
-int Tensor::getMs() const {
-	return m_Ms;
+int Tensor::getDoubleMs() const {
+	return m_doubleMs;
 }
 
-void Tensor::setMs(int Ms) {
-	m_Ms = Ms;
+void Tensor::setDoubleMs(int doubleMs) {
+	m_doubleMs = doubleMs;
 }
 
 bool Tensor::isAntisymmetrized() const {
