@@ -7,6 +7,7 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
+#include <limits.h>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -99,6 +100,34 @@ public:
 	void setIndexSymmetries(symmetry_list_t &&symmetries);
 
 	/**
+	 * @returns The total spin S property of this Tensor.
+	 * If this is the highest possible value representable with an int, then this means
+	 * that this property is unspecified.
+	 */
+	int getS() const;
+	/**
+	 * Sets the total spin S property of this Tensor
+	 *
+	 * @param S The new spin property
+	 */
+	void setS(int S);
+	/**
+	 * @returns Whether this Tensor has a defined spin property
+	 */
+	bool hasS() const;
+
+	/**
+	 * @returns The Delta S_z property (change in the M_s quantum number) of this Tensor
+	 */
+	int getMs() const;
+	/**
+	 * Sets the Delta S_z property (change in the M_s quantum number) of this Tensor
+	 *
+	 * @param Ms The new property to use
+	 */
+	void setMs(int Ms);
+
+	/**
 	 * Replaces the given index
 	 *
 	 * @param source The index to replace
@@ -138,6 +167,8 @@ protected:
 	index_list_t m_indices;
 	std::string m_name;
 	symmetry_list_t m_indexSymmetries;
+	int m_S  = std::numeric_limits< int >::max();
+	int m_Ms = 0;
 };
 
 /**

@@ -110,6 +110,26 @@ void Tensor::setIndexSymmetries(Tensor::symmetry_list_t &&symmetries) {
 	m_indexSymmetries = symmetries;
 }
 
+int Tensor::getS() const {
+	return m_S;
+}
+
+void Tensor::setS(int S) {
+	m_S = S;
+}
+
+bool Tensor::hasS() const {
+	return m_S != std::numeric_limits< int >::max();
+}
+
+int Tensor::getMs() const {
+	return m_Ms;
+}
+
+void Tensor::setMs(int Ms) {
+	m_Ms = Ms;
+}
+
 void Tensor::replaceIndex(const Index &source, const Index &replacement) {
 	for (std::size_t i = 0; i < m_indices.size(); i++) {
 		if (m_indices[i] == source) {
