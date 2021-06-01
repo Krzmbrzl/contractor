@@ -29,5 +29,8 @@ int main(int argc, const char **argv) {
 		return Contractor::ExitCodes::OK;
 	}
 
+	// TODO: Validate that all indices that are neither creator nor annihilator don't have spin
+	// and creators and annihilators always have spin "Both"
+
 	return 0;
 }
