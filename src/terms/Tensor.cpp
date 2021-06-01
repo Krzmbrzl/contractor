@@ -130,6 +130,14 @@ void Tensor::setMs(int Ms) {
 	m_Ms = Ms;
 }
 
+bool Tensor::isAntisymmetrized() const {
+	return m_antisymmetrized;
+}
+
+void Tensor::setAntisymmetrized(bool antisymmetrized) {
+	m_antisymmetrized = antisymmetrized;
+}
+
 void Tensor::replaceIndex(const Index &source, const Index &replacement) {
 	for (std::size_t i = 0; i < m_indices.size(); i++) {
 		if (m_indices[i] == source) {

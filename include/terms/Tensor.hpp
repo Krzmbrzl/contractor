@@ -128,6 +128,17 @@ public:
 	void setMs(int Ms);
 
 	/**
+	 * @returns Whether this Tensor is describing an anti-symmetrized quantity
+	 */
+	bool isAntisymmetrized() const;
+	/**
+	 * Sets whether this Tensor is describing an anti-symmetrized quantity
+	 *
+	 * @param antisymmetrized
+	 */
+	void setAntisymmetrized(bool antisymmetrized);
+
+	/**
 	 * Replaces the given index
 	 *
 	 * @param source The index to replace
@@ -167,8 +178,9 @@ protected:
 	index_list_t m_indices;
 	std::string m_name;
 	symmetry_list_t m_indexSymmetries;
-	int m_S  = std::numeric_limits< int >::max();
-	int m_Ms = 0;
+	int m_S                = std::numeric_limits< int >::max();
+	int m_Ms               = 0;
+	bool m_antisymmetrized = true;
 };
 
 /**
