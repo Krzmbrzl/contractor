@@ -24,7 +24,7 @@ public:
 	 *
 	 * @param id ID of the new space
 	 */
-	constexpr explicit IndexSpace(id_t id) : m_id(id) {}
+	constexpr explicit IndexSpace(id_t id = 0) : m_id(id) {}
 
 	friend constexpr bool operator==(const IndexSpace &lhs, const IndexSpace &rhs) { return lhs.m_id == rhs.m_id; }
 
