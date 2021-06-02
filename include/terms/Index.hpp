@@ -52,7 +52,7 @@ public:
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
 
 	friend std::ostream &operator<<(std::ostream &out, const Index &index) {
-		out  << index.m_space.getID() << "-" << index.m_id;
+		out << index.m_space.getID() << "-" << index.m_id;
 
 		switch (index.m_type) {
 			case Type::None:
@@ -135,5 +135,17 @@ protected:
 };
 
 }; // namespace Contractor::Terms
+
+// Provide template specialization of std::hash for the Index class
+namespace std {
+template<> struct hash< Contractor::Terms::Index > {
+	std::size_t operator()(const Contractor::Terms::Index &index) const {
+		return std::hash< Contractor::Terms::IndexSpace >{}(index.getSpace())
+			   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1)
+			   ^ (std::hash< Contractor::Terms::Index::Type >{}(index.getType()) << 2)
+			   ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 3);
+	}
+};
+}; // namespace std
 
 #endif // CONTRACTOR_TERMS_INDEX_HPP_
