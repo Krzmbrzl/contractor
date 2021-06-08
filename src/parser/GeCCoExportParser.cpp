@@ -74,7 +74,7 @@ Terms::GeneralTerm GeCCoExportParser::parseContraction() {
 	Terms::Tensor resultTensor = parseResult();
 	m_reader.skipWS();
 
-	int prefactor = parseFactor();
+	double prefactor = parseFactor();
 	m_reader.skipWS();
 
 	skipVerticesCount();
