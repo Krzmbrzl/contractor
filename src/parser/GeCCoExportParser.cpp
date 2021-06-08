@@ -8,8 +8,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <iostream>
-
 namespace ct = Contractor::Terms;
 
 namespace Contractor::Parser {
@@ -162,9 +160,6 @@ Terms::Tensor::index_list_t GeCCoExportParser::parseIndexSpec(bool adjoint) {
 	}
 
 	m_reader.expect("]");
-
-	std::cout << "Creators: \"" << creatorString << "\"" << std::endl;
-	std::cout << "Annihilators: \"" << annihilatorString << "\"" << std::endl;
 
 	// General parsing is done - convert the extracted data into usable objects
 	Terms::Tensor::index_list_t indices;
