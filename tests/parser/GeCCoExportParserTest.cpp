@@ -319,6 +319,8 @@ TEST(GeCCoExportParserTest, parseContraction) {
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
+
+		ASSERT_EQ(parsedTerm, expectedTerm);
 	}
 	{
 		std::string content = "[CONTR] #        4\n"
@@ -367,12 +369,18 @@ TEST(GeCCoExportParserTest, parseContraction) {
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
 			ct::Tensor("H", { createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator),
-							  createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator) }),
-			ct::Tensor("T2", { createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-							   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) })
+							  createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator),
+							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) }),
+			ct::Tensor("T2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+							   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+							   createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Annihilator),
+							   createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Annihilator) })
 		};
 
-		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
+		ct::GeneralTerm expectedTerm(parent, 0.5, containedTensors);
+
+		ASSERT_EQ(parsedTerm, expectedTerm);
 	}
 }
 
