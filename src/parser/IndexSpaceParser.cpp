@@ -59,7 +59,7 @@ Terms::IndexSpaceMeta parseDefinition(const std::string &inName, const nlohmann:
 
 Utils::IndexSpaceResolver IndexSpaceParser::parse(std::istream &inputStream) {
 	try {
-		nlohmann::json json;
+		nlohmann::ordered_json json;
 		inputStream >> json;
 
 		Utils::IndexSpaceResolver::meta_list_t metaList;
