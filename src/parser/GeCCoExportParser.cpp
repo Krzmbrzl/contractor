@@ -322,27 +322,9 @@ Terms::GeneralTerm::tensor_list_t
 	// Skip to next line
 	m_reader.skipWS();
 
-	std::vector< bool > isContracted;
-	while (m_reader.peek() != '\n') {
-		char c = m_reader.read();
-		switch (c) {
-			case 'T':
-				// Marked as (T)rue if this index is part of the result Tensor (and thus
-				// not contracted)
-				isContracted.push_back(false);
-				break;
-			case 'F':
-				isContracted.push_back(true);
-				break;
-			default:
-				throw ParseException(std::string("Unexpected index decoration \"") + c + "\"");
-		}
-
-		m_reader.skipWS(false);
-	}
-
-	// Skip to next line
-	m_reader.skipWS();
+	// Skip over the line that contains the information about which index is part of the result Tensor
+	// and which is a contracted index as this information is not important to us
+	m_reader.skipBehind("\n");
 
 	// Skip over the line that contains the information to which contraction (ARC) a given index
 	// belongs as this information is not important to us
@@ -367,7 +349,7 @@ Terms::GeneralTerm::tensor_list_t
 	}
 
 	if (vertexIndices.size() != isCreator.size() || isCreator.size() != indexSpaces.size()
-		|| isCreator.size() != isContracted.size() || isCreator.size() != indexIDs.size()) {
+		|| isCreator.size() != indexIDs.size()) {
 		throw ParseException("Inconsistency in contraction String");
 	}
 
@@ -383,9 +365,6 @@ Terms::GeneralTerm::tensor_list_t
 	Terms::Tensor::index_list_t indexList;
 	for (std::size_t i = 0; i < indices.size(); i++) {
 		std::size_t index = indices[i];
-		if (!isContracted[index]) {
-			continue;
-		}
 
 		if (isCreator[index]) {
 			indexList.push_back(Terms::Index(indexSpaces[index], indexIDs[index], Terms::Index::Type::Creator,
