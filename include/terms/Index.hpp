@@ -45,9 +45,19 @@ public:
 	Index &operator=(const Index &other) = default;
 	Index &operator=(Index &&other) = default;
 
+	/**
+	 * @returns Whether the two indices are considered to be the same. Two indices are the same if they match in all attributes
+	 * except their type.
+	 */
+	friend constexpr bool isSame(const Index &lhs, const Index &rhs) {
+		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spin == rhs.m_spin;
+	}
+
+	/**
+	 * @returns Whether two indices are identical. That is they are the same and their type is the same as well.
+	 */
 	friend constexpr bool operator==(const Index &lhs, const Index &rhs) {
-		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spin == rhs.m_spin
-			   && lhs.m_type == rhs.m_type;
+		return isSame(lhs, rhs) && lhs.m_type == rhs.m_type;
 	}
 
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }

@@ -220,7 +220,8 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	Tensor::index_list_t resultIndices;
 
 	for (const Index &currentIndex : m_indices) {
-		auto it = std::find(other.m_indices.begin(), other.m_indices.end(), currentIndex);
+		auto it = std::find_if(other.m_indices.begin(), other.m_indices.end(),
+							   [currentIndex](const Index &other) { return isSame(currentIndex, other); });
 
 		if (it != other.m_indices.end()) {
 			// The tensors share an index
@@ -249,7 +250,8 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	// Gather result indices from the other Tensor
 	if (contractedIndices.size() != other.m_indices.size()) {
 		for (const Index &currentIndex : other.m_indices) {
-			auto it = std::find(contractedIndices.begin(), contractedIndices.end(), currentIndex);
+			auto it = std::find_if(contractedIndices.begin(), contractedIndices.end(),
+								   [currentIndex](const Index &other) { return isSame(currentIndex, other); });
 
 			if (it == contractedIndices.end()) {
 				// This index has not been contracted

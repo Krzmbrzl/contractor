@@ -77,6 +77,34 @@ TEST(IndexTest, equality) {
 	}
 }
 
+TEST(IndexTest, isSame) {
+	for (ct::IndexSpace::id_t space1 : { 0, 1 }) {
+		for (ct::IndexSpace::id_t space2 : { 0, 1 }) {
+			for (ct::Index::id_t id1 : { 0, 1 }) {
+				for (ct::Index::id_t id2 : { 0, 1 }) {
+					for (ct::Index::Spin spin1 : { ct::Index::Spin::None, ct::Index::Spin::Alpha, ct::Index::Spin::Beta,
+												   ct::Index::Spin::Both }) {
+						for (ct::Index::Spin spin2 : { ct::Index::Spin::None, ct::Index::Spin::Alpha,
+													   ct::Index::Spin::Beta, ct::Index::Spin::Both }) {
+							// In order for two indices to be the same, their type does not matter
+							bool matches = space1 == space2 && id1 == id2 && spin1 == spin2;
+
+							ct::Index index1(ct::IndexSpace(space1), id1, ct::Index::Type::Creator, spin1);
+							ct::Index index2(ct::IndexSpace(space2), id2, ct::Index::Type::Annihilator, spin2);
+
+							if (matches) {
+								ASSERT_TRUE(isSame(index1, index2));
+							} else {
+								ASSERT_FALSE(isSame(index1, index2));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 TEST(IndexTest, copy) {
 	ct::Index index(ct::IndexSpace(0), 1, ct::Index::Type::None);
 	ct::Index copy(index);
