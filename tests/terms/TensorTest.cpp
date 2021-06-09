@@ -2,6 +2,7 @@
 #include "terms/IndexPermutation.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include <string_view>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -17,6 +18,37 @@ static cu::IndexSpaceResolver resolver({
 static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id,
 							 ct::Index::Type type = ct::Index::Type::Creator) {
 	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
+}
+
+static ct::Index createIndex(const std::string_view spec) {
+	ct::IndexSpace::id_t spaceID;
+	char base;
+
+	switch (spec[0]) {
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+			spaceID = resolver.resolve("virtual").getID();
+			base    = 'a';
+			break;
+		case 'i':
+		case 'j':
+		case 'k':
+		case 'l':
+			spaceID = resolver.resolve("occupied").getID();
+			base    = 'i';
+			break;
+		default:
+			throw "Unsupported index spec";
+	}
+
+	ct::Index::id_t id = spec[0] - base;
+
+	std::cout << "Space " << spaceID << " ID: " << id << std::endl;
+
+	return ct::Index(ct::IndexSpace(spaceID), id,
+					 spec.size() > 1 ? ct::Index::Type::Creator : ct::Index::Type::Annihilator, ct::Index::Spin::Both);
 }
 
 
@@ -454,18 +486,13 @@ TEST(TensorTest, getIndexMapping) {
 }
 
 TEST(TensorTest, contract) {
-	ct::Index i(ct::IndexSpace(0), 0, ct::Index::Type::Annihilator);
-	ct::Index j(ct::IndexSpace(0), 1, ct::Index::Type::Annihilator);
-	ct::Index a(ct::IndexSpace(1), 0, ct::Index::Type::Creator);
-	ct::Index b(ct::IndexSpace(1), 1, ct::Index::Type::Creator);
-
 	{
 		// Contraction over a single common index
-		ct::Tensor t1("T1", { ct::Index(i) });
-		ct::Tensor t2("T2", { ct::Index(i) });
+		ct::Tensor t1("T1", { createIndex("i+") });
+		ct::Tensor t2("T2", { createIndex("i") });
 
 		ct::Tensor expectedResult("T1_T2", {});
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(i.getSpace()).getSize();
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(createIndex("i").getSpace()).getSize() * 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -474,10 +501,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// No contraction possible
-		ct::Tensor t1("T1", { ct::Index(i) });
-		ct::Tensor t2("T2", { ct::Index(j) });
+		ct::Tensor t1("T1", { createIndex("i+") });
+		ct::Tensor t2("T2", { createIndex("j") });
 
-		ct::Tensor expectedResult("T1_T2", { ct::Index(i), ct::Index(j) });
+		ct::Tensor expectedResult("T1_T2", { createIndex("i+"), createIndex("j") });
 		ct::ContractionResult::cost_t expectedCost = 0;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
@@ -487,11 +514,11 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// Contraction over a single common index with other indices present as well
-		ct::Tensor t1("T1", { ct::Index(a), ct::Index(i) });
-		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b) });
+		ct::Tensor t1("T1", { createIndex("a"), createIndex("i+") });
+		ct::Tensor t2("T2", { createIndex("i"), createIndex("b+") });
 
-		ct::Tensor expectedResult("T1_T2", { ct::Index(a), ct::Index(b) });
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(i.getSpace()).getSize();
+		ct::Tensor expectedResult("T1_T2", { createIndex("a"), createIndex("b+") });
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(createIndex("i").getSpace()).getSize() * 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -500,12 +527,12 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// Contraction over two common indices
-		ct::Tensor t1("T1", { ct::Index(a), ct::Index(i) });
-		ct::Tensor t2("T2", { ct::Index(i), ct::Index(b), ct::Index(a) });
+		ct::Tensor t1("T1", { createIndex("a"), createIndex("i+") });
+		ct::Tensor t2("T2", { createIndex("i"), createIndex("b"), createIndex("a+") });
 
-		ct::Tensor expectedResult("T1_T2", { ct::Index(b) });
-		ct::ContractionResult::cost_t expectedCost =
-			resolver.getMeta(i.getSpace()).getSize() * resolver.getMeta(a.getSpace()).getSize();
+		ct::Tensor expectedResult("T1_T2", { createIndex("b") });
+		ct::ContractionResult::cost_t expectedCost = (resolver.getMeta(createIndex("i").getSpace()).getSize() * 2)
+													 * (resolver.getMeta(createIndex("a").getSpace()).getSize() * 2);
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -514,10 +541,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// "Contraction" with scalar
-		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t1("T1", { createIndex("i") });
 		ct::Tensor t2("T2", {});
 
-		ct::Tensor expectedResult("T1_T2", { ct::Index(i) });
+		ct::Tensor expectedResult("T1_T2", { createIndex("i") });
 		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
@@ -527,10 +554,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// "Contraction" with scalar (reversed)
-		ct::Tensor t1("T1", { ct::Index(i) });
+		ct::Tensor t1("T1", { createIndex("i") });
 		ct::Tensor t2("T2", {});
 
-		ct::Tensor expectedResult("T1_T2", { ct::Index(i) });
+		ct::Tensor expectedResult("T1_T2", { createIndex("i") });
 		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t2.contract(t1, resolver);
