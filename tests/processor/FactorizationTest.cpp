@@ -49,7 +49,7 @@ TEST(FactorizationTest, factorize) {
 
 		ct::Tensor resultTensor("LCCD");
 
-		ct::Tensor intermediateResult1("H_T", { ct::Index(i), ct::Index(l) });
+		ct::Tensor intermediateResult1("H_T", { ct::Index(l), ct::Index(i) });
 		ct::Tensor intermediateResult2("T_T", { ct::Index(i), ct::Index(l) });
 
 		ct::ContractionResult::cost_t expectedContractionCost = 0;
@@ -57,45 +57,26 @@ TEST(FactorizationTest, factorize) {
 		ct::BinaryTerm intermdediate1(intermediateResult2, 1.0, ct::Tensor(tensors[0]), ct::Tensor(tensors[3]));
 		// *2 as the indices contain an implicit spin and run over alpha and beta cases
 		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
-		// T_H[il] = H[jlba] T[abij]
+		// H_T[li] = H[jlba] T[abji]
 		ct::BinaryTerm intermdediate2(intermediateResult1, 1.0, ct::Tensor(tensors[1]), ct::Tensor(tensors[2]));
 		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
-		// LCCD[] = T_T[il] T_H[il]
+		// LCCD[] = H_T[li] T_T[il]
 		ct::BinaryTerm expectedResult(resultTensor, 2.0, ct::Tensor(intermediateResult1),
 									  ct::Tensor(intermediateResult2));
 		expectedContractionCost += (occupiedSize * 2) * (occupiedSize * 2);
 
 
-		// Test all permutations of the original Term as order of the Tensors within the Term must not matter
-		for (std::size_t ii = 0; ii < tensors.size(); ii++) {
-			for (std::size_t jj = 0; jj < tensors.size(); jj++) {
-				if (ii == jj) {
-					continue;
-				}
-				for (std::size_t kk = 0; kk < tensors.size(); kk++) {
-					if (ii == kk || jj == kk) {
-						continue;
-					}
-					for (std::size_t ll = 0; ll < tensors.size(); ll++) {
-						if (ii == ll || jj == ll || kk == ll) {
-							continue;
-						}
+		// LCCD[] = T[ikdc] H[jlba] T[abji] T[cdlk] (in all possible permutations
+		ct::GeneralTerm inTerm(resultTensor, 2.0,
+							   { ct::Tensor(tensors[0]), ct::Tensor(tensors[1]),
+								 ct::Tensor(tensors[2]), ct::Tensor(tensors[3]) });
 
-						// LCCD[] = T[ikdc] H[jlba] T[abji] T[cdlk] (in all possible permutations
-						ct::GeneralTerm inTerm(resultTensor, 2.0,
-											   { ct::Tensor(tensors[ii]), ct::Tensor(tensors[jj]),
-												 ct::Tensor(tensors[kk]), ct::Tensor(tensors[ll]) });
+		ct::ContractionResult::cost_t contractionCost;
+		std::vector< ct::BinaryTerm > outTerms = cp::factorize(inTerm, resolver, &contractionCost);
 
-						ct::ContractionResult::cost_t contractionCost;
-						std::vector< ct::BinaryTerm > outTerms = cp::factorize(inTerm, resolver, &contractionCost);
-
-						ASSERT_THAT(outTerms,
-									::testing::UnorderedElementsAre(intermdediate1, intermdediate2, expectedResult));
-						ASSERT_EQ(contractionCost, expectedContractionCost);
-					}
-				}
-			}
-		}
+		ASSERT_THAT(outTerms,
+					::testing::UnorderedElementsAre(intermdediate1, intermdediate2, expectedResult));
+		ASSERT_EQ(contractionCost, expectedContractionCost);
 	}
 	{
 		// Term with only a single Tensor in it -> Factorization doesn't actually do anything
