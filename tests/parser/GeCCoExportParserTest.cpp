@@ -382,6 +382,46 @@ TEST(GeCCoExportParserTest, parseContraction) {
 
 		ASSERT_EQ(parsedTerm, expectedTerm);
 	}
+	{
+		// Skalar Tensor
+		std::string content = "[CONTR] #        1\n"
+							  "  /RESULT/\n"
+							  "  	LCCD  F [,]\n"
+							  "  /FACTOR/         1.00000000000000   1         1.00000000000000\n"
+							  "  /#VERTICES/     1    1\n"
+							  "  /SVERTEX/   1\n"
+							  "  /#ARCS/     0    0\n"
+							  "  /VERTICES/\n"
+							  "  	  H  F [,]\n"
+							  "  /ARCS/\n"
+							  "  /XARCS/\n"
+							  "  /CONTR_STRING/\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "  /RESULT_STRING/\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "\n"
+							  "[CONTR]\n";
+
+		std::stringstream sstream(content);
+		cp::GeCCoExportParser parser(resolver);
+
+		parser.setSource(sstream);
+
+		ct::GeneralTerm parsedTerm = parser.parseContraction();
+
+		ct::Tensor parent("LCCD");
+		ct::GeneralTerm expectedTerm(parent, 1.0, { ct::Tensor("H") });
+
+		ASSERT_EQ(parsedTerm, expectedTerm);
+	}
 }
 
 // Assume that the test will never be put on a computer that did not clone the original repo containing the test files
