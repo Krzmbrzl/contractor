@@ -70,6 +70,33 @@ TEST(GeCCoExportParserTest, parseContractionStringIndexing) {
 	}
 }
 
+TEST(GeCCoExportParserTest, parseResultStringIndexing) {
+	// TODO
+	{
+		std::string content = "/RESULT_STRING/\n"
+							  "   1   1   1   1\n"
+							  "   1   1   2   2\n"
+							  "   2   2   1   1\n"
+							  "   1   1   1   1\n"
+							  "   1   2   2   1\n"
+							  "[CONTR]\n";
+
+		std::stringstream sstream(content);
+		cp::GeCCoExportParser parser(resolver);
+
+		parser.setSource(sstream);
+
+		ct::Tensor resultTensor = parser.parseResultStringIndexing("O2");
+
+		ct::Tensor expected("O2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
+									createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
+									createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+									createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) });
+
+		ASSERT_EQ(resultTensor, expected);
+	}
+}
+
 TEST(GeCCoExportParserTest, parseVertices) {
 	{
 		std::string content = "/VERTICES/\n"
@@ -364,8 +391,8 @@ TEST(GeCCoExportParserTest, parseContraction) {
 
 		ct::Tensor parent("O2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 								  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-								  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
-								  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) });
+								  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
+								  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) });
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
 			ct::Tensor("H", { createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator),

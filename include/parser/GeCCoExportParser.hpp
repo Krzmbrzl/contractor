@@ -38,7 +38,7 @@ public:
 	term_list_t parse();
 
 	Terms::GeneralTerm parseContraction();
-	Terms::Tensor parseResult();
+	std::string parseResult();
 	double parseFactor();
 	Terms::Tensor parseTensor();
 	Terms::Tensor::index_list_t parseIndexSpec(bool adjoint);
@@ -49,11 +49,13 @@ public:
 	void skipArcs();
 	void skipXArcs();
 	Terms::GeneralTerm::tensor_list_t parseContractionStringIndexing(const std::vector< std::string > &operatorNames);
-	void skipResultStringIndexing();
+	Terms::Tensor parseResultStringIndexing(const std::string &resultName);
 
 protected:
 	const Utils::IndexSpaceResolver &m_resolver;
 	BufferedStreamReader m_reader;
+
+	std::string parseTensorName();
 };
 
 } // namespace Contractor::Parser

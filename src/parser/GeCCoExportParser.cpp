@@ -71,7 +71,7 @@ Terms::GeneralTerm GeCCoExportParser::parseContraction() {
 	int contractionNum = m_reader.parseInt();
 	m_reader.skipWS();
 
-	Terms::Tensor resultTensor = parseResult();
+	std::string resultName = parseResult();
 	m_reader.skipWS();
 
 	double prefactor = parseFactor();
@@ -98,16 +98,22 @@ Terms::GeneralTerm GeCCoExportParser::parseContraction() {
 	Terms::GeneralTerm::tensor_list_t tensors = parseContractionStringIndexing(operatorNames);
 	m_reader.skipWS();
 
-	skipResultStringIndexing();
+	Terms::Tensor resultTensor = parseResultStringIndexing(resultName);
 
 	return Terms::GeneralTerm(resultTensor, prefactor, std::move(tensors));
 }
 
-Terms::Tensor GeCCoExportParser::parseResult() {
+std::string GeCCoExportParser::parseResult() {
 	m_reader.expect("/RESULT/");
 	m_reader.skipWS();
 
-	return parseTensor();
+	std::string name = parseTensorName();
+
+	// Skip the rest of the line as we'll read the indices from the
+	// result string instead
+	m_reader.skipBehind("\n");
+
+	return name;
 }
 
 double GeCCoExportParser::parseFactor() {
@@ -124,10 +130,7 @@ double GeCCoExportParser::parseFactor() {
 }
 
 Terms::Tensor GeCCoExportParser::parseTensor() {
-	std::string name;
-	while (std::isalnum(m_reader.peek()) || m_reader.peek() == '_' || m_reader.peek() == '-') {
-		name += m_reader.read();
-	}
+	std::string name = parseTensorName();
 
 	m_reader.skipWS();
 
@@ -381,7 +384,6 @@ Terms::GeneralTerm::tensor_list_t
 		}
 
 		if (i + 1 == indices.size() || vertexIndices[index] != vertexIndices[indices[i + 1]]) {
-			// TODO: Set up symmetry
 			// The Tensor specification is done
 			tensors.push_back(Terms::Tensor(operatorNames[vertexIndices[index]], indexList));
 
@@ -392,7 +394,7 @@ Terms::GeneralTerm::tensor_list_t
 	return tensors;
 }
 
-void GeCCoExportParser::skipResultStringIndexing() {
+Terms::Tensor GeCCoExportParser::parseResultStringIndexing(const std::string &resultName) {
 	m_reader.expect("/RESULT_STRING/");
 
 	m_reader.skipWS();
@@ -400,13 +402,101 @@ void GeCCoExportParser::skipResultStringIndexing() {
 	if (m_reader.peek() == '/' || m_reader.peek() == '[') {
 		// The contraction String was empty so that by skipping over the WS we reached the next section
 		// already
-		return;
+		return Terms::Tensor(resultName);
 	}
 
-	// Skip the 5 lines of the result String
-	for (uint8_t i = 0; i < 5; i++) {
-		m_reader.skipBehind("\n");
+	while (m_reader.peek() != '\n') {
+		if (m_reader.parseInt() != 1) {
+			throw ParseException("Found vertex index in result that is not 1");
+		}
+
+		m_reader.skipWS(false);
 	}
+
+	// skip to next line
+	m_reader.skipWS();
+
+	std::vector< bool > isCreator;
+	while (m_reader.peek() != '\n') {
+		bool currentIsCreator = m_reader.parseInt() == 1;
+		isCreator.push_back(currentIsCreator);
+
+		m_reader.skipWS(false);
+	}
+
+	// Skip to next line
+	m_reader.skipWS();
+
+	std::vector< Terms::IndexSpace > indexSpaces;
+	while (m_reader.peek() != '\n') {
+		Terms::IndexSpace::id_t spaceID = m_reader.parseInt();
+
+		try {
+			switch (spaceID) {
+				// Hole space == 1, particle space == 2
+				case 1:
+					indexSpaces.push_back(m_resolver.resolve("occupied"));
+					break;
+				case 2:
+					indexSpaces.push_back(m_resolver.resolve("virtual"));
+					break;
+				default:
+					throw ParseException("Invalid index space ID \"" + std::to_string(spaceID) + "\"");
+			}
+		} catch (const Utils::ResolveException &e) {
+			throw ParseException(std::string("Failed at parsing index space ID: ") + e.what());
+		}
+
+		m_reader.skipWS(false);
+	}
+
+	// Skip to next line
+	m_reader.skipWS();
+
+	// Skip over the line that contains the information to which contraction (ARC) a given index
+	// belongs as this information is not important to us
+	m_reader.skipBehind("\n");
+
+	// Skip to next line
+	m_reader.skipWS();
+
+	std::vector< Terms::Index::id_t > indexIDs;
+	while (m_reader.peek() != '\n') {
+		Terms::Index::id_t currentID = m_reader.parseInt();
+
+		if (currentID <= 0) {
+			throw ParseException(std::string("Expected all index IDs to be > 0 but got \"") + std::to_string(currentID)
+								 + "\"");
+		}
+
+		// GeCCo indices are 1-based -> transform to 0-based
+		indexIDs.push_back(currentID - 1);
+
+		m_reader.skipWS(false);
+	}
+
+	if (isCreator.size() != indexSpaces.size() || isCreator.size() != indexIDs.size()) {
+		throw ParseException("Inconsistency in contraction String");
+	}
+
+	Terms::Tensor::index_list_t indices;
+	for (std::size_t i = 0; i < isCreator.size(); ++i) {
+		indices.push_back(Terms::Index(indexSpaces[i], indexIDs[i],
+									   isCreator[i] ? Terms::Index::Type::Creator : Terms::Index::Type::Annihilator,
+									   Terms::Index::Spin::Both));
+	}
+
+	return Terms::Tensor(resultName, std::move(indices));
+}
+
+std::string GeCCoExportParser::parseTensorName() {
+	std::string name;
+
+	while (std::isalnum(m_reader.peek()) || m_reader.peek() == '_' || m_reader.peek() == '-') {
+		name += m_reader.read();
+	}
+
+	return name;
 }
 
 }; // namespace Contractor::Parser
