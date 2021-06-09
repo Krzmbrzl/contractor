@@ -15,6 +15,7 @@ add_subdirectory(parser)
 add_subdirectory(terms)
 add_subdirectory(utils)
 add_subdirectory(processor)
+add_subdirectory(formatting)
 
 target_link_libraries(${MAIN_EXECUTABLE_NAME}
 	PRIVATE ${MAIN_EXECUTABLE_NAME}::parser
