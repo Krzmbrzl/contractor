@@ -57,6 +57,10 @@ bool Term::equals(const Term &other, std::underlying_type_t< CompareOption::Opti
 		return false;
 	}
 
+	if (getResult() != other.getResult()) {
+		return false;
+	}
+
 	if ((options & CompareOption::REQUIRE_SAME_TYPE) && typeid(*this).hash_code() != typeid(other).hash_code()) {
 		return false;
 	}

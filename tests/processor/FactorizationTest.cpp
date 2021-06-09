@@ -54,11 +54,11 @@ TEST(FactorizationTest, factorize) {
 
 		ct::ContractionResult::cost_t expectedContractionCost = 0;
 		// T_T[il] = T[ikdc] T[cdlk]
-		ct::BinaryTerm intermdediate1(intermediateResult1, 1.0, ct::Tensor(tensors[0]), ct::Tensor(tensors[3]));
+		ct::BinaryTerm intermdediate1(intermediateResult2, 1.0, ct::Tensor(tensors[0]), ct::Tensor(tensors[3]));
 		// *2 as the indices contain an implicit spin and run over alpha and beta cases
 		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
 		// T_H[il] = H[jlba] T[abij]
-		ct::BinaryTerm intermdediate2(intermediateResult2, 1.0, ct::Tensor(tensors[1]), ct::Tensor(tensors[2]));
+		ct::BinaryTerm intermdediate2(intermediateResult1, 1.0, ct::Tensor(tensors[1]), ct::Tensor(tensors[2]));
 		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
 		// LCCD[] = T_T[il] T_H[il]
 		ct::BinaryTerm expectedResult(resultTensor, 2.0, ct::Tensor(intermediateResult1),
