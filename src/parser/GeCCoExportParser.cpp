@@ -263,6 +263,12 @@ Terms::GeneralTerm::tensor_list_t
 
 	if (m_reader.peek() == '/') {
 		// The contraction String was empty and skipWS as already skipped to the next section
+		// That means that all Tensors contained in this Term are skalars
+
+		for (const std::string &currentName : operatorNames) {
+			tensors.push_back(Terms::Tensor(std::move(currentName)));
+		}
+
 		return tensors;
 	}
 
