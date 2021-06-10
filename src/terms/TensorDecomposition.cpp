@@ -77,7 +77,7 @@ GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term)
 	return GeneralTerm(copy);
 }
 
-TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &term) const {
+TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &term, bool *wasSuccessful) const {
 	TensorDecomposition::decomposed_terms_t result;
 
 	bool substitionApplied = false;
@@ -135,6 +135,10 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 		tensors.insert(tensors.end(), tensorIterable.begin(), tensorIterable.end());
 
 		result.push_back(GeneralTerm(term.getResult(), term.getPrefactor(), std::move(tensors)));
+	}
+
+	if (wasSuccessful) {
+		*wasSuccessful = substitionApplied;
 	}
 
 	return result;

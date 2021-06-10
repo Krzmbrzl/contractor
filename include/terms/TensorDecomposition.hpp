@@ -5,8 +5,8 @@
 #include "terms/Tensor.hpp"
 #include "terms/Term.hpp"
 
-#include <vector>
 #include <ostream>
+#include <vector>
 
 namespace Contractor::Terms {
 
@@ -47,11 +47,13 @@ public:
 	 * Apply the decomposition to the given Term
 	 *
 	 * @param term The Term to perform the decomposition in
+	 * @param wasSuccessful An optional pointer to a boolean flag that will hold whether or not
+	 * the decomposition was successfully applied to the given Term.
 	 * @returns A list of GeneralTerm objects representing the decomposed parts of the
 	 * original part. If this decoposition does not involve substitutiing for a sum of
 	 * Tensor products, the length of the returned list is 1.
 	 */
-	decomposed_terms_t apply(const Term &term) const;
+	decomposed_terms_t apply(const Term &term, bool *wasSuccessful = nullptr) const;
 
 	/**
 	 * @returns The list of substitutions that make up this decomposition. Note that the
