@@ -51,7 +51,7 @@ public:
 	 * original part. If this decoposition does not involve substitutiing for a sum of
 	 * Tensor products, the length of the returned list is 1.
 	 */
-	decomposed_terms_t apply(const Term &term);
+	decomposed_terms_t apply(const Term &term) const;
 
 	/**
 	 * @returns The list of substitutions that make up this decomposition. Note that the

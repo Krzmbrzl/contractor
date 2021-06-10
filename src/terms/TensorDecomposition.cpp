@@ -77,7 +77,7 @@ GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term)
 	return GeneralTerm(copy);
 }
 
-TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &term) {
+TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &term) const {
 	TensorDecomposition::decomposed_terms_t result;
 
 	for (const GeneralTerm &sub : m_substutions) {
