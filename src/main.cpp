@@ -5,8 +5,8 @@
 #include "parser/GeCCoExportParser.cpp"
 #include "parser/IndexSpaceParser.cpp"
 #include "parser/SymmetryListParser.cpp"
-#include "utils/IndexSpaceResolver.cpp"
 #include "processor/Factorization.hpp"
+#include "utils/IndexSpaceResolver.cpp"
 
 #include <boost/program_options/errors.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -17,10 +17,10 @@
 #include <fstream>
 #include <iostream>
 
-namespace ct = Contractor::Terms;
-namespace cu = Contractor::Utils;
-namespace cp = Contractor::Parser;
-namespace cf = Contractor::Formatting;
+namespace ct  = Contractor::Terms;
+namespace cu  = Contractor::Utils;
+namespace cp  = Contractor::Parser;
+namespace cf  = Contractor::Formatting;
 namespace cpr = Contractor::Processor;
 
 struct CommandLineArguments {
@@ -158,15 +158,13 @@ int main(int argc, const char **argv) {
 	printer << "Factorization into binary terms:\n";
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
 		ct::ContractionResult::cost_t cost;
-		std::vector<ct::BinaryTerm> currentBinary = cpr::factorize(currentGeneral, resolver, &cost);
+		std::vector< ct::BinaryTerm > currentBinary = cpr::factorize(currentGeneral, resolver, &cost);
 
 		printer << currentGeneral << " factorizes to\n";
 		for (const ct::BinaryTerm &current : currentBinary) {
 			printer << "  " << current << "\n";
 		}
 		printer << "Estimated cost of carrying out the contraction: " << cost << "\n\n";
-
-
 	}
 
 	// Spin-integration
