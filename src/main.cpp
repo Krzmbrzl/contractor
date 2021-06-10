@@ -144,8 +144,13 @@ int main(int argc, const char **argv) {
 
 	}
 
-	// Print factorized terms
-	// Print estimated cost of each factorization
+	// Spin-integration
+
+	// Spin summation
+
+	// Symmetrization of results
+
+	// Conversion to ITF
 
 	return Contractor::ExitCodes::OK;
 }
