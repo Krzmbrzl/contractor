@@ -117,9 +117,10 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(decomposed[0], expected);
 	}
 	{
-		// This time the decomposition is specified in terms of a Tensor that refers to the same element as the substitute in
-		// the original Term. That means that the corresponding indices of the decomposition term have to be mapped to the actual
-		// indices in the Term in order to make sure that the result contains the correct indices.
+		// This time the decomposition is specified in terms of a Tensor that refers to the same element as the
+		// substitute in the original Term. That means that the corresponding indices of the decomposition term have to
+		// be mapped to the actual indices in the Term in order to make sure that the result contains the correct
+		// indices.
 		ct::Index altI(i.getSpace(), 20, i.getType(), i.getSpin());
 		ct::Index altJ(j.getSpace(), 21, j.getType(), j.getSpin());
 		ct::Index altA(a.getSpace(), 20, a.getType(), a.getSpin());
@@ -131,8 +132,8 @@ TEST(TensorDecompositionTest, apply) {
 
 		ct::Tensor substituted("S", { ct::Index(altI), ct::Index(c) });
 		constexpr ct::Term::factor_t decompositionFactor           = -3;
-		ct::TensorDecomposition::substitution_list_t substitutions = { ct::GeneralTerm(altSubstitute, decompositionFactor,
-																					   { ct::Tensor(substituted) }) };
+		ct::TensorDecomposition::substitution_list_t substitutions = { ct::GeneralTerm(
+			altSubstitute, decompositionFactor, { ct::Tensor(substituted) }) };
 
 		ct::TensorDecomposition decomposition(substitutions);
 
@@ -153,8 +154,8 @@ TEST(TensorDecompositionTest, apply) {
 		// No-op substitution
 		ct::Tensor substituted1("S1", {});
 		ct::Tensor substituted2("S2", {});
-		constexpr ct::Term::factor_t factor1                       = 2.0;
-		constexpr ct::Term::factor_t factor2                       = -1;
+		constexpr ct::Term::factor_t factor1 = 2.0;
+		constexpr ct::Term::factor_t factor2 = -1;
 		ct::Tensor dummyTensor("IDontExist");
 		ct::TensorDecomposition::substitution_list_t substitutions = {
 			ct::GeneralTerm(dummyTensor, factor1, { ct::Tensor(substituted1) }),
