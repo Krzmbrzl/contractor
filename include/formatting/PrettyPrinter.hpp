@@ -17,6 +17,7 @@ namespace Contractor::Terms {
 class Term;
 class IndexPermutation;
 class IndexSpaceMeta;
+class TensorDecomposition;
 }; // namespace Contractor::Terms
 
 namespace Contractor::Utils {
@@ -53,6 +54,7 @@ public:
 	void print(const Terms::Index::Spin &spin);
 	void print(const Terms::IndexSpaceMeta &meta);
 	void print(const Utils::IndexSpaceResolver &resolver);
+	void print(const Terms::TensorDecomposition &decomposition);
 
 	void printTensorType(const Terms::Tensor &tensor, const Utils::IndexSpaceResolver &resolver);
 	void printSymmetries(const Terms::Tensor &tensor);

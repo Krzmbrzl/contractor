@@ -1,5 +1,6 @@
 #include "ExitCodes.hpp"
 #include "formatting/PrettyPrinter.cpp"
+#include "parser/DecompositionParser.cpp"
 #include "parser/DecompositionParser.hpp"
 #include "parser/GeCCoExportParser.cpp"
 #include "parser/IndexSpaceParser.cpp"
@@ -109,6 +110,8 @@ int main(int argc, const char **argv) {
 	cu::IndexSpaceResolver resolver          = parse< cp::IndexSpaceParser >(args.indexSpaceFile);
 	cp::GeCCoExportParser::term_list_t terms = parse< cp::GeCCoExportParser >(args.geccoExportFile, resolver);
 	std::vector< ct::Tensor > symmetries     = parse< cp::SymmetryListParser >(args.symmetryFile, resolver);
+	cp::DecompositionParser::decomposition_list_t decompositions =
+		parse< cp::DecompositionParser >(args.decompositionFile, resolver);
 
 	// TODO: Validate that all indices that are neither creator nor annihilator don't have spin
 	// and creators and annihilators always have spin "Both"
@@ -125,13 +128,35 @@ int main(int argc, const char **argv) {
 
 	printer << "\n\nThese are the read in Terms:\n" << terms << "\n\n";
 
+	// Print decomposition
+	printer << "These are the specified decompositions:\n";
+	for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
+		printer << currentDecomposition << "\n";
+	}
+	printer << "\n\n";
+
 	// Transfer symmetry to the Tensor objects in terms
 
 	// Print/Log terms again
 
+	// Apply decomposition
+	printer << "Applying decompositions:\n";
+	std::vector< ct::GeneralTerm > decomposedTerms;
+	for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
+		for (const ct::GeneralTerm &currentTerm : terms) {
+			printer << currentTerm << " decomposes to\n";
+			for (ct::GeneralTerm &current : currentDecomposition.apply(currentTerm)) {
+				printer << "  " << current << "\n";
+				decomposedTerms.push_back(std::move(current));
+			}
+		}
+	}
+
+	printer << "\n\n";
+
 	// Factorize terms
 	printer << "Factorization into binary terms:\n";
-	for (const ct::GeneralTerm &currentGeneral : terms) {
+	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
 		ct::ContractionResult::cost_t cost;
 		std::vector<ct::BinaryTerm> currentBinary = cpr::factorize(currentGeneral, resolver, &cost);
 

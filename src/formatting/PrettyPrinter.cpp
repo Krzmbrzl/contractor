@@ -2,6 +2,7 @@
 #include "terms/Index.hpp"
 #include "terms/IndexPermutation.hpp"
 #include "terms/Tensor.hpp"
+#include "terms/TensorDecomposition.hpp"
 #include "terms/Term.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
@@ -198,6 +199,26 @@ void PrettyPrinter::print(const Utils::IndexSpaceResolver &resolver) {
 		*m_stream << "  ";
 		print(current);
 		*m_stream << "\n";
+	}
+}
+
+void PrettyPrinter::print(const Terms::TensorDecomposition &decomposition) {
+	assert(m_stream != nullptr);
+
+	if (decomposition.getSubstitutions().size() > 1) {
+		*m_stream << "Iterative substitution where\n";
+
+		for (std::size_t i = 0; i < decomposition.getSubstitutions().size(); ++i) {
+			*m_stream << "  in run " << (i + 1) << " we substitute ";
+			print(decomposition.getSubstitutions()[i]);
+
+			if (i + 1 < decomposition.getSubstitutions().size()) {
+				*m_stream << "\n";
+			}
+		}
+	} else {
+		*m_stream << "Substitute ";
+		print(decomposition.getSubstitutions()[0]);
 	}
 }
 
