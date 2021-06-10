@@ -80,12 +80,14 @@ GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term)
 TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &term) const {
 	TensorDecomposition::decomposed_terms_t result;
 
+	bool substitionApplied = false;
 	for (const GeneralTerm &sub : m_substutions) {
 		// We have to make sure that the indices in our substitution don't collide with further indices
 		// in the given term
 		GeneralTerm currentSubstitution = makeIndicesUnique(sub, term);
 
 		GeneralTerm::tensor_list_t tensorList;
+		bool currentSubstitutionApplied = false;
 		for (const Tensor &currentTensor : term.getTensors()) {
 			if (currentTensor.refersToSameElement(currentSubstitution.getResult())) {
 				// This is the Tensor we intend to substitute -> Instead of the Tensor itself, push the
@@ -109,13 +111,30 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 				// Append all Tensors from currentSubstitution to the end of tensorList
 				tensorList.insert(tensorList.end(), currentSubstitution.getTensors().begin(),
 								  currentSubstitution.getTensors().end());
+
+				currentSubstitutionApplied = true;
 			} else {
 				tensorList.push_back(currentTensor);
 			}
 		}
 
-		result.push_back(GeneralTerm(term.getResult(), term.getPrefactor() * currentSubstitution.getPrefactor(),
-									 std::move(tensorList)));
+		if (currentSubstitutionApplied) {
+			result.push_back(GeneralTerm(term.getResult(), term.getPrefactor() * currentSubstitution.getPrefactor(),
+										 std::move(tensorList)));
+
+			substitionApplied = true;
+		}
+	}
+
+	if (!substitionApplied) {
+		// The substitution did not alter the given Term as it does not apply to it
+		// -> return the Tensors from the original term unaltered
+
+		GeneralTerm::tensor_list_t tensors;
+		auto tensorIterable = term.getTensors();
+		tensors.insert(tensors.end(), tensorIterable.begin(), tensorIterable.end());
+
+		result.push_back(GeneralTerm(term.getResult(), term.getPrefactor(), std::move(tensors)));
 	}
 
 	return result;

@@ -93,7 +93,6 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(decomposed[0], expected1);
 		ASSERT_EQ(decomposed[1], expected2);
 	}
-
 	{
 		// Replace with single term that collides with indices in the second Tensor, while having common indices with
 		// the substituted Tensor
@@ -149,5 +148,24 @@ TEST(TensorDecompositionTest, apply) {
 
 		ASSERT_EQ(decomposed.size(), 1);
 		ASSERT_EQ(decomposed[0], expected);
+	}
+	{
+		// No-op substitution
+		ct::Tensor substituted1("S1", {});
+		ct::Tensor substituted2("S2", {});
+		constexpr ct::Term::factor_t factor1                       = 2.0;
+		constexpr ct::Term::factor_t factor2                       = -1;
+		ct::Tensor dummyTensor("IDontExist");
+		ct::TensorDecomposition::substitution_list_t substitutions = {
+			ct::GeneralTerm(dummyTensor, factor1, { ct::Tensor(substituted1) }),
+			ct::GeneralTerm(dummyTensor, factor2, { ct::Tensor(substituted2) })
+		};
+
+		ct::TensorDecomposition decomposition(substitutions);
+
+		ct::TensorDecomposition::decomposed_terms_t decomposed = decomposition.apply(originalTerm);
+
+		ASSERT_EQ(decomposed.size(), 1);
+		ASSERT_EQ(decomposed[0], originalTerm);
 	}
 }
