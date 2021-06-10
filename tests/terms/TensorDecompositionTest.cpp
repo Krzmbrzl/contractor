@@ -154,4 +154,30 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(decomposed.size(), 1);
 		ASSERT_EQ(decomposed[0], originalTerm);
 	}
+	{
+		// Substitute H[ijab] with B[i,a,q] B[j,b,q] - B[i,b,q] B[j,a,q]
+
+		ct::Tensor b1("B", { idx("i+"), idx("a"), idx("q!") });
+		ct::Tensor b2("B", { idx("j+"), idx("b"), idx("q!") });
+		ct::Tensor b3("B", { idx("i+"), idx("b"), idx("q!") });
+		ct::Tensor b4("B", { idx("j+"), idx("a"), idx("q!") });
+
+		constexpr ct::Term::factor_t factor1 = -0.5;
+		constexpr ct::Term::factor_t factor2 = 2;
+		ct::TensorDecomposition decomposition({
+			ct::GeneralTerm(substitute, factor1, { ct::Tensor(b1), ct::Tensor(b2) }),
+			ct::GeneralTerm(substitute, factor2, { ct::Tensor(b3), ct::Tensor(b4) }),
+		});
+
+		ct::GeneralTerm expected1(originalTerm.getResult(), originalTerm.getPrefactor() * factor1,
+								  { ct::Tensor(b1), ct::Tensor(b2), ct::Tensor(secondTensor) });
+		ct::GeneralTerm expected2(originalTerm.getResult(), originalTerm.getPrefactor() * factor2,
+								  { ct::Tensor(b3), ct::Tensor(b4), ct::Tensor(secondTensor) });
+
+		ct::TensorDecomposition::decomposed_terms_t decomposedTerms = decomposition.apply(originalTerm);
+
+		ASSERT_EQ(decomposedTerms.size(), 2);
+		ASSERT_EQ(decomposedTerms[0], expected1);
+		ASSERT_EQ(decomposedTerms[1], expected2);
+	}
 }
