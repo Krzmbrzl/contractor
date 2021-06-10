@@ -142,13 +142,30 @@ int main(int argc, const char **argv) {
 	// Apply decomposition
 	printer << "Applying decompositions:\n";
 	std::vector< ct::GeneralTerm > decomposedTerms;
-	for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
-		for (const ct::GeneralTerm &currentTerm : terms) {
-			printer << currentTerm << " decomposes to\n";
-			for (ct::GeneralTerm &current : currentDecomposition.apply(currentTerm)) {
-				printer << "  " << current << "\n";
-				decomposedTerms.push_back(std::move(current));
+	for (const ct::GeneralTerm &currentTerm : terms) {
+		bool wasDecomposed = false;
+
+		for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
+			bool decompositionApplied = false;
+			ct::TensorDecomposition::decomposed_terms_t decTerms =
+				currentDecomposition.apply(currentTerm, &decompositionApplied);
+
+			if (decompositionApplied) {
+				// Only print the decomposed terms if the decomposition actually applied
+				printer << currentTerm << " decomposes to\n";
+
+				for (ct::GeneralTerm &current : decTerms) {
+					printer << "  " << current << "\n";
+					decomposedTerms.push_back(std::move(current));
+				}
+
+				wasDecomposed = true;
 			}
+		}
+
+		if (!wasDecomposed) {
+			// Add the term to the list nonetheless in order to not lose it for further processing
+			decomposedTerms.push_back(currentTerm);
 		}
 	}
 
