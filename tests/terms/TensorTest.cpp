@@ -2,6 +2,8 @@
 #include "terms/IndexPermutation.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include "IndexHelper.hpp"
+
 #include <string_view>
 #include <utility>
 
@@ -9,47 +11,6 @@
 
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
-
-static cu::IndexSpaceResolver resolver({
-	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
-	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
-});
-
-static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id,
-							 ct::Index::Type type = ct::Index::Type::Creator) {
-	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
-}
-
-static ct::Index createIndex(const std::string_view spec) {
-	ct::IndexSpace::id_t spaceID;
-	char base;
-
-	switch (spec[0]) {
-		case 'a':
-		case 'b':
-		case 'c':
-		case 'd':
-			spaceID = resolver.resolve("virtual").getID();
-			base    = 'a';
-			break;
-		case 'i':
-		case 'j':
-		case 'k':
-		case 'l':
-			spaceID = resolver.resolve("occupied").getID();
-			base    = 'i';
-			break;
-		default:
-			throw "Unsupported index spec";
-	}
-
-	ct::Index::id_t id = spec[0] - base;
-
-	std::cout << "Space " << spaceID << " ID: " << id << std::endl;
-
-	return ct::Index(ct::IndexSpace(spaceID), id,
-					 spec.size() > 1 ? ct::Index::Type::Creator : ct::Index::Type::Annihilator, ct::Index::Spin::Both);
-}
 
 
 TEST(TensorTest, getter) {
@@ -61,22 +22,14 @@ TEST(TensorTest, getter) {
 	ASSERT_EQ(empty1.getIndices().size(), 0);
 	ASSERT_EQ(empty2.getIndices().size(), 0);
 
-	ct::Tensor::index_list_t creators;
-	creators.push_back(createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator));
-	creators.push_back(createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator));
-	creators.push_back(createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator));
-	creators.push_back(createIndex(resolver.resolve("virtual"), 3, ct::Index::Type::Creator));
+	ct::Tensor::index_list_t creators = { idx("j+"), idx("k+"), idx("a+"), idx("c+") };
 
 	ct::Tensor creatorsOnly("H", creators);
 
 	ASSERT_EQ(creatorsOnly.getName(), "H");
 	ASSERT_EQ(creatorsOnly.getIndices(), creators);
 
-	ct::Tensor::index_list_t annihilators;
-	annihilators.push_back(createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator));
-	annihilators.push_back(createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Annihilator));
-	annihilators.push_back(createIndex(resolver.resolve("occupied"), 6, ct::Index::Type::Annihilator));
-	annihilators.push_back(createIndex(resolver.resolve("virtual"), 2, ct::Index::Type::Annihilator));
+	ct::Tensor::index_list_t annihilators = { idx("a"), idx("j"), idx("n"), idx("b") };
 
 	ct::Tensor annihilatorsOnly("H", annihilators);
 
@@ -101,45 +54,39 @@ TEST(TensorTest, equality) {
 	}
 
 	{
-		ct::Tensor element1("H", { createIndex(resolver.resolve("occupied"), 0) });
+		ct::Tensor element1("H", { idx("i+") });
 		ct::Tensor element2("H");
-		ct::Tensor element3("H", { createIndex(resolver.resolve("occupied"), 0) });
+		ct::Tensor element3("H", { idx("i+") });
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
 	}
 
 	{
-		ct::Tensor element1("H", { createIndex(resolver.resolve("occupied"), 0) });
-		ct::Tensor element2("H", { createIndex(resolver.resolve("occupied"), 1) });
-		ct::Tensor element3("H", { createIndex(resolver.resolve("occupied"), 0) });
+		ct::Tensor element1("H", { idx("i+") });
+		ct::Tensor element2("H", { idx("j+") });
+		ct::Tensor element3("H", { idx("i+") });
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
 	}
 
 	{
-		ct::Tensor element1("H", { createIndex(resolver.resolve("occupied"), 0) });
-		ct::Tensor element2("H", { createIndex(resolver.resolve("virtual"), 0) });
-		ct::Tensor element3("H", { createIndex(resolver.resolve("occupied"), 0) });
+		ct::Tensor element1("H", { idx("i+") });
+		ct::Tensor element2("H", { idx("a+") });
+		ct::Tensor element3("H", { idx("i+") });
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
 	}
 
 	{
-		ct::IndexPermutation p(
-			std::make_pair(createIndex(resolver.resolve("occupied"), 0), createIndex(resolver.resolve("occupied"), 1)));
+		ct::IndexPermutation p(ct::IndexPermutation::index_pair_t(idx("i+"), idx("j+")));
 		ct::Tensor::symmetry_list_t permutations = { ct::IndexPermutation(p) };
 
-		ct::Tensor element1(
-			"H", { createIndex(resolver.resolve("occupied"), 0), createIndex(resolver.resolve("occupied"), 1) },
-			permutations);
-		ct::Tensor element2(
-			"H", { createIndex(resolver.resolve("virtual"), 0), createIndex(resolver.resolve("occupied"), 1) });
-		ct::Tensor element3(
-			"H", { createIndex(resolver.resolve("occupied"), 0), createIndex(resolver.resolve("occupied"), 1) },
-			permutations);
+		ct::Tensor element1("H", { idx("i+"), idx("j+") }, permutations);
+		ct::Tensor element2("H", { idx("a+"), idx("j+") });
+		ct::Tensor element3("H", { idx("i+"), idx("j+") }, permutations);
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
@@ -203,8 +150,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_FALSE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+") });
+		ct::Tensor second("g", { idx("j+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -212,8 +159,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_TRUE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+") });
+		ct::Tensor second("g", { idx("a+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -221,10 +168,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_FALSE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 21, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+"), idx("k+") });
+		ct::Tensor second("g", { idx("l+"), idx("m+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -232,10 +177,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_TRUE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Annihilator) });
+		ct::Tensor first("g", { idx("i+"), idx("j+") });
+		ct::Tensor second("g", { idx("k+"), idx("l") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -243,10 +186,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_FALSE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 7, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Annihilator) });
+		ct::Tensor first("g", { idx("i+"), idx("i+") });
+		ct::Tensor second("g", { idx("k+"), idx("l+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -254,10 +195,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_FALSE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+"), idx("i+") });
+		ct::Tensor second("g", { idx("k+"), idx("k+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -265,12 +204,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_TRUE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 10, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+"), idx("i+"), idx("j+") });
+		ct::Tensor second("g", { idx("k+"), idx("k+"), idx("k+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -278,12 +213,8 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_FALSE(second.refersToSameElement(first));
 	}
 	{
-		ct::Tensor first("g", { createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 10, ct::Index::Type::Creator),
-								createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator) });
-		ct::Tensor second("g", { createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator),
-								 createIndex(resolver.resolve("occupied"), 13, ct::Index::Type::Creator) });
+		ct::Tensor first("g", { idx("i+"), idx("j+"), idx("i+") });
+		ct::Tensor second("g", { idx("k+"), idx("l+"), idx("k+") });
 
 		ASSERT_TRUE(first.refersToSameElement(first));
 		ASSERT_TRUE(second.refersToSameElement(second));
@@ -304,19 +235,19 @@ TEST(TensorTest, transferSymmetry) {
 		ASSERT_EQ(transformed, original);
 	}
 	{
-		ct::Index si1 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index si2 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index si3 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index si4 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index si1 = idx("i+");
+		ct::Index si2 = idx("j+");
+		ct::Index si3 = idx("j");
+		ct::Index si4 = idx("j");
 		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si2));
 		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
 		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
 
-		ct::Index i1 = createIndex(resolver.resolve("occupied"), 10, ct::Index::Type::Creator);
-		ct::Index i2 = createIndex(resolver.resolve("occupied"), 11, ct::Index::Type::Creator);
-		ct::Index i3 = createIndex(resolver.resolve("occupied"), 10, ct::Index::Type::Annihilator);
-		ct::Index i4 = createIndex(resolver.resolve("occupied"), 11, ct::Index::Type::Annihilator);
+		ct::Index i1 = idx("k+");
+		ct::Index i2 = idx("l+");
+		ct::Index i3 = idx("k");
+		ct::Index i4 = idx("l");
 		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si2));
 		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
@@ -328,19 +259,19 @@ TEST(TensorTest, transferSymmetry) {
 		ASSERT_EQ(transformed, expected);
 	}
 	{
-		ct::Index si1 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index si2 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index si3 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index si4 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index si1 = idx("i+");
+		ct::Index si2 = idx("j+");
+		ct::Index si3 = idx("j");
+		ct::Index si4 = idx("j");
 		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si2));
 		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
 		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
 
-		ct::Index i1 = createIndex(resolver.resolve("occupied"), 23, ct::Index::Type::Creator);
-		ct::Index i2 = createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator);
-		ct::Index i3 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
-		ct::Index i4 = createIndex(resolver.resolve("occupied"), 12, ct::Index::Type::Annihilator);
+		ct::Index i1 = idx("l+");
+		ct::Index i2 = idx("k+");
+		ct::Index i3 = idx("j");
+		ct::Index i4 = idx("m");
 		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si2));
 		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
@@ -353,19 +284,19 @@ TEST(TensorTest, transferSymmetry) {
 	}
 	{
 		// Duplicate indices
-		ct::Index si1 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index si2 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index si3 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index si4 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index si1 = idx("i+");
+		ct::Index si2 = idx("i+");
+		ct::Index si3 = idx("j");
+		ct::Index si4 = idx("j");
 		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si3));
 		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
 		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
 
-		ct::Index i1 = createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator);
-		ct::Index i2 = createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator);
-		ct::Index i3 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
-		ct::Index i4 = createIndex(resolver.resolve("occupied"), 12, ct::Index::Type::Annihilator);
+		ct::Index i1 = idx("p+");
+		ct::Index i2 = idx("p+");
+		ct::Index i3 = idx("j");
+		ct::Index i4 = idx("l");
 		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si3));
 		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
@@ -378,19 +309,19 @@ TEST(TensorTest, transferSymmetry) {
 	}
 	{
 		// Destination tensor already has some symmetry (which will be overwritten)
-		ct::Index si1 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index si2 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index si3 = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index si4 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index si1 = idx("i+");
+		ct::Index si2 = idx("j+");
+		ct::Index si3 = idx("j");
+		ct::Index si4 = idx("j");
 		ct::IndexPermutation sp1(ct::IndexPermutation::index_pair_t(si1, si3));
 		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexPermutation(sp1) };
 		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
 
-		ct::Index i1 = createIndex(resolver.resolve("occupied"), 8, ct::Index::Type::Creator);
-		ct::Index i2 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
-		ct::Index i3 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
-		ct::Index i4 = createIndex(resolver.resolve("occupied"), 12, ct::Index::Type::Annihilator);
+		ct::Index i1 = idx("l+");
+		ct::Index i2 = idx("k+");
+		ct::Index i3 = idx("j");
+		ct::Index i4 = idx("m");
 		ct::IndexPermutation p1(ct::IndexPermutation::index_pair_t(si1, si3));
 		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
 		ct::Tensor::symmetry_list_t symmetries = { ct::IndexPermutation(p1) };
@@ -405,9 +336,9 @@ TEST(TensorTest, transferSymmetry) {
 
 TEST(TensorTest, replaceIndex) {
 	{
-		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
-		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
+		ct::Index index1 = idx("j+");
+		ct::Index index2 = idx("k+");
+		ct::Index index3 = idx("l+");
 
 		ct::Tensor expected("H", { ct::Index(index3), ct::Index(index2) },
 							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index3, index2)) });
@@ -419,9 +350,9 @@ TEST(TensorTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 	{
-		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
-		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
+		ct::Index index1 = idx("j+");
+		ct::Index index2 = idx("k+");
+		ct::Index index3 = idx("l+");
 
 		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index3) },
 							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index3)) });
@@ -434,10 +365,10 @@ TEST(TensorTest, replaceIndex) {
 	}
 	{
 		// Replacing a non-existent index is a no-op
-		ct::Index index1 = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-		ct::Index index2 = createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator);
-		ct::Index index3 = createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator);
-		ct::Index dummy  = createIndex(resolver.resolve("occupied"), 4, ct::Index::Type::Creator);
+		ct::Index index1 = idx("j+");
+		ct::Index index2 = idx("k+");
+		ct::Index index3 = idx("l+");
+		ct::Index dummy  = idx("m+");
 
 		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index2) },
 							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2)) });
@@ -488,11 +419,11 @@ TEST(TensorTest, getIndexMapping) {
 TEST(TensorTest, contract) {
 	{
 		// Contraction over a single common index
-		ct::Tensor t1("T1", { createIndex("i+") });
-		ct::Tensor t2("T2", { createIndex("i") });
+		ct::Tensor t1("T1", { idx("i+") });
+		ct::Tensor t2("T2", { idx("i") });
 
 		ct::Tensor expectedResult("T1_T2", {});
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(createIndex("i").getSpace()).getSize() * 2;
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize() * 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -501,10 +432,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// No contraction possible
-		ct::Tensor t1("T1", { createIndex("i+") });
-		ct::Tensor t2("T2", { createIndex("j") });
+		ct::Tensor t1("T1", { idx("i+") });
+		ct::Tensor t2("T2", { idx("j") });
 
-		ct::Tensor expectedResult("T1_T2", { createIndex("i+"), createIndex("j") });
+		ct::Tensor expectedResult("T1_T2", { idx("i+"), idx("j") });
 		ct::ContractionResult::cost_t expectedCost = 0;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
@@ -514,11 +445,11 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// Contraction over a single common index with other indices present as well
-		ct::Tensor t1("T1", { createIndex("a"), createIndex("i+") });
-		ct::Tensor t2("T2", { createIndex("i"), createIndex("b+") });
+		ct::Tensor t1("T1", { idx("a"), idx("i+") });
+		ct::Tensor t2("T2", { idx("i"), idx("b+") });
 
-		ct::Tensor expectedResult("T1_T2", { createIndex("a"), createIndex("b+") });
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(createIndex("i").getSpace()).getSize() * 2;
+		ct::Tensor expectedResult("T1_T2", { idx("a"), idx("b+") });
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize() * 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -527,12 +458,12 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// Contraction over two common indices
-		ct::Tensor t1("T1", { createIndex("a"), createIndex("i+") });
-		ct::Tensor t2("T2", { createIndex("i"), createIndex("b"), createIndex("a+") });
+		ct::Tensor t1("T1", { idx("a"), idx("i+") });
+		ct::Tensor t2("T2", { idx("i"), idx("b"), idx("a+") });
 
-		ct::Tensor expectedResult("T1_T2", { createIndex("b") });
-		ct::ContractionResult::cost_t expectedCost = (resolver.getMeta(createIndex("i").getSpace()).getSize() * 2)
-													 * (resolver.getMeta(createIndex("a").getSpace()).getSize() * 2);
+		ct::Tensor expectedResult("T1_T2", { idx("b") });
+		ct::ContractionResult::cost_t expectedCost = (resolver.getMeta(idx("i").getSpace()).getSize() * 2)
+													 * (resolver.getMeta(idx("a").getSpace()).getSize() * 2);
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -541,10 +472,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// "Contraction" with scalar
-		ct::Tensor t1("T1", { createIndex("i") });
+		ct::Tensor t1("T1", { idx("i") });
 		ct::Tensor t2("T2", {});
 
-		ct::Tensor expectedResult("T1_T2", { createIndex("i") });
+		ct::Tensor expectedResult("T1_T2", { idx("i") });
 		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
@@ -554,10 +485,10 @@ TEST(TensorTest, contract) {
 	}
 	{
 		// "Contraction" with scalar (reversed)
-		ct::Tensor t1("T1", { createIndex("i") });
+		ct::Tensor t1("T1", { idx("i") });
 		ct::Tensor t2("T2", {});
 
-		ct::Tensor expectedResult("T1_T2", { createIndex("i") });
+		ct::Tensor expectedResult("T1_T2", { idx("i") });
 		ct::ContractionResult::cost_t expectedCost = 1;
 
 		ct::ContractionResult result = t2.contract(t1, resolver);

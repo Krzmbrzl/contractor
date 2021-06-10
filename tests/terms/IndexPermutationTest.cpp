@@ -3,23 +3,16 @@
 #include "terms/Tensor.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include "IndexHelper.hpp"
+
 #include <gtest/gtest.h>
 
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
 
-static cu::IndexSpaceResolver resolver({
-	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
-	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
-});
-
-static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id, ct::Index::Type type) {
-	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
-}
-
 TEST(IndexPermutation, getter) {
-	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-	ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
+	ct::Index firstIndex  = idx("i+");
+	ct::Index secondIndex = idx("j+");
 
 	auto pair = std::make_pair(firstIndex, secondIndex);
 
@@ -32,10 +25,10 @@ TEST(IndexPermutation, getter) {
 }
 
 TEST(IndexPermutationTest, apply) {
-	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-	ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = idx("i+");
+	ct::Index secondIndex = idx("j+");
+	ct::Index thirdIndex  = idx("i");
+	ct::Index fourthIndex = idx("j");
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
@@ -89,9 +82,9 @@ TEST(IndexPermutationTest, apply) {
 }
 
 TEST(IndexPermutationTest, applyWithDuplicateIndices) {
-	ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-	ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-	ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+	ct::Index firstIndex  = idx("i+");
+	ct::Index thirdIndex  = idx("i");
+	ct::Index fourthIndex = idx("j");
 
 	ct::Tensor original(
 		"H", { ct::Index(firstIndex), ct::Index(firstIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
@@ -114,9 +107,9 @@ TEST(IndexPermutationTest, applyWithDuplicateIndices) {
 
 TEST(IndexPermutationTest, replaceIndex) {
 	{
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("i");
+		ct::Index thirdIndex  = idx("j");
 
 		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(thirdIndex, secondIndex) });
 
@@ -126,9 +119,9 @@ TEST(IndexPermutationTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 	{
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("i");
+		ct::Index thirdIndex  = idx("j");
 
 		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(firstIndex, thirdIndex) });
 
@@ -138,10 +131,10 @@ TEST(IndexPermutationTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 	{
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
-		ct::Index dummyIndex  = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("i");
+		ct::Index thirdIndex  = idx("j");
+		ct::Index dummyIndex  = idx("j");
 
 		ct::IndexPermutation expected({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex) });
 
