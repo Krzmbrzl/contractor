@@ -22,7 +22,7 @@ TEST(TensorDecompositionTest, apply) {
 	ct::Tensor result("Res", {});
 	constexpr ct::Term::factor_t originalFactor = 1.0;
 
-	ct::Tensor substitute("H", { idx("i+"), idx("j+"), idx("a+"), idx("b+") });
+	ct::Tensor substitute("H", { idx("i+"), idx("j+"), idx("a"), idx("b") });
 	ct::Tensor secondTensor("T", { idx("i+"), idx("k+"), idx("c+") });
 
 	// Res = H[ij,ab] T[ik,c]
@@ -113,7 +113,7 @@ TEST(TensorDecompositionTest, apply) {
 		// substitute in the original Term. That means that the corresponding indices of the decomposition term have to
 		// be mapped to the actual indices in the Term in order to make sure that the result contains the correct
 		// indices.
-		ct::Tensor altSubstitute(substitute.getName(), { idx("m+"), idx("n+"), idx("g+"), idx("h+") });
+		ct::Tensor altSubstitute(substitute.getName(), { idx("m+"), idx("n+"), idx("g"), idx("h") });
 
 		ASSERT_TRUE(altSubstitute.refersToSameElement(substitute));
 
@@ -155,29 +155,69 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(decomposed[0], originalTerm);
 	}
 	{
-		// Substitute H[ijab] with B[i,a,q] B[j,b,q] - B[i,b,q] B[j,a,q]
+		// Substitute H[ij,ab] with B[i,a,q] B[j,b,q] - B[i,b,q] B[j,a,q]
+		// But refer to H via a different Tensor that only refers to the same element
+		ct::Tensor altSubstitute(substitute.getName(), { idx("m+"), idx("n+"), idx("g"), idx("h") });
 
-		ct::Tensor b1("B", { idx("i+"), idx("a"), idx("q!") });
-		ct::Tensor b2("B", { idx("j+"), idx("b"), idx("q!") });
-		ct::Tensor b3("B", { idx("i+"), idx("b"), idx("q!") });
-		ct::Tensor b4("B", { idx("j+"), idx("a"), idx("q!") });
+		ASSERT_TRUE(altSubstitute.refersToSameElement(substitute));
+
+		ct::Tensor b1("B", { idx("m+"), idx("g"), idx("q!") });
+		ct::Tensor b2("B", { idx("n+"), idx("h"), idx("q!") });
+		ct::Tensor b3("B", { idx("m+"), idx("h"), idx("q!") });
+		ct::Tensor b4("B", { idx("n+"), idx("g"), idx("q!") });
+
+		ct::Tensor b1_res("B", { idx("i+"), idx("a"), idx("q!") });
+		ct::Tensor b2_res("B", { idx("j+"), idx("b"), idx("q!") });
+		ct::Tensor b3_res("B", { idx("i+"), idx("b"), idx("q!") });
+		ct::Tensor b4_res("B", { idx("j+"), idx("a"), idx("q!") });
+
 
 		constexpr ct::Term::factor_t factor1 = -0.5;
 		constexpr ct::Term::factor_t factor2 = 2;
 		ct::TensorDecomposition decomposition({
-			ct::GeneralTerm(substitute, factor1, { ct::Tensor(b1), ct::Tensor(b2) }),
-			ct::GeneralTerm(substitute, factor2, { ct::Tensor(b3), ct::Tensor(b4) }),
+			ct::GeneralTerm(altSubstitute, factor1, { ct::Tensor(b1), ct::Tensor(b2) }),
+			ct::GeneralTerm(altSubstitute, factor2, { ct::Tensor(b3), ct::Tensor(b4) }),
 		});
 
 		ct::GeneralTerm expected1(originalTerm.getResult(), originalTerm.getPrefactor() * factor1,
-								  { ct::Tensor(b1), ct::Tensor(b2), ct::Tensor(secondTensor) });
+								  { ct::Tensor(b1_res), ct::Tensor(b2_res), ct::Tensor(secondTensor) });
 		ct::GeneralTerm expected2(originalTerm.getResult(), originalTerm.getPrefactor() * factor2,
-								  { ct::Tensor(b3), ct::Tensor(b4), ct::Tensor(secondTensor) });
+								  { ct::Tensor(b3_res), ct::Tensor(b4_res), ct::Tensor(secondTensor) });
 
 		ct::TensorDecomposition::decomposed_terms_t decomposedTerms = decomposition.apply(originalTerm);
 
 		ASSERT_EQ(decomposedTerms.size(), 2);
 		ASSERT_EQ(decomposedTerms[0], expected1);
 		ASSERT_EQ(decomposedTerms[1], expected2);
+	}
+	{
+		// Replace the Tensor with a replacement that refers to the same element but only because it has changed the
+		// order of two indices in the original substitute Tensor. The difficulty here is that when replacing indices in
+		// order to adapt the indices of the replacement Term to the target Tensor, we will end up in a situation where
+		// we need to replace i -> j and j -> i on a Tensor of the form T[ji]. If the replacing is done iteratively, we
+		// first replace i -> j yielding T[jj] and then by replacing j -> i we produce T[ii] instead of the original
+		// required T[ij].
+		ct::Tensor::index_list_t indices = substitute.getIndices();
+		ASSERT_TRUE(indices.size() >= 2);
+		ASSERT_EQ(indices[0].getSpace(), indices[1].getSpace());
+
+		std::swap(indices[0], indices[1]);
+		ct::Tensor altSubstitute(substitute.getName(), indices, substitute.getIndexSymmetries());
+
+		ASSERT_TRUE(altSubstitute.refersToSameElement(substitute));
+
+		ct::Tensor replacement("R", { indices[0], indices[1] });
+		ct::Tensor replacement_res("R", { substitute.getIndices()[0], substitute.getIndices()[1] });
+
+		constexpr ct::Term::factor_t factor = -0.5;
+		ct::TensorDecomposition decomposition({ ct::GeneralTerm(altSubstitute, factor, { ct::Tensor(replacement) }) });
+
+		ct::GeneralTerm expected(originalTerm.getResult(), originalTerm.getPrefactor() * factor,
+								 { ct::Tensor(replacement_res), ct::Tensor(secondTensor) });
+
+		ct::TensorDecomposition::decomposed_terms_t decomposedTerms = decomposition.apply(originalTerm);
+
+		ASSERT_EQ(decomposedTerms.size(), 1);
+		ASSERT_EQ(decomposedTerms[0], expected);
 	}
 }
