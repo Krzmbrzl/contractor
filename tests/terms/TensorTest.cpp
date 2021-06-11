@@ -381,6 +381,37 @@ TEST(TensorTest, replaceIndex) {
 	}
 }
 
+TEST(TensorTest, replaceIndices) {
+	{
+		ct::Tensor expected("H", { idx("i"), idx("j") });
+		ct::Tensor actual("H", { idx("j"), idx("i") });
+
+		// Switch i and j by replacing i->j and j->i
+		// Note that if we were to apply these separately using the replaceIndex function we'd end
+		// up with either H[ii] or H[jj] instead of the desired H[ij]
+		std::vector< std::pair< ct::Index, ct::Index > > replacements = { { idx("i"), idx("j") },
+																		  { idx("j"), idx("i") } };
+
+		actual.replaceIndices(replacements);
+
+		ASSERT_EQ(actual, expected);
+	}
+	{
+		// Do the same but this time include index symmetries
+		ct::Tensor expected("H", { idx("i"), idx("j") },
+							{ ct::IndexPermutation(ct::IndexPermutation::index_pair_t(idx("i"), idx("j"))) });
+		ct::Tensor actual("H", { idx("j"), idx("i") },
+						  { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(idx("j"), idx("i"))) });
+
+		std::vector< std::pair< ct::Index, ct::Index > > replacements = { { idx("i"), idx("j") },
+																		  { idx("j"), idx("i") } };
+
+		actual.replaceIndices(replacements);
+
+		ASSERT_EQ(actual, expected);
+	}
+}
+
 TEST(TensorTest, getIndexMapping) {
 	ct::Index i(ct::IndexSpace(0), 0, ct::Index::Type::Annihilator);
 	ct::Index j(ct::IndexSpace(0), 1, ct::Index::Type::Annihilator);

@@ -149,6 +149,14 @@ public:
 	void replaceIndex(const Index &source, const Index &replacement);
 
 	/**
+	 * Perform the given index replacements making sure no double-replacements
+	 * occur (that is an index gets replaced and then its replacement gets replaced again).
+	 *
+	 * @param replacements A list of index replacements to be carried out
+	 */
+	void replaceIndices(const std::vector< std::pair< Index, Index > > &replacements);
+
+	/**
 	 * @param other The Tensor to compare to
 	 * @returns Whether both Tensors are actually referring to the same element. This differs
 	 * from equality as the actual index IDs are not important for this, only the relative

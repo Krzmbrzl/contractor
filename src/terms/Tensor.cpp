@@ -144,6 +144,50 @@ void Tensor::replaceIndex(const Index &source, const Index &replacement) {
 	}
 }
 
+void Tensor::replaceIndices(const std::vector< std::pair< Index, Index > > &replacements) {
+	// TODO: Implement and keep IndexSymmetries in sync as well
+	// First replace the indices in the index list
+	auto indexIt = m_indices.begin();
+	while (indexIt != m_indices.end()) {
+		for (const auto &currentPair : replacements) {
+			if (*indexIt == currentPair.first) {
+				*indexIt = currentPair.second;
+
+				// It is important to break out of the for loop here in order to avoid replacing
+				// the replacement again in consecutive iterations
+				break;
+			}
+		}
+
+		indexIt++;
+	}
+
+	// Then also replace the indices in the symmetry specifications
+	for (IndexPermutation &currentSymmetry : m_indexSymmetries) {
+		for (std::pair< Index, Index > &currentPermutation : currentSymmetry.accessPermutations()) {
+			bool replacedFirst  = false;
+			bool replacedSecond = false;
+
+			for (const auto &currentReplacement : replacements) {
+				if (!replacedFirst && currentPermutation.first == currentReplacement.first) {
+					currentPermutation.first = currentReplacement.second;
+
+					replacedFirst = true;
+				}
+				if (!replacedSecond && currentPermutation.second == currentReplacement.first) {
+					currentPermutation.second = currentReplacement.second;
+
+					replacedSecond = true;
+				}
+
+				if (replacedFirst && replacedSecond) {
+					break;
+				}
+			}
+		}
+	}
+}
+
 bool Tensor::refersToSameElement(const Tensor &other) const {
 	if (m_indices.size() != other.m_indices.size() || getName() != other.getName()) {
 		return false;
