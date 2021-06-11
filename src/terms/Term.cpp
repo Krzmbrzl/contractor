@@ -31,6 +31,10 @@ void Term::setResult(const Tensor &result) {
 	m_result = result;
 }
 
+Tensor & Term::accessResult() {
+	return m_result;
+}
+
 Term::factor_t Term::getPrefactor() const {
 	return m_prefactor;
 }

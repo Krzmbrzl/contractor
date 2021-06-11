@@ -60,6 +60,11 @@ public:
 	void setResult(const Tensor &result);
 
 	/**
+	 * @returns A mutable reference to the result Tensor this Term contributes to
+	 */
+	Tensor &accessResult();
+
+	/**
 	 * @returns The prefactor of this Term
 	 */
 	factor_t getPrefactor() const;
