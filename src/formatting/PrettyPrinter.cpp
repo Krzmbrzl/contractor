@@ -114,12 +114,16 @@ void PrettyPrinter::print(const Terms::Tensor &tensor) {
 	}
 }
 
-void PrettyPrinter::print(const Terms::Term &term) {
+void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 	assert(m_stream != nullptr);
 
 	print(term.getResult());
 
-	*m_stream << " += ";
+	*m_stream << " ";
+	if (printPlusEqual) {
+		*m_stream << "+";
+	}
+	*m_stream << "= ";
 
 	if (term.size() == 0) {
 		*m_stream << term.getPrefactor();
@@ -210,7 +214,7 @@ void PrettyPrinter::print(const Terms::TensorDecomposition &decomposition) {
 
 		for (std::size_t i = 0; i < decomposition.getSubstitutions().size(); ++i) {
 			*m_stream << "  in run " << (i + 1) << " we substitute ";
-			print(decomposition.getSubstitutions()[i]);
+			print(decomposition.getSubstitutions()[i], false);
 
 			if (i + 1 < decomposition.getSubstitutions().size()) {
 				*m_stream << "\n";

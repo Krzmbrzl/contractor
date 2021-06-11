@@ -49,7 +49,7 @@ public:
 	void print(const Terms::ContractionResult::cost_t &cost);
 	void print(const Terms::Index &index);
 	void print(const Terms::Tensor &tensor);
-	void print(const Terms::Term &term);
+	void print(const Terms::Term &term, bool printPlusEqual = true);
 	void print(const Terms::IndexPermutation &permutation);
 	void print(const Terms::Index::Spin &spin);
 	void print(const Terms::IndexSpaceMeta &meta);
