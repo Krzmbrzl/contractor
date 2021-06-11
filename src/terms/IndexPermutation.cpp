@@ -36,6 +36,10 @@ const IndexPermutation::permutation_list &IndexPermutation::getPermutations() co
 	return m_permutations;
 }
 
+IndexPermutation::permutation_list &IndexPermutation::accessPermutations() {
+	return m_permutations;
+}
+
 IndexPermutation::factor_t IndexPermutation::getFactor() const {
 	return m_factor;
 }

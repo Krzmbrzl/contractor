@@ -52,6 +52,12 @@ public:
 	const permutation_list &getPermutations() const;
 
 	/**
+	 * @returns A mutable reference of the pairwise permutations connected with
+	 * this permutation object (meant to be executed together)
+	 */
+	permutation_list &accessPermutations();
+
+	/**
 	 * @returns The prefactor associated with this permutation
 	 */
 	factor_t getFactor() const;
