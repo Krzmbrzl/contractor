@@ -132,7 +132,7 @@ int main(int argc, const char **argv) {
 	printer << "\n\nThese are the read in Terms:\n" << terms << "\n\n";
 
 	// Print decomposition
-	printer << "These are the specified decompositions:\n";
+	printer << "These are the specified substitutions:\n";
 	for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
 		printer << currentDecomposition << "\n";
 	}
@@ -143,7 +143,7 @@ int main(int argc, const char **argv) {
 	// Print/Log terms again
 
 	// Apply decomposition
-	printer << "Applying decompositions:\n";
+	printer << "Applying substitutions:\n";
 	std::vector< ct::GeneralTerm > decomposedTerms;
 	for (const ct::GeneralTerm &currentTerm : terms) {
 		bool wasDecomposed = false;
@@ -155,7 +155,7 @@ int main(int argc, const char **argv) {
 
 			if (decompositionApplied) {
 				// Only print the decomposed terms if the decomposition actually applied
-				printer << currentTerm << " decomposes to\n";
+				printer << currentTerm << " expands to\n";
 
 				for (ct::GeneralTerm &current : decTerms) {
 					printer << "  " << current << "\n";
