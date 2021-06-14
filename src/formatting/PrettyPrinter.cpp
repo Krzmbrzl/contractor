@@ -14,8 +14,8 @@ PrettyPrinter::PrettyPrinter(std::ostream &stream, bool asciiOnly) {
 	setStream(stream);
 
 	if (asciiOnly) {
-		m_alphaSpinSymbol   = "$";
-		m_betaSpinSymbol    = "%";
+		m_alphaSpinSymbol   = "/";
+		m_betaSpinSymbol    = "\\";
 		m_noneSpinSymbol    = "#";
 		m_creatorSymbol     = "+";
 		m_annihilatorSymbol = "-";
