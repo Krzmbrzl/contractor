@@ -159,12 +159,12 @@ void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 void PrettyPrinter::print(const Terms::IndexPermutation &permutation) {
 	assert(m_stream != nullptr);
 
-	*m_stream << "Substitute ";
+	*m_stream << "Interchange ";
 	for (std::size_t i = 0; i < permutation.getPermutations().size(); ++i) {
 		const Terms::IndexPermutation::index_pair_t &current = permutation.getPermutations()[i];
 
 		print(current.first);
-		*m_stream << " -> ";
+		*m_stream << " <> ";
 		print(current.second);
 
 		if (i + 1 < permutation.getPermutations().size()) {
