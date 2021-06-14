@@ -10,14 +10,22 @@
 
 namespace Contractor::Formatting {
 
-const std::string PrettyPrinter::AlphaSpinSymbol   = "🠑";
-const std::string PrettyPrinter::BetaSpinSymbol    = "🠓";
-const std::string PrettyPrinter::NoneSpinSymbol    = "ⁿ";
-const std::string PrettyPrinter::CreatorSymbol     = "⁺";
-const std::string PrettyPrinter::AnnihilatorSymbol = "⁻";
-
-PrettyPrinter::PrettyPrinter(std::ostream &stream) {
+PrettyPrinter::PrettyPrinter(std::ostream &stream, bool asciiOnly) {
 	setStream(stream);
+
+	if (asciiOnly) {
+		m_alphaSpinSymbol   = "$";
+		m_betaSpinSymbol    = "%";
+		m_noneSpinSymbol    = "#";
+		m_creatorSymbol     = "+";
+		m_annihilatorSymbol = "-";
+	} else {
+		m_alphaSpinSymbol   = "🠑";
+		m_betaSpinSymbol    = "🠓";
+		m_noneSpinSymbol    = "ⁿ";
+		m_creatorSymbol     = "⁺";
+		m_annihilatorSymbol = "⁻";
+	}
 }
 
 void PrettyPrinter::setStream(std::ostream &stream) {
@@ -74,25 +82,25 @@ void PrettyPrinter::print(const Terms::Index &index) {
 
 	switch (index.getSpin()) {
 		case Terms::Index::Spin::Alpha:
-			*m_stream << AlphaSpinSymbol;
+			*m_stream << m_alphaSpinSymbol;
 			break;
 		case Terms::Index::Spin::Beta:
-			*m_stream << BetaSpinSymbol;
+			*m_stream << m_betaSpinSymbol;
 			break;
 		case Terms::Index::Spin::Both:
 			// This is the default that we'll assume and thus this does not get a special label
 			break;
 		case Terms::Index::Spin::None:
 			// "n" for "No spin"
-			*m_stream << NoneSpinSymbol;
+			*m_stream << m_noneSpinSymbol;
 			break;
 	}
 	switch (index.getType()) {
 		case Terms::Index::Type::Creator:
-			*m_stream << CreatorSymbol;
+			*m_stream << m_creatorSymbol;
 			break;
 		case Terms::Index::Type::Annihilator:
-			*m_stream << AnnihilatorSymbol;
+			*m_stream << m_annihilatorSymbol;
 			break;
 		case Terms::Index::Type::None:
 			// No symbol -> No type
@@ -302,19 +310,19 @@ std::string PrettyPrinter::getLegend(int maxSpaceID) const {
 	}
 
 	legend += "\nUsed spin symbols:\n";
-	legend += "  Alpha: " + AlphaSpinSymbol + "\n";
-	legend += "  Beta:  " + BetaSpinSymbol + "\n";
-	legend += "  None:  " + NoneSpinSymbol + "\n";
+	legend += "  Alpha: " + m_alphaSpinSymbol + "\n";
+	legend += "  Beta:  " + m_betaSpinSymbol + "\n";
+	legend += "  None:  " + m_noneSpinSymbol + "\n";
 	legend += "  Alpha&Beta: This case is implicitly assumed if none of the above symbols is used\n";
 
 	legend += "\nUsed type symbols:\n";
-	legend += "  Creator:     " + CreatorSymbol + "\n";
-	legend += "  Annihilator: " + AnnihilatorSymbol + "\n";
+	legend += "  Creator:     " + m_creatorSymbol + "\n";
+	legend += "  Annihilator: " + m_annihilatorSymbol + "\n";
 	legend += "  None:        No symbol\n";
 
 	legend += "\nExample:\n";
 	legend += "  Creator Index with ID 3 in space 1 with Alpha spin: ";
-	legend += static_cast< char >(getIndexBaseChar(0) + 2) + AlphaSpinSymbol + CreatorSymbol + "\n";
+	legend += static_cast< char >(getIndexBaseChar(0) + 2) + m_alphaSpinSymbol + m_creatorSymbol + "\n";
 
 	legend += "\nTensors:\n";
 	legend += "  A Tensor is represented by its name potentially followed by its indices wrapped in […]\n";

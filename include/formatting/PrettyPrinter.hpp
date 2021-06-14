@@ -31,14 +31,7 @@ namespace Contractor::Formatting {
  */
 class PrettyPrinter {
 public:
-	static const std::string AlphaSpinSymbol;
-	static const std::string BetaSpinSymbol;
-	static const std::string NoneSpinSymbol;
-	static const std::string CreatorSymbol;
-	static const std::string AnnihilatorSymbol;
-
-	PrettyPrinter() = default;
-	PrettyPrinter(std::ostream &stream);
+	PrettyPrinter(std::ostream &stream, bool asciiOnly = false);
 
 	void setStream(std::ostream &stream);
 
@@ -64,6 +57,12 @@ public:
 protected:
 	static constexpr int maxIndexSpaceID = 5;
 	static constexpr int maxIndexID      = 7;
+
+	std::string m_alphaSpinSymbol;
+	std::string m_betaSpinSymbol;
+	std::string m_noneSpinSymbol;
+	std::string m_creatorSymbol;
+	std::string m_annihilatorSymbol;
 
 	std::ostream *m_stream              = nullptr;
 	boost::format m_floatingPointFormat = boost::format("%|1$f|");

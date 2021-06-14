@@ -28,6 +28,7 @@ struct CommandLineArguments {
 	std::filesystem::path geccoExportFile;
 	std::filesystem::path symmetryFile;
 	std::filesystem::path decompositionFile;
+	bool asciiOnlyOutput;
 };
 
 int processCommandLine(int argc, const char **argv, CommandLineArguments &args) {
@@ -46,6 +47,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Path to the Tensor symmetry specification file (.symmetry)")
 		("decomposition,d", boost::program_options::value<std::filesystem::path>(&args.decompositionFile)->required(),
 		 "Path to the decomposition file (.decomposition)")
+		("ascii-only", boost::program_options::value<bool>(&args.asciiOnlyOutput)->default_value(false)->zero_tokens(),
+		 "If this flag is used, the output printed to the console will only contain ASCII characters")
 	;
 	// clang-format on
 
@@ -100,7 +103,7 @@ int main(int argc, const char **argv) {
 		return result;
 	}
 
-	cf::PrettyPrinter printer(std::cout);
+	cf::PrettyPrinter printer(std::cout, args.asciiOnlyOutput);
 
 
 	printer << printer.getLegend() << "\n\n";
