@@ -253,7 +253,7 @@ std::vector< std::pair< Index, Index > > Tensor::getIndexMapping(const Tensor &o
 }
 
 ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const {
-	ContractionResult::cost_t cost = 0;
+	ContractionResult::cost_t cost = 1;
 
 	std::vector< Index > contractedIndices;
 	Tensor::index_list_t resultIndices;
@@ -266,14 +266,8 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 			// The tensors share an index
 			unsigned int currentCost = resolver.getMeta(currentIndex.getSpace()).getSize();
 
-			if (cost == 0) {
-				// Init cost
-				cost = currentCost;
-			} else {
-				// There has been an index that is being contracted before. From now on the costs
-				// are multiplicative
-				cost *= currentCost;
-			}
+			// Costs are multiplicative
+			cost *= currentCost;
 
 			contractedIndices.push_back(currentIndex);
 		} else {
@@ -307,12 +301,14 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 		resultName.append(other.getName());
 	}
 
-	Tensor result(resultName, std::move(resultIndices));
-
-	if (cost == 0 && (m_indices.size() == 0 || other.m_indices.size() == 0)) {
-		// A scalar can always be "contracted" in a single step
-		cost = 1;
+	// Until here we have computed the cost of evaluating a single element in the
+	// result Tensor. However for the total operation cost we now also have to figure
+	// out how expensive it is to compute all entries in the result tensor
+	for (const Index &currentResultIndex : resultIndices) {
+		cost *= resolver.getMeta(currentResultIndex.getSpace()).getSize();
 	}
+
+	Tensor result(resultName, std::move(resultIndices));
 
 	return { std::move(result), cost };
 }

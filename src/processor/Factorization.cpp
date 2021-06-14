@@ -96,7 +96,18 @@ std::vector< ct::BinaryTerm > factorize(const ct::GeneralTerm &term, const Utils
 	std::vector< ct::BinaryTerm > factorizedTerms;
 	cost_t cost = std::numeric_limits< cost_t >::max();
 
-	cost = factorizationHelper(0, cost, factorizedTerms, term.accessTensors(), resolver);
+	if (term.size() > 1) {
+		cost = factorizationHelper(0, cost, factorizedTerms, term.accessTensors(), resolver);
+	} else {
+		// If we get a single Tensor, there is nothing to factorize but the costs for computing this
+		// Tensor depends on its indices
+		cost = 1;
+		for (const ct::Index &current : term.getResult().getIndices()) {
+			cost *= resolver.getMeta(current.getSpace()).getSize();
+		}
+
+		factorizedTerms.push_back(ct::BinaryTerm(term.getResult(), term.getPrefactor(), term.getResult(), ct::BinaryTerm::DummyRHS));
+	}
 
 	assert(factorizedTerms.size() > 0);
 
