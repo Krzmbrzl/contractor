@@ -454,7 +454,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { idx("i") });
 
 		ct::Tensor expectedResult("T1_T2", {});
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize() * 2;
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -480,7 +480,7 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { idx("i"), idx("b+") });
 
 		ct::Tensor expectedResult("T1_T2", { idx("a"), idx("b+") });
-		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize() * 2;
+		ct::ContractionResult::cost_t expectedCost = resolver.getMeta(idx("i").getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -493,8 +493,8 @@ TEST(TensorTest, contract) {
 		ct::Tensor t2("T2", { idx("i"), idx("b"), idx("a+") });
 
 		ct::Tensor expectedResult("T1_T2", { idx("b") });
-		ct::ContractionResult::cost_t expectedCost = (resolver.getMeta(idx("i").getSpace()).getSize() * 2)
-													 * (resolver.getMeta(idx("a").getSpace()).getSize() * 2);
+		ct::ContractionResult::cost_t expectedCost =
+			resolver.getMeta(idx("i").getSpace()).getSize() * resolver.getMeta(idx("a").getSpace()).getSize();
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 

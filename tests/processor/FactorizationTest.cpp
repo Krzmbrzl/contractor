@@ -56,14 +56,14 @@ TEST(FactorizationTest, factorize) {
 		// T_T[il] = T[ikdc] T[cdlk]
 		ct::BinaryTerm intermdediate1(intermediateResult2, 1.0, ct::Tensor(tensors[0]), ct::Tensor(tensors[3]));
 		// *2 as the indices contain an implicit spin and run over alpha and beta cases
-		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
+		expectedContractionCost += occupiedSize * virtualSize * virtualSize;
 		// H_T[li] = H[jlba] T[abji]
 		ct::BinaryTerm intermdediate2(intermediateResult1, 1.0, ct::Tensor(tensors[1]), ct::Tensor(tensors[2]));
-		expectedContractionCost += (occupiedSize * 2) * (virtualSize * 2) * (virtualSize * 2);
+		expectedContractionCost += occupiedSize * virtualSize * virtualSize;
 		// LCCD[] = H_T[li] T_T[il]
 		ct::BinaryTerm expectedResult(resultTensor, 2.0, ct::Tensor(intermediateResult1),
 									  ct::Tensor(intermediateResult2));
-		expectedContractionCost += (occupiedSize * 2) * (occupiedSize * 2);
+		expectedContractionCost += occupiedSize * occupiedSize;
 
 
 		// LCCD[] = T[ikdc] H[jlba] T[abji] T[cdlk] (in all possible permutations
@@ -99,7 +99,7 @@ TEST(FactorizationTest, factorize) {
 		std::vector< ct::Tensor > tensors = { ct::Tensor("T1", { ct::Index(i), ct::Index(a) }),
 											  ct::Tensor("T2", { ct::Index(j), ct::Index(a) }) };
 
-		ct::ContractionResult::cost_t expectedContractionCost = resolver.getMeta(a.getSpace()).getSize() * 2;
+		ct::ContractionResult::cost_t expectedContractionCost = resolver.getMeta(a.getSpace()).getSize();
 
 		for (std::size_t ii = 0; ii < tensors.size(); ++ii) {
 			for (std::size_t jj = 0; jj < tensors.size(); ++jj) {
