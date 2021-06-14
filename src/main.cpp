@@ -174,6 +174,8 @@ int main(int argc, const char **argv) {
 
 	printer << "\n\n";
 
+	printer << "Terms after having applied the substsitutions:\n" << decomposedTerms << "\n\n";
+
 	// Factorize terms
 	printer << "Factorization into binary terms:\n";
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
