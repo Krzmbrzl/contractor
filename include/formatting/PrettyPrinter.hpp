@@ -92,8 +92,8 @@ template< typename T > PrettyPrinter &operator<<(PrettyPrinter &printer, const s
 				  "PrettyPrinter::print does not exist for the given type (required for the << operator)");
 
 	printer << "# of elements: " << vector.size() << "\n";
-	for (const T &current : vector) {
-		printer << current << "\n";
+	for (std::size_t i = 0; i < vector.size(); ++i) {
+		printer << "- " << (i + 1) << ": " << vector[i] << "\n";
 	}
 
 	return printer;
