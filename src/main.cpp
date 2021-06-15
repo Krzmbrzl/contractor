@@ -179,6 +179,7 @@ int main(int argc, const char **argv) {
 	// Factorize terms
 	printer << "Factorization into binary terms:\n";
 	cpr::Factorizer factorizer(resolver);
+	ct::ContractionResult::cost_t totalCost = 0;
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
 		std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
 		ct::ContractionResult::cost_t cost = factorizer.getLastFactorizationCost();
@@ -188,7 +189,11 @@ int main(int argc, const char **argv) {
 			printer << "  " << current << "\n";
 		}
 		printer << "Estimated cost of carrying out the contraction: " << cost << "\n\n";
+
+		totalCost += cost;
 	}
+
+	printer << "Total # of operations: " << totalCost << "\n\n";
 
 	// Spin-integration
 
