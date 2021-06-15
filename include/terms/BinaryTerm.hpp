@@ -20,7 +20,7 @@ public:
 	 */
 	static const Tensor DummyRHS;
 
-	explicit BinaryTerm(const Tensor &result, Term::factor_t prefactor, const Tensor &left,
+	explicit BinaryTerm(const Tensor &result = Tensor(), Term::factor_t prefactor = 1.0, const Tensor &left = Tensor(),
 						const Tensor &right = DummyRHS);
 
 	BinaryTerm(const BinaryTerm &other) = default;

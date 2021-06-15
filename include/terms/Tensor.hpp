@@ -54,7 +54,8 @@ public:
 
 	explicit Tensor(const std::string_view name, const index_list_t &indices,
 					const symmetry_list_t &indexSymmetries = {});
-	explicit Tensor(const std::string_view name, index_list_t &&indices = {}, symmetry_list_t &&indexSymmetries = {});
+	explicit Tensor(const std::string_view name = "", index_list_t &&indices = {},
+					symmetry_list_t &&indexSymmetries = {});
 
 	explicit Tensor(const Tensor &other) = default;
 	Tensor(Tensor &&other)               = default;
