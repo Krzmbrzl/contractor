@@ -5,7 +5,7 @@
 #include "parser/GeCCoExportParser.cpp"
 #include "parser/IndexSpaceParser.cpp"
 #include "parser/SymmetryListParser.cpp"
-#include "processor/Factorization.hpp"
+#include "processor/Factorizer.hpp"
 #include "utils/IndexSpaceResolver.cpp"
 
 #include <boost/program_options/errors.hpp>
@@ -178,9 +178,10 @@ int main(int argc, const char **argv) {
 
 	// Factorize terms
 	printer << "Factorization into binary terms:\n";
+	cpr::Factorizer factorizer(resolver);
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
-		ct::ContractionResult::cost_t cost;
-		std::vector< ct::BinaryTerm > currentBinary = cpr::factorize(currentGeneral, resolver, &cost);
+		std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
+		ct::ContractionResult::cost_t cost = factorizer.getLastFactorizationCost();
 
 		printer << currentGeneral << " factorizes to\n";
 		for (const ct::BinaryTerm &current : currentBinary) {

@@ -1,4 +1,4 @@
-#include "processor/Factorization.hpp"
+#include "processor/Factorizer.hpp"
 #include "terms/BinaryTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Index.hpp"
@@ -10,23 +10,25 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <iostream>
-
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
 namespace cp = Contractor::Processor;
 
-TEST(FactorizationTest, factorize) {
+TEST(FactorizerTest, factorize) {
 	ct::ContractionResult::cost_t occupiedSize = resolver.getMeta(idx("i").getSpace()).getSize();
 	ct::ContractionResult::cost_t virtualSize  = resolver.getMeta(idx("a").getSpace()).getSize();
-	ct::Index i                                = idx("i+");
-	ct::Index j                                = idx("j+");
-	ct::Index k                                = idx("k+");
-	ct::Index l                                = idx("l+");
-	ct::Index a                                = idx("a+");
-	ct::Index b                                = idx("b+");
-	ct::Index c                                = idx("c+");
-	ct::Index d                                = idx("d+");
+	ct::ContractionResult::cost_t externalSize = resolver.getMeta(idx("q").getSpace()).getSize();
+
+	cp::Factorizer factorizer(resolver);
+
+	ct::Index i = idx("i+");
+	ct::Index j = idx("j+");
+	ct::Index k = idx("k+");
+	ct::Index l = idx("l+");
+	ct::Index a = idx("a+");
+	ct::Index b = idx("b+");
+	ct::Index c = idx("c+");
+	ct::Index d = idx("d+");
 
 	{
 		// General test of a case where factorization makes a difference
@@ -61,8 +63,8 @@ TEST(FactorizationTest, factorize) {
 			resultTensor, 2.0,
 			{ ct::Tensor(tensors[0]), ct::Tensor(tensors[1]), ct::Tensor(tensors[2]), ct::Tensor(tensors[3]) });
 
-		ct::ContractionResult::cost_t contractionCost;
-		std::vector< ct::BinaryTerm > outTerms = cp::factorize(inTerm, resolver, &contractionCost);
+		std::vector< ct::BinaryTerm > outTerms = factorizer.factorize(inTerm);
+		ct::ContractionResult::cost_t contractionCost = factorizer.getLastFactorizationCost();
 
 		ASSERT_THAT(outTerms, ::testing::UnorderedElementsAre(intermdediate1, intermdediate2, expectedResult));
 		ASSERT_EQ(contractionCost, expectedContractionCost);
@@ -76,8 +78,8 @@ TEST(FactorizationTest, factorize) {
 		ct::GeneralTerm inTerm(tensor, -3.0, { ct::Tensor(tensor) });
 		ct::BinaryTerm expectedTerm(tensor, -3.0, tensor);
 
-		ct::ContractionResult::cost_t factorizationCost = 0;
-		std::vector< ct::BinaryTerm > resultingTerms    = cp::factorize(inTerm, resolver, &factorizationCost);
+		std::vector< ct::BinaryTerm > resultingTerms    = factorizer.factorize(inTerm);
+		ct::ContractionResult::cost_t factorizationCost = factorizer.getLastFactorizationCost();
 
 		ASSERT_EQ(resultingTerms.size(), 1);
 		ASSERT_EQ(resultingTerms[0], expectedTerm);
@@ -102,8 +104,8 @@ TEST(FactorizationTest, factorize) {
 				// order
 				ct::BinaryTerm expectedTerm(resultTensor, -3.0, ct::Tensor(tensors[ii]), ct::Tensor(tensors[jj]));
 
-				ct::ContractionResult::cost_t factorizationCost = 0;
-				std::vector< ct::BinaryTerm > resultingTerms    = cp::factorize(inTerm, resolver, &factorizationCost);
+				std::vector< ct::BinaryTerm > resultingTerms    = factorizer.factorize(inTerm);
+				ct::ContractionResult::cost_t factorizationCost = factorizer.getLastFactorizationCost();
 
 				ASSERT_EQ(resultingTerms.size(), 1);
 				ASSERT_EQ(resultingTerms[0], expectedTerm);
@@ -141,11 +143,44 @@ TEST(FactorizationTest, factorize) {
 						* static_cast< int >(std::pow(resolver.getMeta(idx("a").getSpace()).getSize(), 2));
 		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
 
-		ct::ContractionResult::cost_t actualCost      = 0;
-		std::vector< ct::BinaryTerm > factorizedTerms = cp::factorize(inTerm, resolver, &actualCost);
+		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm);
+		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
 
 		ASSERT_EQ(factorizedTerms.size(), 2);
-		ASSERT_EQ(factorizedTerms[0], intermediateTerm);
-		ASSERT_EQ(factorizedTerms[1], result);
+		ASSERT_EQ(actualCost, expectedCost);
+		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediateTerm, result));
+	}
+	{
+		// O[a⁺b⁺i⁻j⁻] += 0.5 * B[k⁺d⁻qⁿ] * B[l⁺c⁻qⁿ] * T[c⁺d⁺k⁻i⁻] * T[a⁺b⁺l⁻j⁻]
+		ct::Tensor O("O", { idx("a+"), idx("b+"), idx("i"), idx("j") });
+		ct::Tensor B1("B", { idx("k+"), idx("d"), idx("q!") });
+		ct::Tensor B2("B", { idx("l+"), idx("c"), idx("q!") });
+		ct::Tensor T1("T", { idx("c+"), idx("d+"), idx("k"), idx("i") });
+		ct::Tensor T2("T", { idx("a+"), idx("b+"), idx("l"), idx("j") });
+
+		ct::GeneralTerm inTerm(ct::Tensor(O), 0.5, { ct::Tensor(B1), ct::Tensor(B2), ct::Tensor(T1), ct::Tensor(T2) });
+
+		// B_T[qⁿc⁺i⁻] = B[k⁺d⁻qⁿ] * T[c⁺d⁺k⁻i⁻]
+		ct::ContractionResult::cost_t expectedCost = 0;
+		ct::Tensor B1_T1("B_T", { idx("q!"), idx("c+"), idx("i") });
+		ct::BinaryTerm intermediate1(ct::Tensor(B1_T1), 1.0, ct::Tensor(B1), ct::Tensor(T1));
+		expectedCost += pow(occupiedSize, 2) * pow(virtualSize, 2) * externalSize;
+
+		// B_B_T[l⁺i⁻] = B_T[qⁿc⁺i⁻] * B[l⁺c⁻qⁿ]
+		ct::Tensor B1_T1_B2("B_B_T", { idx("l+"), idx("i")});
+		ct::BinaryTerm intermediate2(ct::Tensor(B1_T1_B2), 1.0, ct::Tensor(B1_T1), ct::Tensor(B2));
+		expectedCost += pow(occupiedSize, 2) * virtualSize * externalSize;
+
+		// O[a⁺b⁺i⁻j⁻] = B_B_T[l⁺i⁻] *T[a⁺b⁺l⁻j⁻]
+		ct::BinaryTerm resultTerm(ct::Tensor(O), inTerm.getPrefactor(), ct::Tensor(B1_T1_B2), ct::Tensor(T2));
+		expectedCost += pow(occupiedSize, 3) * pow(virtualSize, 2);
+
+
+		std::vector<ct::BinaryTerm> factorizedTerms = factorizer.factorize(inTerm);
+		ct::ContractionResult::cost_t actualCost = factorizer.getLastFactorizationCost();
+
+		ASSERT_EQ(factorizedTerms.size(), 3);
+		ASSERT_EQ(actualCost, expectedCost);
+		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediate1, intermediate2, resultTerm));
 	}
 }

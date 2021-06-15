@@ -3,7 +3,7 @@ include(GoogleTest)
 set(COMPONENT_NAME "processor")
 
 add_executable(${COMPONENT_NAME}_test
-	FactorizationTest.cpp
+	FactorizerTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test
