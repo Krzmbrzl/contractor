@@ -2,12 +2,13 @@
 #define CONTRACTOR_PARSER_DECOMPOSITIONPARSER_HPP_
 
 #include "parser/BufferedStreamReader.hpp"
-#include "utils/IndexSpaceResolver.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <istream>
 #include <string>
+#include <vector>
 
 namespace Contractor::Parser {
 
@@ -54,8 +55,8 @@ public:
 	decomposition_list_t parse();
 
 	std::string parseTensorName();
-	Terms::Tensor parseTensor();
-	Terms::TensorDecomposition parseDecomposition(const Terms::Tensor &tensor);
+	std::vector< Terms::Tensor > parseBaseTensors();
+	std::vector< Terms::TensorDecomposition > parseDecompositions(const std::vector< Terms::Tensor > &baseTensors);
 	Terms::GeneralTerm parseDecompositionPart(const Terms::Tensor &tensor, int sign);
 	Terms::Tensor parseDecompositionElement(const Terms::Tensor::index_list_t &originalIndices);
 

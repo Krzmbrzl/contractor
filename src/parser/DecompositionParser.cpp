@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cctype>
+#include <sstream>
 #include <unordered_map>
 
 namespace ct = Contractor::Terms;
@@ -33,7 +34,7 @@ DecompositionParser::decomposition_list_t DecompositionParser::parse() {
 	m_reader.skipWS(true);
 
 	while (m_reader.hasInput()) {
-		ct::Tensor tensor = parseTensor();
+		std::vector< ct::Tensor > baseTensors = parseBaseTensors();
 
 		m_reader.skipWS(false);
 
@@ -41,7 +42,11 @@ DecompositionParser::decomposition_list_t DecompositionParser::parse() {
 
 		m_reader.skipWS(false);
 
-		decompositons.push_back(parseDecomposition(tensor));
+		std::vector< ct::TensorDecomposition > currentDecompositions = parseDecompositions(baseTensors);
+
+		for (ct::TensorDecomposition &current : currentDecompositions) {
+			decompositons.push_back(std::move(current));
+		}
 
 		m_reader.skipWS(true);
 	}
@@ -64,94 +69,204 @@ std::string DecompositionParser::parseTensorName() {
 	return name;
 }
 
-ct::Tensor DecompositionParser::parseTensor() {
+void directProduct(std::vector< std::string > &products, const std::vector< std::vector< char > > &indexSpecs,
+				   std::string &currentProduct, std::size_t currentIndex = 0) {
+	if (indexSpecs.empty()) {
+		return;
+	}
+
+	for (std::size_t i = 0; i < indexSpecs[currentIndex].size(); ++i) {
+		// Add current char
+		currentProduct += indexSpecs[currentIndex][i];
+
+		if (currentIndex + 1 < indexSpecs.size()) {
+			// Recurse
+			directProduct(products, indexSpecs, currentProduct, currentIndex + 1);
+		} else {
+			// We have completed the current product
+			products.push_back(currentProduct);
+		}
+
+		// Remove the char again
+		currentProduct.erase(currentProduct.size() - 1);
+	}
+}
+
+std::vector< std::string > readIndexSpec(BufferedStreamReader &reader, char sequenceTerminator) {
+	std::vector< std::vector< char > > indexSpecs;
+	while (reader.peek() != sequenceTerminator) {
+		std::vector< char > current;
+
+		if (reader.peek() == '(') {
+			// Multi-choice
+			reader.expect("(");
+
+			if (reader.peek() == ')') {
+				throw ParseException("Empty index choice specification: \"()\"");
+			}
+
+			bool cont = true;
+			do {
+				current.push_back(reader.read());
+
+				switch (reader.peek()) {
+					case ')':
+						cont = false;
+						break;
+					case '|':
+						reader.read();
+						break;
+					default:
+						throw ParseException(std::string("Unexpected character in index choice spec: '") + reader.peek()
+											 + "' (expected ')' or '|')");
+				}
+			} while (cont);
+
+			reader.expect(")");
+		} else {
+			// Single-choice
+			current.push_back(reader.read());
+		}
+
+		indexSpecs.push_back(std::move(current));
+	}
+
+	std::vector< std::string > products;
+	std::string dummyWorkingString;
+	directProduct(products, indexSpecs, dummyWorkingString);
+
+	if (products.empty()) {
+		// Empty index ranges also have to be represented explicitly
+		products.push_back("");
+	}
+
+	return products;
+}
+
+std::vector< ct::Tensor > DecompositionParser::parseBaseTensors() {
 	std::string name = parseTensorName();
+
+	// The spec can be for one specific kind of Tensor element
+	// like T[HH,PP] or it can be for a combination of many different
+	// Tensor elements like T[(H|P),(H,P)] which expands to
+	// T[H,H], T[H,P], T[P,H] and T[P,P]
 
 	m_reader.expect("[");
 
 	if (m_reader.peek() == ']') {
 		// Skalar Tensor
 		m_reader.expect("]");
-		return ct::Tensor(std::move(name), {});
+		return { ct::Tensor(std::move(name), {}) };
 	}
 
-	std::string creatorString;
-	while (m_reader.peek() != ',') {
-		creatorString += m_reader.read();
-	}
+	std::vector< std::string > creatorIndexStrings = readIndexSpec(m_reader, ',');
 
 	m_reader.expect(",");
 
-	std::string annihilatorString;
-	while (m_reader.peek() != ']') {
-		annihilatorString += m_reader.read();
-	}
+	std::vector< std::string > annihilatorStrings = readIndexSpec(m_reader, ']');
 
 	m_reader.expect("]");
 
-	ct::Tensor::index_list_t indices;
-	std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
+	std::vector< ct::Tensor > tensors;
+	for (const std::string &currentCreatorString : creatorIndexStrings) {
+		for (const std::string &currentAnnihilatorString : annihilatorStrings) {
+			ct::Tensor::index_list_t indices;
+			std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
 
-	// Creator indices
-	for (std::size_t i = 0; i < creatorString.size(); i++) {
-		try {
-			ct::IndexSpace space = m_resolver.resolve(creatorString[i]);
-			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Creator,
-										m_resolver.getMeta(space).getDefaultSpin()));
-		} catch (const Utils::ResolveException &e) {
-			throw ParseException(std::string("Failed at parsing index space label: \"") + e.what() + "\"");
+			// Creator indices
+			for (std::size_t i = 0; i < currentCreatorString.size(); i++) {
+				try {
+					ct::IndexSpace space = m_resolver.resolve(currentCreatorString[i]);
+					indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Creator,
+												m_resolver.getMeta(space).getDefaultSpin()));
+				} catch (const Utils::ResolveException &e) {
+					throw ParseException(std::string("Failed at parsing index space label: \"") + e.what() + "\"");
+				}
+			}
+			// Annihilator indices
+			for (std::size_t i = 0; i < currentAnnihilatorString.size(); i++) {
+				try {
+					ct::IndexSpace space = m_resolver.resolve(currentAnnihilatorString[i]);
+					indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
+												m_resolver.getMeta(space).getDefaultSpin()));
+				} catch (const Utils::ResolveException &e) {
+					throw ParseException(std::string("Failed at parsing index space label: \"") + e.what() + "\"");
+				}
+			}
+
+			tensors.push_back(ct::Tensor(std::move(name), std::move(indices)));
 		}
 	}
-	// Annihilator indices
-	for (std::size_t i = 0; i < annihilatorString.size(); i++) {
-		try {
-			ct::IndexSpace space = m_resolver.resolve(annihilatorString[i]);
-			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
-										m_resolver.getMeta(space).getDefaultSpin()));
-		} catch (const Utils::ResolveException &e) {
-			throw ParseException(std::string("Failed at parsing index space label: \"") + e.what() + "\"");
-		}
-	}
 
-	return ct::Tensor(std::move(name), std::move(indices));
+	assert(tensors.size() > 0);
+
+	return tensors;
 }
 
-ct::TensorDecomposition DecompositionParser::parseDecomposition(const ct::Tensor &tensor) {
-	ct::TensorDecomposition::substitution_list_t substitutions;
+std::vector< ct::TensorDecomposition >
+	DecompositionParser::parseDecompositions(const std::vector< ct::Tensor > &baseTensors) {
+	// We have to trick a bit in order to parse the decompositions for all base tensors that we are given
+	// What we do is to read the current line, store it in a string, copy the reader and replace the original
+	// reader with one that operates on the string representing the current rest of the line.
+	// This reader will be reset in every iteration allowing the called routines to repeatedly parse this input
+	// even though it is only specified in the original input once.
+	// After we are done, we restore the original reader and keep going as normal
 
-	int sign = 1;
+	std::string currentLine;
 	while (m_reader.hasInput() && m_reader.peek() != '\n') {
-		substitutions.push_back(parseDecompositionPart(tensor, sign));
+		currentLine += m_reader.read();
+	}
 
-		m_reader.skipWS(false);
+	BufferedStreamReader readerCopy = std::move(m_reader);
 
-		if (m_reader.hasInput()) {
-			switch (m_reader.peek()) {
-				case '+':
-					sign = 1;
-					m_reader.expect("*");
-					m_reader.skipWS(false);
-					break;
-				case '-':
-					sign = -1;
-					m_reader.expect("-");
-					m_reader.skipWS(false);
-					break;
-				case '\n':
-					// Sequence terminated -> no-op
-					break;
-				default:
-					throw ParseException(std::string("Encountered invalid character '") + m_reader.peek()
-										 + "' while parsing decompositon");
+	std::vector< ct::TensorDecomposition > decompositions;
+	for (const ct::Tensor &currentBaseTensor : baseTensors) {
+		// Set the reader to read the current line (again)
+		std::stringstream sstream(currentLine);
+		m_reader.initSource(sstream);
+
+
+		ct::TensorDecomposition::substitution_list_t substitutions;
+
+		int sign = 1;
+		while (m_reader.hasInput() && m_reader.peek() != '\n') {
+			substitutions.push_back(parseDecompositionPart(currentBaseTensor, sign));
+
+			m_reader.skipWS(false);
+
+			if (m_reader.hasInput()) {
+				switch (m_reader.peek()) {
+					case '+':
+						sign = 1;
+						m_reader.expect("*");
+						m_reader.skipWS(false);
+						break;
+					case '-':
+						sign = -1;
+						m_reader.expect("-");
+						m_reader.skipWS(false);
+						break;
+					case '\n':
+						// Sequence terminated -> no-op
+						break;
+					default:
+						throw ParseException(std::string("Encountered invalid character '") + m_reader.peek()
+											 + "' while parsing decompositon");
+				}
 			}
 		}
+
+		decompositions.push_back(ct::TensorDecomposition(std::move(substitutions)));
 	}
+
+	// Reset reader
+	m_reader = std::move(readerCopy);
 
 	if (m_reader.hasInput()) {
 		m_reader.expect("\n");
 	}
 
-	return ct::TensorDecomposition(std::move(substitutions));
+	return decompositions;
 }
 
 ct::GeneralTerm DecompositionParser::parseDecompositionPart(const ct::Tensor &tensor, int sign) {
@@ -221,6 +336,7 @@ ct::Tensor DecompositionParser::parseDecompositionElement(const ct::Tensor::inde
 
 			try {
 				ct::IndexSpace space = m_resolver.resolve(m_reader.read());
+
 				indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::None,
 											m_resolver.getMeta(space).getDefaultSpin()));
 			} catch (const Utils::ResolveException &e) {

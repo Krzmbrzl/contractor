@@ -5,11 +5,12 @@
 #include "terms/Tensor.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
-#include <sstream>
-#include <string>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
+#include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #define STRINGIFY(x) #x
@@ -160,7 +161,7 @@ TEST(DecompositionParserTest, parseDecompositionPart) {
 	}
 }
 
-TEST(DecompositionParserTest, parseDecomposition) {
+TEST(DecompositionParserTest, parseDecompositions) {
 	ct::Tensor::index_list_t indices = { createIndex("occupied", 0), createIndex("occupied", 1),
 										 createIndex("virtual", 0), createIndex("virtual", 1) };
 
@@ -181,7 +182,10 @@ TEST(DecompositionParserTest, parseDecomposition) {
 			ct::GeneralTerm(second),
 		});
 
-		ASSERT_EQ(parser.parseDecomposition(tensor), expected);
+		std::vector< ct::Tensor > baseTensors{ ct::Tensor(tensor) };
+		std::vector< ct::TensorDecomposition > decompositions = parser.parseDecompositions(baseTensors);
+		ASSERT_EQ(decompositions.size(), 1);
+		ASSERT_EQ(decompositions[0], expected);
 	}
 	{
 		std::string content = "2 * B[1] - -1 *  A[3]";
@@ -196,7 +200,10 @@ TEST(DecompositionParserTest, parseDecomposition) {
 			ct::GeneralTerm(second),
 		});
 
-		ASSERT_EQ(parser.parseDecomposition(tensor), expected);
+		std::vector< ct::Tensor > baseTensors{ ct::Tensor(tensor) };
+		std::vector< ct::TensorDecomposition > decompositions = parser.parseDecompositions(baseTensors);
+		ASSERT_EQ(decompositions.size(), 1);
+		ASSERT_EQ(decompositions[0], expected);
 	}
 	{
 		std::string content = "B[1]";
@@ -207,11 +214,40 @@ TEST(DecompositionParserTest, parseDecomposition) {
 
 		ct::TensorDecomposition expected({ ct::GeneralTerm(first) });
 
-		ASSERT_EQ(parser.parseDecomposition(tensor), expected);
+		std::vector< ct::Tensor > baseTensors{ ct::Tensor(tensor) };
+		std::vector< ct::TensorDecomposition > decompositions = parser.parseDecompositions(baseTensors);
+		ASSERT_EQ(decompositions.size(), 1);
+		ASSERT_EQ(decompositions[0], expected);
+	}
+	{
+		std::vector< ct::Tensor > baseTensors{ ct::Tensor("H", { createIndex("occupied", 0) }),
+											   ct::Tensor("H", { createIndex("virtual", 0) }) };
+
+		std::string content = "2 * B[1] - -1 *  A[1,P]";
+		std::stringstream sstream(content);
+		parser.setSource(sstream);
+
+		ct::GeneralTerm first(tensor, 2, { ct::Tensor("B", { ct::Index(indices[1 - 1]) }) });
+		ct::GeneralTerm second(tensor, 1, { ct::Tensor("A", { ct::Index(indices[3 - 1]) }) });
+
+		ct::TensorDecomposition expected1(
+			{ ct::GeneralTerm(baseTensors[0], 2, { ct::Tensor("B", { baseTensors[0].getIndices()[1 - 1] }) }),
+			  ct::GeneralTerm(baseTensors[0], 1,
+							  { ct::Tensor("A", { baseTensors[0].getIndices()[1 - 1],
+												  createIndex("virtual", 0, ct::Index::Type::None) }) }) });
+		ct::TensorDecomposition expected2(
+			{ ct::GeneralTerm(baseTensors[1], 2, { ct::Tensor("B", { baseTensors[1].getIndices()[1 - 1] }) }),
+			  ct::GeneralTerm(baseTensors[1], 1,
+							  { ct::Tensor("A", { baseTensors[1].getIndices()[1 - 1],
+												  createIndex("virtual", 1, ct::Index::Type::None) }) }) });
+
+		std::vector< ct::TensorDecomposition > decompositions = parser.parseDecompositions(baseTensors);
+		ASSERT_EQ(decompositions.size(), 2);
+		ASSERT_THAT(decompositions, ::testing::UnorderedElementsAre(expected1, expected2));
 	}
 }
 
-TEST(DecompositionParserTest, parseTensor) {
+TEST(DecompositionParserTest, parseBaseTensors) {
 	cp::DecompositionParser parser(resolver);
 
 	{
@@ -221,7 +257,9 @@ TEST(DecompositionParserTest, parseTensor) {
 
 		ct::Tensor expected("H");
 
-		ASSERT_EQ(parser.parseTensor(), expected);
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 1);
+		ASSERT_EQ(tensors[0], expected);
 	}
 	{
 		std::string content = "H[P,]";
@@ -230,7 +268,9 @@ TEST(DecompositionParserTest, parseTensor) {
 
 		ct::Tensor expected("H", { createIndex("virtual", 0, ct::Index::Type::Creator) });
 
-		ASSERT_EQ(parser.parseTensor(), expected);
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 1);
+		ASSERT_EQ(tensors[0], expected);
 	}
 	{
 		std::string content = "H[,P]";
@@ -239,7 +279,9 @@ TEST(DecompositionParserTest, parseTensor) {
 
 		ct::Tensor expected("H", { createIndex("virtual", 0, ct::Index::Type::Annihilator) });
 
-		ASSERT_EQ(parser.parseTensor(), expected);
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 1);
+		ASSERT_EQ(tensors[0], expected);
 	}
 	{
 		std::string content = "T2[P,H]";
@@ -249,7 +291,9 @@ TEST(DecompositionParserTest, parseTensor) {
 		ct::Tensor expected("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
 									createIndex("occupied", 0, ct::Index::Type::Annihilator) });
 
-		ASSERT_EQ(parser.parseTensor(), expected);
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 1);
+		ASSERT_EQ(tensors[0], expected);
 	}
 	{
 		std::string content = "T2[PH,HP]";
@@ -261,7 +305,73 @@ TEST(DecompositionParserTest, parseTensor) {
 									createIndex("occupied", 1, ct::Index::Type::Annihilator),
 									createIndex("virtual", 1, ct::Index::Type::Annihilator) });
 
-		ASSERT_EQ(parser.parseTensor(), expected);
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 1);
+		ASSERT_EQ(tensors[0], expected);
+	}
+	{
+		std::string content = "T2[(H|P),H]";
+		std::stringstream sstream(content);
+		parser.setSource(sstream);
+
+		ct::Tensor expected1("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
+									 createIndex("occupied", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected2("T2", { createIndex("occupied", 0, ct::Index::Type::Creator),
+									 createIndex("occupied", 1, ct::Index::Type::Annihilator) });
+
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 2);
+		ASSERT_THAT(tensors, ::testing::UnorderedElementsAre(expected1, expected2));
+	}
+	{
+		std::string content = "T2[P,(H|P)]";
+		std::stringstream sstream(content);
+		parser.setSource(sstream);
+
+		ct::Tensor expected1("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
+									 createIndex("occupied", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected2("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
+									 createIndex("virtual", 1, ct::Index::Type::Annihilator) });
+
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 2);
+		ASSERT_THAT(tensors, ::testing::UnorderedElementsAre(expected1, expected2));
+	}
+	{
+		std::string content = "T2[(P|H),(H|P)]";
+		std::stringstream sstream(content);
+		parser.setSource(sstream);
+
+		ct::Tensor expected1("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
+									 createIndex("occupied", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected2("T2", { createIndex("virtual", 0, ct::Index::Type::Creator),
+									 createIndex("virtual", 1, ct::Index::Type::Annihilator) });
+		ct::Tensor expected3("T2", { createIndex("occupied", 0, ct::Index::Type::Creator),
+									 createIndex("virtual", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected4("T2", { createIndex("occupied", 0, ct::Index::Type::Creator),
+									 createIndex("occupied", 1, ct::Index::Type::Annihilator) });
+
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 4);
+		ASSERT_THAT(tensors, ::testing::UnorderedElementsAre(expected1, expected2, expected3, expected4));
+	}
+	{
+		std::string content = "T2[,(H|P)(H|P)]";
+		std::stringstream sstream(content);
+		parser.setSource(sstream);
+
+		ct::Tensor expected1("T2", { createIndex("virtual", 0, ct::Index::Type::Annihilator),
+									 createIndex("virtual", 1, ct::Index::Type::Annihilator) });
+		ct::Tensor expected2("T2", { createIndex("virtual", 0, ct::Index::Type::Annihilator),
+									 createIndex("occupied", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected3("T2", { createIndex("occupied", 0, ct::Index::Type::Annihilator),
+									 createIndex("virtual", 0, ct::Index::Type::Annihilator) });
+		ct::Tensor expected4("T2", { createIndex("occupied", 0, ct::Index::Type::Annihilator),
+									 createIndex("occupied", 1, ct::Index::Type::Annihilator) });
+
+		std::vector< ct::Tensor > tensors = parser.parseBaseTensors();
+		ASSERT_EQ(tensors.size(), 4);
+		ASSERT_THAT(tensors, ::testing::UnorderedElementsAre(expected1, expected2, expected3, expected4));
 	}
 }
 
@@ -279,7 +389,7 @@ TEST(DecompositionParserTest, parse) {
 		std::ifstream input(testInput);
 		cp::DecompositionParser::decomposition_list_t decompositions = parser.parse(input);
 
-		ASSERT_EQ(decompositions.size(), 2);
+		ASSERT_EQ(decompositions.size(), 17);
 	}
 }
 
