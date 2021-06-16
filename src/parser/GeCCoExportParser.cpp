@@ -385,7 +385,7 @@ Terms::GeneralTerm::tensor_list_t
 
 		if (i + 1 == indices.size() || vertexIndices[index] != vertexIndices[indices[i + 1]]) {
 			// The Tensor specification is done
-			tensors.push_back(Terms::Tensor(operatorNames[vertexIndices[index]], indexList));
+			tensors.push_back(Terms::Tensor(operatorNames[vertexIndices[index]], std::move(indexList)));
 
 			indexList.clear();
 		}
