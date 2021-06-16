@@ -366,7 +366,7 @@ Terms::GeneralTerm::tensor_list_t
 	// will end up next to one another.
 	std::vector< std::size_t > indices(vertexIndices.size());
 	std::iota(indices.begin(), indices.end(), 0);
-	std::sort(indices.begin(), indices.end(),
+	std::stable_sort(indices.begin(), indices.end(),
 			  [&](std::size_t a, std::size_t b) { return vertexIndices[a] < vertexIndices[b]; });
 
 
