@@ -57,15 +57,15 @@ TEST(GeCCoExportParserTest, parseContractionStringIndexing) {
 				  ct::Tensor("H", {
 									  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
 									  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator),
-									  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
 									  createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator),
+									  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
 								  }));
 		ASSERT_EQ(tensors[1],
 				  ct::Tensor("T2", {
 									   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 									   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-									   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
 									   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+									   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
 								   }));
 	}
 }
@@ -90,8 +90,8 @@ TEST(GeCCoExportParserTest, parseResultStringIndexing) {
 
 		ct::Tensor expected("O2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 									createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-									createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-									createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) });
+									createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+									createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) });
 
 		ASSERT_EQ(resultTensor, expected);
 	}
@@ -337,12 +337,12 @@ TEST(GeCCoExportParserTest, parseContraction) {
 		ct::GeneralTerm::tensor_list_t containedTensors = {
 			ct::Tensor("T2", { createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
 							   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Creator),
-							   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
-							   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator) }),
+							   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Annihilator),
+							   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator) }),
 			ct::Tensor("H", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 							  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) })
+							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.25, containedTensors);
@@ -391,18 +391,18 @@ TEST(GeCCoExportParserTest, parseContraction) {
 
 		ct::Tensor parent("O2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 								  createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-								  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-								  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) });
+								  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+								  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) });
 
 		ct::GeneralTerm::tensor_list_t containedTensors = {
 			ct::Tensor("H", { createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Creator),
 							  createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Creator),
-							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator) }),
+							  createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator),
+							  createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator) }),
 			ct::Tensor("T2", { createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
 							   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Creator),
-							   createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Annihilator),
-							   createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Annihilator) })
+							   createIndex(resolver.resolve("occupied"), 2, ct::Index::Type::Annihilator),
+							   createIndex(resolver.resolve("occupied"), 3, ct::Index::Type::Annihilator) })
 		};
 
 		ct::GeneralTerm expectedTerm(parent, 0.5, containedTensors);

@@ -56,6 +56,7 @@ protected:
 	BufferedStreamReader m_reader;
 
 	std::string parseTensorName();
+	void sortIndices(Terms::Tensor::index_list_t &indices);
 };
 
 } // namespace Contractor::Parser

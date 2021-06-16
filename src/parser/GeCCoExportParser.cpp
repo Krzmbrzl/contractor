@@ -367,7 +367,7 @@ Terms::GeneralTerm::tensor_list_t
 	std::vector< std::size_t > indices(vertexIndices.size());
 	std::iota(indices.begin(), indices.end(), 0);
 	std::stable_sort(indices.begin(), indices.end(),
-			  [&](std::size_t a, std::size_t b) { return vertexIndices[a] < vertexIndices[b]; });
+					 [&](std::size_t a, std::size_t b) { return vertexIndices[a] < vertexIndices[b]; });
 
 
 	// Pack all this information together and assemble the corresponding Tensors from it
@@ -385,6 +385,8 @@ Terms::GeneralTerm::tensor_list_t
 
 		if (i + 1 == indices.size() || vertexIndices[index] != vertexIndices[indices[i + 1]]) {
 			// The Tensor specification is done
+			sortIndices(indexList);
+
 			tensors.push_back(Terms::Tensor(operatorNames[vertexIndices[index]], std::move(indexList)));
 
 			indexList.clear();
@@ -486,6 +488,8 @@ Terms::Tensor GeCCoExportParser::parseResultStringIndexing(const std::string &re
 									   Terms::Index::Spin::Both));
 	}
 
+	sortIndices(indices);
+
 	return Terms::Tensor(resultName, std::move(indices));
 }
 
@@ -497,6 +501,39 @@ std::string GeCCoExportParser::parseTensorName() {
 	}
 
 	return name;
+}
+
+void GeCCoExportParser::sortIndices(Terms::Tensor::index_list_t &indices) {
+	// GeCCo uses index pairing from the outside to the inside whereas what we want to use is pairings
+	// from left to right.
+	// As an example for the index pairs a<->i and b<->j
+	// GeCCo: abji
+	// We:    abij
+	// Index pairing always occurs between creator and annihilator indices. Therefore in order to achieve
+	// what we are looking for, we will first sort the indices in such a way that creators come first and
+	// annihilators come second. Then we reverse the order of annihilators.
+
+	static_assert(Terms::Index::Type::Creator < Terms::Index::Type::Annihilator,
+				  "Implicit assumption for sorting broken");
+
+	std::stable_sort(indices.begin(), indices.end(), [](const Terms::Index &left, const Terms::Index &right) {
+		return left.getType() < right.getType();
+	});
+
+	// The indices are usually split 50:50 between creators and annihilators. Therefore we should find the
+	// first annihialtor index exactly as the first entry in the right half.
+	// And as we always expect index pairs, we are assuming an even number of indices
+	assert(indices.size() % 2 == 0);
+
+	std::size_t firstAnnihilatorIndex = indices.size() / 2;
+
+	assert(firstAnnihilatorIndex > 0);
+	assert(indices[firstAnnihilatorIndex].getType() == Terms::Index::Type::Annihilator);
+	assert(indices[indices.size() - 1].getType() == Terms::Index::Type::Annihilator);
+	assert(indices[firstAnnihilatorIndex - 1].getType() == Terms::Index::Type::Creator);
+
+	// Reverse the order of annihilators
+	std::reverse(indices.begin() + firstAnnihilatorIndex, indices.end());
 }
 
 }; // namespace Contractor::Parser
