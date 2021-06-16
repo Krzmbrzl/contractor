@@ -19,33 +19,41 @@ ct::ContractionResult::cost_t Factorizer::getLastFactorizationCost() const {
 	return m_bestCost;
 }
 
+ct::ContractionResult::cost_t Factorizer::getLastBiggestIntermediateSize() const {
+	return m_biggestIntermediateSize;
+}
+
 std::vector< ct::BinaryTerm > Factorizer::factorize(const ct::GeneralTerm &term) {
 	// Initialize the best cost for this factorization with the maximum possible
 	// value so that all possible factorizations will result in a better cost than that
-	m_bestCost = std::numeric_limits< decltype(m_bestCost) >::max();
+	m_bestCost                = std::numeric_limits< decltype(m_bestCost) >::max();
+	m_biggestIntermediateSize = std::numeric_limits< decltype(m_biggestIntermediateSize) >::max();
 
 	// Copy the Tensors of this term into a vector to be used for the factorization
 	std::vector< ct::Tensor > tensors = term.accessTensors();
 	std::vector< ct::BinaryTerm > factorizedTerms;
 
-	bool foundFactorization = doFactorize(0, tensors, factorizedTerms, term);
+	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term);
 	assert(foundFactorization);
 
 	return m_bestFactorization;
 }
 
-bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar, std::vector< ct::Tensor > &tensors,
-							 std::vector< ct::BinaryTerm > &factorizedTerms, const ct::GeneralTerm &term) {
+bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
+							 const ct::ContractionResult::cost_t &biggestIntermediate,
+							 std::vector< ct::Tensor > &tensors, std::vector< ct::BinaryTerm > &factorizedTerms,
+							 const ct::GeneralTerm &term) {
 	if (tensors.size() == 0) {
 		// Nothing to factorize anymore
-		if (costSoFar < m_bestCost) {
+		if (costSoFar < m_bestCost || (costSoFar == m_bestCost && biggestIntermediate < m_biggestIntermediateSize)) {
 			// Save factorized terms
 			m_bestFactorization.clear();
 			m_bestFactorization.reserve(factorizedTerms.size());
 
 			m_bestFactorization.insert(m_bestFactorization.begin(), factorizedTerms.begin(), factorizedTerms.end());
 
-			m_bestCost = costSoFar;
+			m_bestCost                = costSoFar;
+			m_biggestIntermediateSize = biggestIntermediate;
 
 			return true;
 		} else {
@@ -82,7 +90,7 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar, std
 		tensors.pop_back();
 
 		// Call the final iteration of this function
-		bool result = doFactorize(cost, tensors, factorizedTerms, term);
+		bool result = doFactorize(cost, biggestIntermediate, tensors, factorizedTerms, term);
 
 		// Back-insert the Tensor again
 		tensors.push_back(std::move(copy));
@@ -117,9 +125,9 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar, std
 			cost_t cost = costSoFar;
 
 			// Move the respective Tensors out of the list
-			auto itLeft  = tensors.begin() + currentPair.first;
+			auto itLeft = tensors.begin() + currentPair.first;
 			assert(itLeft != tensors.end());
-			ct::Tensor left  = std::move(*itLeft);
+			ct::Tensor left = std::move(*itLeft);
 			tensors.erase(itLeft);
 
 			auto itRight = tensors.begin() + currentPair.second - (currentPair.first < currentPair.second ? 1 : 0);
@@ -138,6 +146,11 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar, std
 				// costs meaning that there is no way that the cost will get lower than what it is
 				// at this point.
 
+				ct::ContractionResult::cost_t intermediateSize = 1;
+				for (const ct::Index &current : result.result.getIndices()) {
+					intermediateSize *= m_resolver.getMeta(current.getSpace()).getSize();
+				}
+
 				// Copy the result Tensor of this Tensor to the list of Tensors available for further
 				// contractions
 				tensors.push_back(result.result);
@@ -146,7 +159,8 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar, std
 				factorizedTerms.push_back(ct::BinaryTerm(std::move(result.result), 1.0, left, right));
 
 				// Factorize the remaining Tensors recursively
-				if (doFactorize(cost, tensors, factorizedTerms, term)) {
+				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms,
+								term)) {
 					foundBetterFactorization = true;
 				}
 			}

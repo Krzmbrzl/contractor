@@ -182,13 +182,14 @@ int main(int argc, const char **argv) {
 	ct::ContractionResult::cost_t totalCost = 0;
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
 		std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
-		ct::ContractionResult::cost_t cost = factorizer.getLastFactorizationCost();
+		ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
 
 		printer << currentGeneral << " factorizes to\n";
 		for (const ct::BinaryTerm &current : currentBinary) {
 			printer << "  " << current << "\n";
 		}
-		printer << "Estimated cost of carrying out the contraction: " << cost << "\n\n";
+		printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
+		printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
 		totalCost += cost;
 	}
