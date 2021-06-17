@@ -2,7 +2,7 @@
 #define CONTRACTOR_TERMS_TENSOR_HPP_
 
 #include "terms/Index.hpp"
-#include "terms/IndexPermutation.hpp"
+#include "terms/IndexSubstitution.hpp"
 #include "utils/IterableView.hpp"
 
 #include <boost/multiprecision/cpp_int.hpp>
@@ -37,7 +37,7 @@ public:
 	 * Type that is used for storing the list of attached indices
 	 */
 	using index_list_t    = std::vector< Index >;
-	using symmetry_list_t = std::vector< IndexPermutation >;
+	using symmetry_list_t = std::vector< IndexSubstitution >;
 
 
 	/**
@@ -58,7 +58,7 @@ public:
 					symmetry_list_t &&indexSymmetries = {});
 
 	Tensor(const Tensor &other) = default;
-	Tensor(Tensor &&other)               = default;
+	Tensor(Tensor &&other)      = default;
 	Tensor &operator=(const Tensor &other) = default;
 	Tensor &operator=(Tensor &&other) = default;
 
@@ -84,19 +84,19 @@ public:
 	const std::string_view getName() const;
 
 	/**
-	 * @returns A list of allowed IndexPermutations for this Tensor
+	 * @returns A list of allowed index exchanges (encoded as pairwise substitutions) for this Tensor
 	 */
 	const symmetry_list_t &getIndexSymmetries() const;
 	/**
-	 * Sets the allowed IndexPermutations for this Tensor
+	 * Sets the allowed index exchanges (encoded as pairwise substitutions) for this Tensor
 	 *
-	 * @param symmetries The allowed permutations
+	 * @param symmetries The allowed exchanges
 	 */
 	void setIndexSymmetries(const symmetry_list_t &symmetries);
 	/**
-	 * Sets the allowed IndexPermutations for this Tensor
+	 * Sets the allowed index exchanges (encoded as pairwise substitutions) for this Tensor
 	 *
-	 * @param symmetries The allowed permutations
+	 * @param symmetries The allowed exchanges
 	 */
 	void setIndexSymmetries(symmetry_list_t &&symmetries);
 

@@ -9,7 +9,7 @@ add_executable(${COMPONENT_NAME}_test
 	TermTest.cpp
 	GeneralTermTest.cpp
 	BinaryTermTest.cpp
-	IndexPermutationTest.cpp
+	IndexSubstitutionTest.cpp
 	IndexSpaceMetaTest.cpp
 	TensorDecompositionTest.cpp
 )

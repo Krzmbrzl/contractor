@@ -107,7 +107,7 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 			indexPairs.push_back(std::pair(firstIndex, secondIndex));
 
 			if (m_reader.peek() == '&') {
-				// There is another index pair in this permutation
+				// There is another index pair in this substitution
 				m_reader.expect("&");
 			} else {
 				stop = true;
@@ -118,17 +118,17 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 		m_reader.expect("->");
 		m_reader.skipWS(false);
 
-		static_assert(std::is_integral_v< Terms::IndexPermutation::factor_t >,
-					  "Expected the factor of an IndexPermutation to be integral");
-		Terms::IndexPermutation::factor_t factor = m_reader.parseInt();
+		static_assert(std::is_integral_v< Terms::IndexSubstitution::factor_t >,
+					  "Expected the factor of an IndexSubstitution to be integral");
+		Terms::IndexSubstitution::factor_t factor = m_reader.parseInt();
 
-		Terms::IndexPermutation::permutation_list allowedPermutations;
+		Terms::IndexSubstitution::substitution_list allowedSubstitutions;
 		for (const auto &currentPair : indexPairs) {
-			allowedPermutations.push_back(
-				Terms::IndexPermutation::index_pair_t(indices[currentPair.first], indices[currentPair.second]));
+			allowedSubstitutions.push_back(
+				Terms::IndexSubstitution::index_pair_t(indices[currentPair.first], indices[currentPair.second]));
 		}
 
-		symmetries.push_back(Terms::IndexPermutation(std::move(allowedPermutations), factor));
+		symmetries.push_back(Terms::IndexSubstitution(std::move(allowedSubstitutions), factor));
 
 		if (m_reader.hasInput() && m_reader.peek() == ',') {
 			m_reader.expect(",");

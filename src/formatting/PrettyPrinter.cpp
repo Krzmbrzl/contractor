@@ -1,6 +1,6 @@
 #include "formatting/PrettyPrinter.hpp"
 #include "terms/Index.hpp"
-#include "terms/IndexPermutation.hpp"
+#include "terms/IndexSubstitution.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
 #include "terms/Term.hpp"
@@ -156,25 +156,25 @@ void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 	}
 }
 
-void PrettyPrinter::print(const Terms::IndexPermutation &permutation) {
+void PrettyPrinter::print(const Terms::IndexSubstitution &substitution) {
 	assert(m_stream != nullptr);
 
 	*m_stream << "Interchange ";
-	for (std::size_t i = 0; i < permutation.getPermutations().size(); ++i) {
-		const Terms::IndexPermutation::index_pair_t &current = permutation.getPermutations()[i];
+	for (std::size_t i = 0; i < substitution.getSubstitutions().size(); ++i) {
+		const Terms::IndexSubstitution::index_pair_t &current = substitution.getSubstitutions()[i];
 
 		print(current.first);
 		*m_stream << " <> ";
 		print(current.second);
 
-		if (i + 1 < permutation.getPermutations().size()) {
+		if (i + 1 < substitution.getSubstitutions().size()) {
 			*m_stream << " and ";
 		}
 	}
 
-	if (permutation.getFactor() != 1) {
+	if (substitution.getFactor() != 1) {
 		*m_stream << " and apply a factor of ";
-		print(permutation.getFactor());
+		print(substitution.getFactor());
 	}
 }
 
@@ -288,7 +288,7 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 	*m_stream << "Symmetries for ";
 	print(tensor);
 
-	for (const Terms::IndexPermutation &currentSym : tensor.getIndexSymmetries()) {
+	for (const Terms::IndexSubstitution &currentSym : tensor.getIndexSymmetries()) {
 		*m_stream << "\n  ";
 		print(currentSym);
 	}

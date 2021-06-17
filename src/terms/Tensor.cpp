@@ -14,10 +14,10 @@ void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 	assert(source.getIndices().size() == destination.getIndices().size());
 
 	Tensor::symmetry_list_t symmetries;
-	for (const IndexPermutation &currentPermutation : source.getIndexSymmetries()) {
-		IndexPermutation::permutation_list permutations;
-		for (const IndexPermutation::index_pair_t &currentPair : currentPermutation.getPermutations()) {
-			// Find the indices of the Index objects that are part of the current IndexPermutation
+	for (const IndexSubstitution &currentSubstitution : source.getIndexSymmetries()) {
+		IndexSubstitution::substitution_list substitutions;
+		for (const IndexSubstitution::index_pair_t &currentPair : currentSubstitution.getSubstitutions()) {
+			// Find the indices of the Index objects that are part of the current IndexSubstitution
 			bool foundFirst  = false;
 			bool foundSecond = false;
 			std::size_t first, second;
@@ -42,11 +42,11 @@ void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 			// Given that the given tensors both refer to the same element, the symmetry operations also
 			// apply to the Index objects at the same indices. Thus we can simply use the indices from
 			// source in order to obtain the corresponding Index objects in destination.
-			permutations.push_back(
-				IndexPermutation::index_pair_t(destination.getIndices()[first], destination.getIndices()[second]));
+			substitutions.push_back(
+				IndexSubstitution::index_pair_t(destination.getIndices()[first], destination.getIndices()[second]));
 		}
 
-		symmetries.push_back(IndexPermutation(std::move(permutations), currentPermutation.getFactor()));
+		symmetries.push_back(IndexSubstitution(std::move(substitutions), currentSubstitution.getFactor()));
 	}
 
 	destination.setIndexSymmetries(std::move(symmetries));
@@ -139,13 +139,12 @@ void Tensor::replaceIndex(const Index &source, const Index &replacement) {
 			m_indices[i] = Index(replacement);
 		}
 	}
-	for (IndexPermutation &currentPermutation : m_indexSymmetries) {
-		currentPermutation.replaceIndex(source, replacement);
+	for (IndexSubstitution &currentSubstitution : m_indexSymmetries) {
+		currentSubstitution.replaceIndex(source, replacement);
 	}
 }
 
 void Tensor::replaceIndices(const std::vector< std::pair< Index, Index > > &replacements) {
-	// TODO: Implement and keep IndexSymmetries in sync as well
 	// First replace the indices in the index list
 	auto indexIt = m_indices.begin();
 	while (indexIt != m_indices.end()) {
@@ -163,19 +162,19 @@ void Tensor::replaceIndices(const std::vector< std::pair< Index, Index > > &repl
 	}
 
 	// Then also replace the indices in the symmetry specifications
-	for (IndexPermutation &currentSymmetry : m_indexSymmetries) {
-		for (std::pair< Index, Index > &currentPermutation : currentSymmetry.accessPermutations()) {
+	for (IndexSubstitution &currentSymmetry : m_indexSymmetries) {
+		for (std::pair< Index, Index > &currentSubstitution : currentSymmetry.accessSubstitutions()) {
 			bool replacedFirst  = false;
 			bool replacedSecond = false;
 
 			for (const auto &currentReplacement : replacements) {
-				if (!replacedFirst && currentPermutation.first == currentReplacement.first) {
-					currentPermutation.first = currentReplacement.second;
+				if (!replacedFirst && currentSubstitution.first == currentReplacement.first) {
+					currentSubstitution.first = currentReplacement.second;
 
 					replacedFirst = true;
 				}
-				if (!replacedSecond && currentPermutation.second == currentReplacement.first) {
-					currentPermutation.second = currentReplacement.second;
+				if (!replacedSecond && currentSubstitution.second == currentReplacement.first) {
+					currentSubstitution.second = currentReplacement.second;
 
 					replacedSecond = true;
 				}

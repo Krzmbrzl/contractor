@@ -6,7 +6,7 @@ add_library(${LIB_NAME} STATIC
 	Term.cpp
 	GeneralTerm.cpp
 	BinaryTerm.cpp
-	IndexPermutation.cpp
+	IndexSubstitution.cpp
 	IndexSpaceMeta.cpp
 	TensorDecomposition.cpp
 )

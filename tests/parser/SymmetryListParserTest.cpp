@@ -80,11 +80,11 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
 		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
-		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
+		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
 
 		ct::Tensor expectedTensor(
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexPermutation(firstPermutation) });
+			{ ct::IndexSubstitution(firstSubstitution) });
 
 		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
 	}
@@ -100,12 +100,12 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
 		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
-		ct::IndexPermutation firstPermutation(ct::IndexPermutation::index_pair_t(firstIndex, secondIndex), -2);
-		ct::IndexPermutation secondPermutation(ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex), 1);
+		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
+		ct::IndexSubstitution secondSubstitution(ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex), 1);
 
 		ct::Tensor expectedTensor(
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexPermutation(firstPermutation), ct::IndexPermutation(secondPermutation) });
+			{ ct::IndexSubstitution(firstSubstitution), ct::IndexSubstitution(secondSubstitution) });
 
 		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
 	}
@@ -121,13 +121,13 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
 		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
 
-		ct::IndexPermutation firstPermutation({ ct::IndexPermutation::index_pair_t(firstIndex, secondIndex),
-												ct::IndexPermutation::index_pair_t(thirdIndex, fourthIndex) },
-											  -1);
+		ct::IndexSubstitution firstSubstitution({ ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex),
+												 ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex) },
+											   -1);
 
 		ct::Tensor expectedTensor(
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexPermutation(firstPermutation) });
+			{ ct::IndexSubstitution(firstSubstitution) });
 
 		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
 	}
@@ -169,7 +169,7 @@ TEST(SymmetryListParserTest, parse) {
 	ct::Index index1 = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
 	ct::Index index2 = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
 	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) },
-					   { ct::IndexPermutation(ct::IndexPermutation::index_pair_t(index1, index2), 1) });
+					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2), 1) });
 
 	cp::SymmetryListParser parser(resolver);
 	std::vector< ct::Tensor > result = parser.parse(sstream);

@@ -15,7 +15,7 @@
 
 namespace Contractor::Terms {
 class Term;
-class IndexPermutation;
+class IndexSubstitution;
 class IndexSpaceMeta;
 class TensorDecomposition;
 }; // namespace Contractor::Terms
@@ -43,7 +43,7 @@ public:
 	void print(const Terms::Index &index);
 	void print(const Terms::Tensor &tensor);
 	void print(const Terms::Term &term, bool printPlusEqual = true);
-	void print(const Terms::IndexPermutation &permutation);
+	void print(const Terms::IndexSubstitution &substitution);
 	void print(const Terms::Index::Spin &spin);
 	void print(const Terms::IndexSpaceMeta &meta);
 	void print(const Utils::IndexSpaceResolver &resolver);
