@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <vector>
+#include <ostream>
 
 namespace Contractor::Terms {
 
@@ -44,6 +45,7 @@ public:
 
 	friend bool operator==(const IndexSubstitution &lhs, const IndexSubstitution &rhs);
 	friend bool operator!=(const IndexSubstitution &lhs, const IndexSubstitution &rhs);
+	friend std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub);
 
 	/**
 	 * @returns A list of pairwise substitutions represented by this object

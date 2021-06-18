@@ -33,6 +33,17 @@ bool operator!=(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
 	return !(lhs == rhs);
 }
 
+std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
+	stream << "(";
+	for (const IndexSubstitution::index_pair_t &currentPair : sub.getSubstitutions()) {
+		stream << currentPair.first << "<->" << currentPair.second << ", ";
+	}
+
+	stream << ")";
+
+	return stream;
+}
+
 const IndexSubstitution::substitution_list &IndexSubstitution::getSubstitutions() const {
 	return m_substitutions;
 }
