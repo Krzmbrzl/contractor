@@ -26,7 +26,8 @@ IndexSubstitution::IndexSubstitution(IndexSubstitution::substitution_list &&subs
 }
 
 bool operator==(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
-	return lhs.m_factor == rhs.m_factor && lhs.m_substitutions == rhs.m_substitutions;
+	return lhs.m_factor == rhs.m_factor && lhs.m_substitutions.size() == rhs.m_substitutions.size()
+		   && std::is_permutation(lhs.m_substitutions.begin(), lhs.m_substitutions.end(), rhs.m_substitutions.begin());
 }
 
 bool operator!=(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
