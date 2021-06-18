@@ -33,7 +33,7 @@ public:
 	explicit IndexSubstitution(const index_pair_t &substitute, factor_t factor = 1);
 	explicit IndexSubstitution(index_pair_t &&substitute, factor_t factor = 1);
 	explicit IndexSubstitution(const substitution_list &substitutions, factor_t factor = 1);
-	explicit IndexSubstitution(substitution_list &&substitutions, factor_t factor = 1);
+	explicit IndexSubstitution(substitution_list &&substitutions = {}, factor_t factor = 1);
 
 	~IndexSubstitution() = default;
 
