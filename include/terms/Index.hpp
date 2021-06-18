@@ -46,8 +46,8 @@ public:
 	Index &operator=(Index &&other) = default;
 
 	/**
-	 * @returns Whether the two indices are considered to be the same. Two indices are the same if they match in all attributes
-	 * except their type.
+	 * @returns Whether the two indices are considered to be the same. Two indices are the same if they match in all
+	 * attributes except their type.
 	 */
 	friend constexpr bool isSame(const Index &lhs, const Index &rhs) {
 		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spin == rhs.m_spin;
@@ -61,6 +61,24 @@ public:
 	}
 
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
+
+	friend std::ostream &operator<<(std::ostream &out, Spin spin) {
+		switch (spin) {
+			case Spin::None:
+				break;
+			case Spin::Alpha:
+				out << "a";
+				break;
+			case Spin::Beta:
+				out << "b";
+				break;
+			case Spin::Both:
+				out << "ab";
+				break;
+		}
+
+		return out;
+	}
 
 	friend std::ostream &operator<<(std::ostream &out, const Index &index) {
 		out << index.m_space.getID() << "-" << index.m_id;
@@ -76,19 +94,7 @@ public:
 				out << "A";
 				break;
 		}
-		switch (index.m_spin) {
-			case Spin::None:
-				break;
-			case Spin::Alpha:
-				out << "a";
-				break;
-			case Spin::Beta:
-				out << "b";
-				break;
-			case Spin::Both:
-				out << "ab";
-				break;
-		}
+		out << index.m_spin;
 
 		return out;
 	}
