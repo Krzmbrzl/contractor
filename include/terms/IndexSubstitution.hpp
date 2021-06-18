@@ -37,7 +37,7 @@ public:
 
 	~IndexSubstitution() = default;
 
-	explicit IndexSubstitution(const IndexSubstitution &) = default;
+	IndexSubstitution(const IndexSubstitution &) = default;
 	IndexSubstitution(IndexSubstitution &&)               = default;
 	IndexSubstitution &operator=(const IndexSubstitution &) = default;
 	IndexSubstitution &operator=(IndexSubstitution &&) = default;
