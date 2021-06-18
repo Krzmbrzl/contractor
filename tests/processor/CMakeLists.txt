@@ -4,6 +4,7 @@ set(COMPONENT_NAME "processor")
 
 add_executable(${COMPONENT_NAME}_test
 	FactorizerTest.cpp
+	SpinIntegratorTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test
