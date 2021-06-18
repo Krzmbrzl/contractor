@@ -16,7 +16,7 @@ static Contractor::Utils::IndexSpaceResolver resolver({
 
 
 static Contractor::Terms::Index idx(const std::string_view spec) {
-	if (spec.size() > 2) {
+	if (spec.size() > 3) {
 		throw std::runtime_error("Index spec is too large");
 	}
 	if (spec.size() < 1) {
@@ -44,16 +44,39 @@ static Contractor::Terms::Index idx(const std::string_view spec) {
 	indexSpin = resolver.getMeta(indexSpace).getDefaultSpin();
 
 	Contractor::Terms::Index::Type indexType = Contractor::Terms::Index::Type::Annihilator;
-	if (spec.size() == 2) {
+	if (spec.size() > 1) {
 		switch (spec[1]) {
 			case '+':
 				indexType = Contractor::Terms::Index::Type::Creator;
+				break;
+			case '-':
+				// Leave at Annihilator
 				break;
 			case '!':
 				indexType = Contractor::Terms::Index::Type::None;
 				break;
 			default:
 				throw std::runtime_error("Invalid index modifier");
+		}
+	}
+
+	if (spec.size() > 2) {
+		// Eplicit spin case
+		switch (spec[2]) {
+			case '/':
+				indexSpin = Contractor::Terms::Index::Spin::Alpha;
+				break;
+			case '\\':
+				indexSpin = Contractor::Terms::Index::Spin::Beta;
+				break;
+			case '|':
+				indexSpin = Contractor::Terms::Index::Spin::None;
+				break;
+			case '&':
+				indexSpin = Contractor::Terms::Index::Spin::Both;
+				break;
+			default:
+				throw std::runtime_error("Invalid spin modifer");
 		}
 	}
 
