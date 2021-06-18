@@ -63,6 +63,11 @@ public:
 	factor_t getFactor() const;
 
 	/**
+	 * Sets the prefactor associated with this substitution
+	 */
+	void setFactor(factor_t factor);
+
+	/**
 	 * Applies the substitutions to the given Tensor (in-place).
 	 *
 	 * @param tensor The Tensor to work on

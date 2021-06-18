@@ -57,6 +57,10 @@ IndexSubstitution::factor_t IndexSubstitution::getFactor() const {
 	return m_factor;
 }
 
+void IndexSubstitution::setFactor(IndexSubstitution::factor_t factor) {
+	m_factor = factor;
+}
+
 IndexSubstitution::factor_t IndexSubstitution::apply(Tensor &tensor) const {
 	Tensor::index_list_t &indices = tensor.getIndices();
 	for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
