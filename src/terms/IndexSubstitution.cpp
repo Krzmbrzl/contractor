@@ -66,11 +66,16 @@ IndexSubstitution::factor_t IndexSubstitution::apply(Tensor &tensor) const {
 	for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
 		for (std::size_t i = 0; i < tensor.getIndices().size(); i++) {
 			// Replace all occurrences of the two indices
-			if (tensor.getIndices()[i] == currentPermutation.first) {
-				tensor.getIndices()[i] = currentPermutation.second;
-			} else if (tensor.getIndices()[i] == currentPermutation.second) {
-				tensor.getIndices()[i] = currentPermutation.first;
+			Index::Type originalType = indices[i].getType();
+
+			if (Index::isSame(indices[i], currentPermutation.first)) {
+				indices[i] = currentPermutation.second;
+			} else if (Index::isSame(indices[i], currentPermutation.second)) {
+				indices[i] = currentPermutation.first;
 			}
+
+			// Make sure the substitution does not change the Index's type
+			indices[i].setType(originalType);
 		}
 	}
 

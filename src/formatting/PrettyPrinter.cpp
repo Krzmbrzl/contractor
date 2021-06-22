@@ -65,7 +65,7 @@ void PrettyPrinter::print(double value) {
 	*m_stream << m_floatingPointFormat % value;
 }
 
-void PrettyPrinter::print(const Terms::Index &index) {
+void PrettyPrinter::print(const Terms::Index &index, bool printType) {
 	assert(m_stream != nullptr);
 
 	// The letter that is going to be used is dependet on the Index's IndexSpace
@@ -95,16 +95,18 @@ void PrettyPrinter::print(const Terms::Index &index) {
 			*m_stream << m_noneSpinSymbol;
 			break;
 	}
-	switch (index.getType()) {
-		case Terms::Index::Type::Creator:
-			*m_stream << m_creatorSymbol;
-			break;
-		case Terms::Index::Type::Annihilator:
-			*m_stream << m_annihilatorSymbol;
-			break;
-		case Terms::Index::Type::None:
-			// No symbol -> No type
-			break;
+	if (printType) {
+		switch (index.getType()) {
+			case Terms::Index::Type::Creator:
+				*m_stream << m_creatorSymbol;
+				break;
+			case Terms::Index::Type::Annihilator:
+				*m_stream << m_annihilatorSymbol;
+				break;
+			case Terms::Index::Type::None:
+				// No symbol -> No type
+				break;
+		}
 	}
 }
 
@@ -163,9 +165,9 @@ void PrettyPrinter::print(const Terms::IndexSubstitution &substitution) {
 	for (std::size_t i = 0; i < substitution.getSubstitutions().size(); ++i) {
 		const Terms::IndexSubstitution::index_pair_t &current = substitution.getSubstitutions()[i];
 
-		print(current.first);
+		print(current.first, false);
 		*m_stream << " <> ";
-		print(current.second);
+		print(current.second, false);
 
 		if (i + 1 < substitution.getSubstitutions().size()) {
 			*m_stream << " and ";

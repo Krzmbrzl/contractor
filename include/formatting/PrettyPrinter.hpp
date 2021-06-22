@@ -40,7 +40,7 @@ public:
 	void print(double val);
 	void print(std::string_view string);
 	void print(const Terms::ContractionResult::cost_t &cost);
-	void print(const Terms::Index &index);
+	void print(const Terms::Index &index, bool printType = true);
 	void print(const Terms::Tensor &tensor);
 	void print(const Terms::Term &term, bool printPlusEqual = true);
 	void print(const Terms::IndexSubstitution &substitution);
