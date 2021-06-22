@@ -49,7 +49,7 @@ public:
 	 * @returns Whether the two indices are considered to be the same. Two indices are the same if they match in all
 	 * attributes except their type.
 	 */
-	friend constexpr bool isSame(const Index &lhs, const Index &rhs) {
+	static constexpr bool isSame(const Index &lhs, const Index &rhs) {
 		return lhs.m_space == rhs.m_space && lhs.m_id == rhs.m_id && lhs.m_spin == rhs.m_spin;
 	}
 

@@ -93,9 +93,9 @@ TEST(IndexTest, isSame) {
 							ct::Index index2(ct::IndexSpace(space2), id2, ct::Index::Type::Annihilator, spin2);
 
 							if (matches) {
-								ASSERT_TRUE(isSame(index1, index2));
+								ASSERT_TRUE(ct::Index::isSame(index1, index2));
 							} else {
-								ASSERT_FALSE(isSame(index1, index2));
+								ASSERT_FALSE(ct::Index::isSame(index1, index2));
 							}
 						}
 					}
