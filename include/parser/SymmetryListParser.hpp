@@ -49,7 +49,7 @@ public:
 	 *
 	 * @returns A Tensor representing the parse result
 	 */
-	Terms::Tensor parseSymmetrySpec();
+	std::vector< Terms::Tensor > parseSymmetrySpecs();
 
 protected:
 	const Utils::IndexSpaceResolver &m_resolver;

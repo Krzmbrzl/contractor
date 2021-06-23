@@ -3,11 +3,14 @@
 #include "terms/Tensor.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include "IndexHelper.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #define STRINGIFY(x) #x
@@ -17,16 +20,7 @@ namespace cp = Contractor::Parser;
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
 
-static cu::IndexSpaceResolver resolver({
-	ct::IndexSpaceMeta("occupied", 'H', 10, ct::Index::Spin::Both),
-	ct::IndexSpaceMeta("virtual", 'P', 100, ct::Index::Spin::Both),
-});
-
-static ct::Index createIndex(const ct::IndexSpace &space, ct::Index::id_t id, ct::Index::Type type) {
-	return ct::Index(space, id, type, resolver.getMeta(space).getDefaultSpin());
-}
-
-TEST(SymmetryListParserTest, parseSymmetrySpec) {
+TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 	{
 		// No symmetry and no indices
 		std::string content = "H[,]:";
@@ -37,7 +31,9 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 
 		ct::Tensor expectedTensor("H");
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
 		// No symmetry and no indices
@@ -49,7 +45,9 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 
 		ct::Tensor expectedTensor("VeryLongName");
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
 		// No symmetry
@@ -59,14 +57,11 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Tensor expectedTensor("H", {
-										   createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator),
-										   createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator),
-										   createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator),
-										   createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator),
-									   });
+		ct::Tensor expectedTensor("H", { idx("i+"), idx("a+"), idx("b"), idx("j") });
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
 		std::string content = "H[HP,PH]: 1-2 -> -2";
@@ -75,10 +70,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("a+");
+		ct::Index thirdIndex  = idx("b");
+		ct::Index fourthIndex = idx("j");
 
 		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
 
@@ -86,7 +81,9 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
 			{ ct::IndexSubstitution(firstSubstitution) });
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
 		std::string content = "H[HP,PH]: 1-2 -> -2, 3-4 -> 1";
@@ -95,10 +92,10 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("a+");
+		ct::Index thirdIndex  = idx("b");
+		ct::Index fourthIndex = idx("j");
 
 		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
 		ct::IndexSubstitution secondSubstitution(ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex), 1);
@@ -107,7 +104,9 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
 			{ ct::IndexSubstitution(firstSubstitution), ct::IndexSubstitution(secondSubstitution) });
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
 		std::string content = "H[HP,PH]: 1-2&3-4 -> -1";
@@ -116,20 +115,39 @@ TEST(SymmetryListParserTest, parseSymmetrySpec) {
 		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::Index firstIndex  = createIndex(resolver.resolve("occupied"), 0, ct::Index::Type::Creator);
-		ct::Index secondIndex = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
-		ct::Index thirdIndex  = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
-		ct::Index fourthIndex = createIndex(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator);
+		ct::Index firstIndex  = idx("i+");
+		ct::Index secondIndex = idx("a+");
+		ct::Index thirdIndex  = idx("b");
+		ct::Index fourthIndex = idx("j");
 
 		ct::IndexSubstitution firstSubstitution({ ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex),
-												 ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex) },
-											   -1);
+												  ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex) },
+												-1);
 
 		ct::Tensor expectedTensor(
 			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
 			{ ct::IndexSubstitution(firstSubstitution) });
 
-		ASSERT_EQ(parser.parseSymmetrySpec(), expectedTensor);
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 1);
+		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
+	}
+	{
+		std::string content = "H[(H|P)P,PH]: 1-2 -> -1";
+		std::stringstream sstream(content);
+
+		cp::SymmetryListParser parser(resolver);
+		parser.setSource(sstream);
+
+		ct::IndexSubstitution sub1({ ct::IndexSubstitution::index_pair_t(idx("i+"), idx("a+")) }, -1);
+		ct::IndexSubstitution sub2({ ct::IndexSubstitution::index_pair_t(idx("a+"), idx("b+")) }, -1);
+
+		ct::Tensor tensor1("H", { idx("i+"), idx("a+"), idx("b"), idx("j") }, { ct::IndexSubstitution(sub1) });
+		ct::Tensor tensor2("H", { idx("a+"), idx("b+"), idx("c"), idx("i") }, { ct::IndexSubstitution(sub2) });
+
+		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
+		ASSERT_EQ(symmetrySpecs.size(), 2);
+		ASSERT_THAT(symmetrySpecs, ::testing::UnorderedElementsAre(tensor1, tensor2));
 	}
 }
 
@@ -140,17 +158,23 @@ TEST(SymmetryListParserTest, whitespaceVariations) {
 	cp::SymmetryListParser parser(resolver);
 	parser.setSource(sstream);
 
-	ct::Tensor tensor1 = parser.parseSymmetrySpec();
+	std::vector< ct::Tensor > specs = parser.parseSymmetrySpecs();
+	ASSERT_EQ(specs.size(), 1);
+	ct::Tensor tensor1 = specs[0];
 
 	content = "H[HP,PH]:      1-2   ->   -2";
 	sstream = std::stringstream(content);
 	parser.setSource(sstream);
-	ct::Tensor tensor2 = parser.parseSymmetrySpec();
+	specs = parser.parseSymmetrySpecs();
+	ASSERT_EQ(specs.size(), 1);
+	ct::Tensor tensor2 = specs[0];
 
 	content = "H[HP,PH]:1-2->-2";
 	sstream = std::stringstream(content);
 	parser.setSource(sstream);
-	ct::Tensor tensor3 = parser.parseSymmetrySpec();
+	specs = parser.parseSymmetrySpecs();
+	ASSERT_EQ(specs.size(), 1);
+	ct::Tensor tensor3 = specs[0];
 
 	ASSERT_EQ(tensor1, tensor2);
 	ASSERT_EQ(tensor2, tensor3);
@@ -166,8 +190,8 @@ TEST(SymmetryListParserTest, parse) {
 	std::stringstream sstream(content);
 
 	ct::Tensor tensor1("H");
-	ct::Index index1 = createIndex(resolver.resolve("virtual"), 0, ct::Index::Type::Creator);
-	ct::Index index2 = createIndex(resolver.resolve("virtual"), 1, ct::Index::Type::Annihilator);
+	ct::Index index1 = idx("a+");
+	ct::Index index2 = idx("b");
 	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) },
 					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2), 1) });
 

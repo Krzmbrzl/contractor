@@ -92,7 +92,7 @@ void directProduct(std::vector< std::string > &products, const std::vector< std:
 	}
 }
 
-std::vector< std::string > readIndexSpec(BufferedStreamReader &reader, char sequenceTerminator) {
+std::vector< std::string > DecompositionParser::readIndexSpec(BufferedStreamReader &reader, char sequenceTerminator) {
 	std::vector< std::vector< char > > indexSpecs;
 	while (reader.peek() != sequenceTerminator) {
 		std::vector< char > current;

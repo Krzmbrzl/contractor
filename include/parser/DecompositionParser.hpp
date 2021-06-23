@@ -60,6 +60,8 @@ public:
 	Terms::GeneralTerm parseDecompositionPart(const Terms::Tensor &tensor, int sign);
 	Terms::Tensor parseDecompositionElement(const Terms::Tensor::index_list_t &originalIndices);
 
+	static std::vector< std::string > readIndexSpec(BufferedStreamReader &reader, char sequenceTerminator);
+
 protected:
 	const Utils::IndexSpaceResolver m_resolver;
 	BufferedStreamReader m_reader;

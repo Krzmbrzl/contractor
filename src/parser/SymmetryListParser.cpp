@@ -1,4 +1,5 @@
 #include "parser/SymmetryListParser.hpp"
+#include "parser/DecompositionParser.hpp"
 
 #include <type_traits>
 #include <unordered_map>
@@ -34,7 +35,8 @@ std::vector< Terms::Tensor > SymmetryListParser::parse() {
 			// Comment
 			m_reader.skipBehind("\n");
 		} else {
-			symmetryTensors.push_back(parseSymmetrySpec());
+			std::vector< ct::Tensor > specs = parseSymmetrySpecs();
+			symmetryTensors.insert(symmetryTensors.end(), specs.begin(), specs.end());
 		}
 
 		m_reader.skipWS();
@@ -45,7 +47,7 @@ std::vector< Terms::Tensor > SymmetryListParser::parse() {
 	return symmetryTensors;
 }
 
-Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
+std::vector< Terms::Tensor > SymmetryListParser::parseSymmetrySpecs() {
 	std::string name;
 	while (m_reader.peek() != '[') {
 		name += m_reader.read();
@@ -53,92 +55,117 @@ Terms::Tensor SymmetryListParser::parseSymmetrySpec() {
 
 	m_reader.expect("[");
 
-	Terms::Tensor::index_list_t indices;
-
-	std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
-
 	// Creators
-	while (m_reader.peek() != ',') {
-		char c = m_reader.read();
-		try {
-			ct::IndexSpace space = m_resolver.resolve(c);
-			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Creator,
-										m_resolver.getMeta(space).getDefaultSpin()));
-		} catch (const Utils::ResolveException &e) {
-			throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
-		}
-	}
+	std::vector< std::string > creatorIndexStrings = DecompositionParser::readIndexSpec(m_reader, ',');
 
 	m_reader.expect(",");
 
 	// Annihilators
-	while (m_reader.peek() != ']') {
-		char c = m_reader.read();
-		try {
-			ct::IndexSpace space = m_resolver.resolve(c);
-			indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
-										m_resolver.getMeta(space).getDefaultSpin()));
-		} catch (const Utils::ResolveException &e) {
-			throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
-		}
-	}
+	std::vector< std::string > annihilatorStrings = DecompositionParser::readIndexSpec(m_reader, ']');
 
 	m_reader.expect("]:");
 
 	m_reader.skipWS(false);
 
-	Terms::Tensor::symmetry_list_t symmetries;
+	// Read the rest of the line
+	std::string lineContent;
 	while (m_reader.hasInput() && m_reader.peek() != '\n') {
-		std::vector< std::pair< std::size_t, std::size_t > > indexPairs;
-		bool stop = false;
-
-		while (!stop) {
-			Terms::Index::id_t firstIndex = m_reader.parseInt();
-			m_reader.expect("-");
-			Terms::Index::id_t secondIndex = m_reader.parseInt();
-
-			if (firstIndex <= 0 || secondIndex <= 0) {
-				throw ParseException("Expect indexing to start at 1");
-			}
-			// Convert to 0-based indexing
-			firstIndex -= 1;
-			secondIndex -= 1;
-
-			indexPairs.push_back(std::pair(firstIndex, secondIndex));
-
-			if (m_reader.peek() == '&') {
-				// There is another index pair in this substitution
-				m_reader.expect("&");
-			} else {
-				stop = true;
-			}
-		}
-
-		m_reader.skipWS(false);
-		m_reader.expect("->");
-		m_reader.skipWS(false);
-
-		static_assert(std::is_integral_v< Terms::IndexSubstitution::factor_t >,
-					  "Expected the factor of an IndexSubstitution to be integral");
-		Terms::IndexSubstitution::factor_t factor = m_reader.parseInt();
-
-		Terms::IndexSubstitution::substitution_list allowedSubstitutions;
-		for (const auto &currentPair : indexPairs) {
-			allowedSubstitutions.push_back(
-				Terms::IndexSubstitution::index_pair_t(indices[currentPair.first], indices[currentPair.second]));
-		}
-
-		symmetries.push_back(Terms::IndexSubstitution(std::move(allowedSubstitutions), factor));
-
-		if (m_reader.hasInput() && m_reader.peek() == ',') {
-			m_reader.expect(",");
-		}
-		m_reader.skipWS(false);
+		lineContent += m_reader.read();
 	}
 
-	Terms::Tensor symmetryTensor(name, std::move(indices), std::move(symmetries));
+	BufferedStreamReader backupReader = m_reader;
 
-	return symmetryTensor;
+	std::vector< ct::Tensor > symmetryTensors;
+	for (const std::string &currentCreatorString : creatorIndexStrings) {
+		for (const std::string &currentAnnihilatorString : annihilatorStrings) {
+			// Set the reader to read one and the same line in every iteration
+			std::stringstream sstream(lineContent);
+			m_reader.initSource(sstream);
+
+			Terms::Tensor::index_list_t indices;
+			std::unordered_map< ct::IndexSpace, ct::Index::id_t > indexMap;
+
+			// Creators
+			for (char c : currentCreatorString) {
+				try {
+					ct::IndexSpace space = m_resolver.resolve(c);
+					indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Creator,
+												m_resolver.getMeta(space).getDefaultSpin()));
+				} catch (const Utils::ResolveException &e) {
+					throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
+				}
+			}
+
+			// Annihilators
+			for (char c : currentAnnihilatorString) {
+				try {
+					ct::IndexSpace space = m_resolver.resolve(c);
+					indices.push_back(ct::Index(space, indexMap[space]++, ct::Index::Type::Annihilator,
+												m_resolver.getMeta(space).getDefaultSpin()));
+				} catch (const Utils::ResolveException &e) {
+					throw ParseException(std::string("Failed at parsing index space label: ") + e.what());
+				}
+			}
+
+
+			Terms::Tensor::symmetry_list_t symmetries;
+			while (m_reader.hasInput() && m_reader.peek() != '\n') {
+				std::vector< std::pair< std::size_t, std::size_t > > indexPairs;
+				bool stop = false;
+
+				while (!stop) {
+					Terms::Index::id_t firstIndex = m_reader.parseInt();
+					m_reader.expect("-");
+					Terms::Index::id_t secondIndex = m_reader.parseInt();
+
+					if (firstIndex <= 0 || secondIndex <= 0) {
+						throw ParseException("Expect indexing to start at 1");
+					}
+					// Convert to 0-based indexing
+					firstIndex -= 1;
+					secondIndex -= 1;
+
+					indexPairs.push_back(std::pair(firstIndex, secondIndex));
+
+					if (m_reader.peek() == '&') {
+						// There is another index pair in this substitution
+						m_reader.expect("&");
+					} else {
+						stop = true;
+					}
+				}
+
+				m_reader.skipWS(false);
+				m_reader.expect("->");
+				m_reader.skipWS(false);
+
+				static_assert(std::is_integral_v< Terms::IndexSubstitution::factor_t >,
+							  "Expected the factor of an IndexSubstitution to be integral");
+				Terms::IndexSubstitution::factor_t factor = m_reader.parseInt();
+
+				Terms::IndexSubstitution::substitution_list allowedSubstitutions;
+				for (const auto &currentPair : indexPairs) {
+					allowedSubstitutions.push_back(Terms::IndexSubstitution::index_pair_t(indices[currentPair.first],
+																						  indices[currentPair.second]));
+				}
+
+				symmetries.push_back(Terms::IndexSubstitution(std::move(allowedSubstitutions), factor));
+
+				if (m_reader.hasInput() && m_reader.peek() == ',') {
+					m_reader.expect(",");
+				}
+				m_reader.skipWS(false);
+			}
+
+			Terms::Tensor symmetryTensor(name, std::move(indices), std::move(symmetries));
+
+			symmetryTensors.push_back(std::move(symmetryTensor));
+		}
+	}
+
+	m_reader = backupReader;
+
+	return symmetryTensors;
 }
 
 }; // namespace Contractor::Parser
