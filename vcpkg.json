@@ -5,6 +5,7 @@
 		"boost-program-options",
 		"boost-multiprecision",
 		"boost-type-traits",
-		"boost-format"
+		"boost-format",
+		"boost-range"
 	]
 }

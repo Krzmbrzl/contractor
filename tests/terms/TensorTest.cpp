@@ -525,3 +525,48 @@ TEST(TensorTest, contract) {
 		ASSERT_EQ(result.cost, expectedCost);
 	}
 }
+
+TEST(TensorTest, contractWithSymmetry) {
+	{
+		// A_B[ij,ab] = A[i,a,q] B[j,b,q]
+		ct::IndexSubstitution sym1({ idx("i"), idx("a") }, 1);
+		ct::IndexSubstitution sym2({ idx("j"), idx("b") }, 1);
+
+		ct::Tensor t1("A", { idx("i+"), idx("a"), idx("q!") }, { sym1 });
+		ct::Tensor t2("B", { idx("j+"), idx("b"), idx("q!") }, { sym2 });
+
+		ct::Tensor expectedResult("A_B", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1, sym2 });
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+	}
+	{
+		// A_B[j,b] = A[ij,ab] B[a,i]
+		ct::IndexSubstitution sym1({ idx("i"), idx("a") }, 1);
+		ct::IndexSubstitution sym2({ idx("j"), idx("b") }, 1);
+		ct::IndexSubstitution sym3({ idx("a"), idx("i") }, 1);
+
+		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1, sym2 });
+		ct::Tensor t2("B", { idx("a+"), idx("i") }, { sym3 });
+
+		ct::Tensor expectedResult("A_B", { idx("j+"), idx("b") }, { sym2 });
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+	}
+	{
+		// A_B[j,b] = A[ij,ab] B[a,i]
+		ct::IndexSubstitution sym1({ idx("i"), idx("b") }, -1);
+
+		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1 });
+		ct::Tensor t2("B", { idx("a+"), idx("i") });
+
+		ct::Tensor expectedResult("A_B", { idx("j+"), idx("b") }, {});
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.result, expectedResult);
+	}
+}

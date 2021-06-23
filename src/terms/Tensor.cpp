@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cassert>
 
+#include <boost/range/join.hpp>
+
 namespace Contractor::Terms {
 
 void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
@@ -310,6 +312,20 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	}
 
 	Tensor result(resultName, std::move(resultIndices));
+
+	// As a final step we want to figure out whether any of the index symmetries from the original Tensors still apply
+	// to the result Tensor.
+	// Note that the indices in the result are the same as in the Tensors it consists of. There is also no ambiguity for
+	// where each index came from since indices that occur in both Tensors are being contracted and thus no longer
+	// show in the result Tensor.
+	Tensor::symmetry_list_t resultSymmetries;
+	for (const IndexSubstitution &currentSymmetry : boost::join(m_indexSymmetries, other.getIndexSymmetries())) {
+		if (currentSymmetry.appliesTo(result, true)) {
+			resultSymmetries.push_back(currentSymmetry);
+		}
+	}
+
+	result.setIndexSymmetries(std::move(resultSymmetries));
 
 	return { std::move(result), cost };
 }
