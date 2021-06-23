@@ -289,6 +289,7 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 
 	*m_stream << "Symmetries for ";
 	print(tensor);
+	*m_stream << ":";
 
 	for (const Terms::IndexSubstitution &currentSym : tensor.getIndexSymmetries()) {
 		*m_stream << "\n  ";
