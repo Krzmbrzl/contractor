@@ -139,8 +139,25 @@ int main(int argc, const char **argv) {
 	printer << "\n\n";
 
 	// Transfer symmetry to the Tensor objects in terms
+	printer << "Applying symmetry to read-in terms:\n";
+	for (ct::GeneralTerm &currentTerm : terms) {
+		printer << "In " << currentTerm << ":\n";
+		for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+			for (ct::Tensor &currentSymmetry : symmetries) {
+				if (currentTensor.refersToSameElement(currentSymmetry)) {
+					ct::Tensor::transferSymmetry(currentSymmetry, currentTensor);
 
-	// Print/Log terms again
+					printer << "- ";
+					printer.printSymmetries(currentTensor);
+					printer << "\n";
+
+					break;
+				}
+			}
+		}
+	}
+
+	printer << "\n\n";
 
 	// Apply decomposition
 	printer << "Applying substitutions:\n";
