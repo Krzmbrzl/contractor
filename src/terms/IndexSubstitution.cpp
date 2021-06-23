@@ -62,6 +62,10 @@ void IndexSubstitution::setFactor(IndexSubstitution::factor_t factor) {
 }
 
 IndexSubstitution::factor_t IndexSubstitution::apply(Tensor &tensor) const {
+	if (!appliesTo(tensor, false)) {
+		return 1;
+	}
+
 	Tensor::index_list_t &indices = tensor.getIndices();
 	for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
 		for (std::size_t i = 0; i < tensor.getIndices().size(); i++) {
@@ -90,6 +94,40 @@ void IndexSubstitution::replaceIndex(const Index &source, const Index &replaceme
 			m_substitutions[i] = IndexSubstitution::index_pair_t(m_substitutions[i].first, replacement);
 		}
 	}
+}
+
+struct is_same {
+	const Index &m_idx;
+
+	is_same(const Index &idx) : m_idx(idx) {}
+
+	bool operator()(const Index &index) const { return Index::isSame(index, m_idx); }
+};
+
+bool IndexSubstitution::appliesTo(const Tensor &tensor, bool bidirectional) const {
+	// A substitution applies, if all subsitutions can be carried out on the given Tensor (that is all
+	// indices referenced in the substitutions are contained in the given Tensor)
+
+	const Tensor::index_list_t &indices = tensor.getIndices();
+
+	for (const index_pair_t &currentPair : m_substitutions) {
+		auto itFirst = std::find_if(indices.begin(), indices.end(), is_same(currentPair.first));
+		auto itSecond = std::find_if(indices.begin(), indices.end(), is_same(currentPair.second));
+
+		bool applies;
+
+		if (bidirectional) {
+			applies = itFirst != indices.end() && itSecond != indices.end();
+		} else {
+			applies = itFirst != indices.end() || itSecond != indices.end();
+		}
+
+		if (!applies) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 }; // namespace Contractor::Terms

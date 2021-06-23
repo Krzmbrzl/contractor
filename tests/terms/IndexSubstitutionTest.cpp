@@ -130,3 +130,22 @@ TEST(IndexSubstitutionTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 }
+
+TEST(IndexSubstitutionTest, appliesTo) {
+	{
+		ct::IndexSubstitution sub({ idx("a"), idx("b") });
+
+		ct::Tensor T("T", { idx("b"), idx("a") });
+
+		ASSERT_TRUE(sub.appliesTo(T, true));
+		ASSERT_TRUE(sub.appliesTo(T, false));
+	}
+	{
+		ct::IndexSubstitution sub({ idx("a"), idx("c") });
+
+		ct::Tensor T("T", { idx("b"), idx("a") });
+
+		ASSERT_FALSE(sub.appliesTo(T, true));
+		ASSERT_TRUE(sub.appliesTo(T, false));
+	}
+}

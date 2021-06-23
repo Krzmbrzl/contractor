@@ -3,9 +3,9 @@
 
 #include "terms/Index.hpp"
 
+#include <ostream>
 #include <utility>
 #include <vector>
-#include <ostream>
 
 namespace Contractor::Terms {
 
@@ -39,7 +39,7 @@ public:
 	~IndexSubstitution() = default;
 
 	IndexSubstitution(const IndexSubstitution &) = default;
-	IndexSubstitution(IndexSubstitution &&)               = default;
+	IndexSubstitution(IndexSubstitution &&)      = default;
 	IndexSubstitution &operator=(const IndexSubstitution &) = default;
 	IndexSubstitution &operator=(IndexSubstitution &&) = default;
 
@@ -82,6 +82,16 @@ public:
 	 * @param replacement The index to replace with
 	 */
 	void replaceIndex(const Index &source, const Index &replacement);
+
+	/**
+	 * @param tensor The Tensor to check
+	 * @param bidirectional Whether it is required that each permutation can be applied
+	 * in both directions. That means for i<>j the Tensor has to contain both: i and j that
+	 * are replaced with one another, whereas in the unidirectional case only i or j is
+	 * required to be present.
+	 * @returns Whether this substitution applies to the given Tensor
+	 */
+	bool appliesTo(const Tensor &tensor, bool bidirectional) const;
 
 protected:
 	substitution_list m_substitutions;
