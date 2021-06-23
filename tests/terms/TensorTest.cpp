@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace ct = Contractor::Terms;
@@ -438,14 +439,8 @@ TEST(TensorTest, getIndexMapping) {
 
 	ASSERT_TRUE(one.refersToSameElement(two));
 
-	std::vector< std::pair< ct::Index, ct::Index > > expectedMapping = {
-		std::make_pair(i, k),
-		std::make_pair(j, l),
-		std::make_pair(a, c),
-		std::make_pair(b, d),
-	};
-
-	ASSERT_EQ(one.getIndexMapping(two), expectedMapping);
+	ASSERT_THAT(one.getIndexMapping(two), ::testing::UnorderedElementsAre(std::make_pair(i, k), std::make_pair(j, l),
+																		  std::make_pair(a, c), std::make_pair(b, d)));
 }
 
 TEST(TensorTest, contract) {

@@ -185,6 +185,13 @@ public:
 	 */
 	ContractionResult contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const;
 
+	/**
+	 * Brings the indices of this Tensor into "canonical" order. That means the indices are sorted
+	 * in such a way that creator indices come before annihilator ones which come before other indices.
+	 * During this procedure the relative order within each index group is not changed.
+	 */
+	void sortIndices();
+
 protected:
 	index_list_t m_indices;
 	std::string m_name;

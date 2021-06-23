@@ -55,10 +55,12 @@ void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 Tensor::Tensor(const std::string_view name, const Tensor::index_list_t &indices,
 			   const Tensor::symmetry_list_t &indexSymmetries)
 	: m_indices(indices), m_name(name), m_indexSymmetries(indexSymmetries) {
+	sortIndices();
 }
 
 Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, Tensor::symmetry_list_t &&indexSymmetries)
 	: m_indices(indices), m_name(name), m_indexSymmetries(indexSymmetries) {
+	sortIndices();
 }
 
 bool operator==(const Tensor &lhs, const Tensor &rhs) {
@@ -310,6 +312,14 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	Tensor result(resultName, std::move(resultIndices));
 
 	return { std::move(result), cost };
+}
+
+bool canonical_index_less(const Index &lhs, const Index &rhs) {
+	return lhs.getType() < rhs.getType();
+}
+
+void Tensor::sortIndices() {
+	std::stable_sort(m_indices.begin(), m_indices.end(), canonical_index_less);
 }
 
 

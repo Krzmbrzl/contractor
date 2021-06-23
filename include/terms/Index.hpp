@@ -23,9 +23,9 @@ public:
 	 * An enum holding different Index types
 	 */
 	enum class Type {
-		None,
 		Creator,
 		Annihilator,
+		None,
 	};
 
 	/**
