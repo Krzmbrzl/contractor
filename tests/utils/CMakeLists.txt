@@ -6,6 +6,7 @@ add_executable(${COMPONENT_NAME}_test
 	IterableTest.cpp
 	IndexSpaceResolverTest.cpp
 	PairingGeneratorTest.cpp
+	HeapsAlgorithmTest.cpp
 )
 
 target_include_directories(${COMPONENT_NAME}_test
@@ -14,6 +15,7 @@ target_include_directories(${COMPONENT_NAME}_test
 
 target_link_libraries(${COMPONENT_NAME}_test
 	gtest_main
+	gmock
 	${MAIN_EXECUTABLE_NAME}::${COMPONENT_NAME}
 	${MAIN_EXECUTABLE_NAME}::utils
 )
