@@ -38,7 +38,7 @@ public:
 		};
 	};
 
-	explicit Term(const Tensor &resul, factor_t prefactor);
+	explicit Term(const Tensor &result = Tensor(), factor_t prefactor = {});
 	Term(const Term &) = default;
 	Term(Term &&)      = default;
 	virtual ~Term()    = default;
