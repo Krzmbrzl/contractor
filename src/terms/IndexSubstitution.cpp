@@ -130,4 +130,18 @@ bool IndexSubstitution::appliesTo(const Tensor &tensor, bool bidirectional) cons
 	return true;
 }
 
+bool IndexSubstitution::isNoOp() const {
+	if (m_factor != 1) {
+		return false;
+	}
+
+	for (const IndexSubstitution::index_pair_t &currentPair : m_substitutions) {
+		if (currentPair.first != currentPair.second) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 }; // namespace Contractor::Terms

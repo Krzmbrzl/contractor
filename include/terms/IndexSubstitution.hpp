@@ -93,6 +93,8 @@ public:
 	 */
 	bool appliesTo(const Tensor &tensor, bool bidirectional) const;
 
+	bool isNoOp() const;
+
 protected:
 	substitution_list m_substitutions;
 	factor_t m_factor;
