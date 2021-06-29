@@ -97,6 +97,10 @@ const std::string_view Tensor::getName() const {
 	return m_name;
 }
 
+void Tensor::setName(const std::string_view &name) {
+	m_name = name;
+}
+
 const Tensor::symmetry_list_t &Tensor::getIndexSymmetries() const {
 	return m_indexSymmetries;
 }

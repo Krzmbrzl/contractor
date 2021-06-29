@@ -83,6 +83,8 @@ public:
 	 */
 	const std::string_view getName() const;
 
+	void setName(const std::string_view &name);
+
 	/**
 	 * @returns A list of allowed index exchanges (encoded as pairwise substitutions) for this Tensor
 	 */
