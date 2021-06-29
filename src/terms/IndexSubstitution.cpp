@@ -40,7 +40,7 @@ std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
 		stream << currentPair.first << "<->" << currentPair.second << ", ";
 	}
 
-	stream << ")";
+	stream << ") -> " << sub.getFactor() ;
 
 	return stream;
 }
