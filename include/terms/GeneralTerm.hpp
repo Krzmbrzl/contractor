@@ -48,15 +48,17 @@ public:
 	/**
 	 * @returns A mutable reference of the contained Tensor list
 	 */
-	tensor_list_t &accessTensors();
+	tensor_list_t &accessTensorList();
+
 	/**
-	 * @returns A direct reference of the underlying Tensor list
+	 * @returns A reference of the contained Tensor list
 	 */
-	const tensor_list_t &accessTensors() const;
+	const tensor_list_t &accessTensorList() const;
 
 protected:
 	tensor_list_t m_tensors;
 
+	Tensor &get(std::size_t index) override;
 	const Tensor &get(std::size_t index) const override;
 };
 

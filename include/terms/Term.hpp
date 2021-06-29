@@ -84,6 +84,12 @@ public:
 	Iterable< const Tensor > getTensors() const;
 
 	/**
+	 * @returns An object that can be iterated over in order to visit the different Tensors contained
+	 * in this term
+	 */
+	Iterable< Tensor > accessTensors();
+
+	/**
 	 * @param other The Term to compare with
 	 * @param options The options to use when performing the comparison. The different options are specified
 	 * in the CompareOption namespace and can be combined using bitwise AND.
@@ -96,6 +102,12 @@ public:
 protected:
 	Tensor m_result;
 	factor_t m_prefactor;
+
+	/**
+	 * @returns A reference to the Tensor at the given index. This helper function is used for making
+	 * iterating over Terms possible.
+	 */
+	virtual Tensor &get(std::size_t index) = 0;
 
 	/**
 	 * @returns A reference to the Tensor at the given index. This helper function is used for making

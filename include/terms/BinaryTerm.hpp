@@ -34,6 +34,7 @@ protected:
 	Tensor m_left;
 	Tensor m_right;
 
+	Tensor &get(std::size_t index) override;
 	const Tensor &get(std::size_t index) const override;
 };
 

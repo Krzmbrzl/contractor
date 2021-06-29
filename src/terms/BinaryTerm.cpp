@@ -14,6 +14,12 @@ std::size_t BinaryTerm::size() const {
 	return m_right != DummyRHS ? 2 : 1;
 }
 
+Tensor &BinaryTerm::get(std::size_t index) {
+	assert(index == 0 || index == 1);
+
+	return (index == 0 ? m_left : m_right);
+}
+
 const Tensor &BinaryTerm::get(std::size_t index) const {
 	assert(index == 0 || index == 1);
 

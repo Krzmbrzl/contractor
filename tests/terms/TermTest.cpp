@@ -21,6 +21,7 @@ struct DummyTerm : public ct::Term {
 	virtual std::size_t size() const override { return m_tensors.size(); }
 
 	virtual const ct::Tensor &get(std::size_t index) const override { return m_tensors[index]; }
+	virtual ct::Tensor &get(std::size_t index) override { return m_tensors[index]; }
 
 	std::vector< ct::Tensor > m_tensors;
 };

@@ -30,7 +30,7 @@ std::vector< ct::BinaryTerm > Factorizer::factorize(const ct::GeneralTerm &term)
 	m_biggestIntermediateSize = std::numeric_limits< decltype(m_biggestIntermediateSize) >::max();
 
 	// Copy the Tensors of this term into a vector to be used for the factorization
-	std::vector< ct::Tensor > tensors = term.accessTensors();
+	std::vector< ct::Tensor > tensors = term.accessTensorList();
 	std::vector< ct::BinaryTerm > factorizedTerms;
 
 	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term);

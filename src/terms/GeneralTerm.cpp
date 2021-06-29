@@ -38,12 +38,18 @@ bool GeneralTerm::remove(const Tensor &tensor) {
 	return true;
 }
 
-GeneralTerm::tensor_list_t &GeneralTerm::accessTensors() {
+GeneralTerm::tensor_list_t &GeneralTerm::accessTensorList() {
 	return m_tensors;
 }
 
-const GeneralTerm::tensor_list_t &GeneralTerm::accessTensors() const {
+const GeneralTerm::tensor_list_t &GeneralTerm::accessTensorList() const {
 	return m_tensors;
+}
+
+Tensor &GeneralTerm::get(std::size_t index) {
+	assert(index < m_tensors.size());
+
+	return m_tensors[index];
 }
 
 const Tensor &GeneralTerm::get(std::size_t index) const {

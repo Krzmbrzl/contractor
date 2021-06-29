@@ -31,7 +31,7 @@ void Term::setResult(const Tensor &result) {
 	m_result = result;
 }
 
-Tensor & Term::accessResult() {
+Tensor &Term::accessResult() {
 	return m_result;
 }
 
@@ -47,9 +47,24 @@ Iterable< const Tensor > Term::getTensors() const {
 	// Get a function pointer to UnoptimizedTerm::get with which we can create the Iterable object that is to
 	// be returned. Note that thanks to that get function not being overloaded, we don't have to perform any
 	// overload resolution with evil looking casts :)
-	std::function< const Tensor &(std::size_t) > getterFunction = std::bind(&Term::get, this, std::placeholders::_1);
+	typedef const Tensor &(Term::*const_getter_t)(std::size_t) const;
+
+	std::function< const Tensor &(std::size_t) > getterFunction =
+		std::bind(static_cast< const_getter_t >(&Term::get), this, std::placeholders::_1);
 
 	return Iterable< const Tensor >(0, size(), getterFunction, this);
+}
+
+Iterable< Tensor > Term::accessTensors() {
+	// Get a function pointer to UnoptimizedTerm::get with which we can create the Iterable object that is to
+	// be returned. Note that thanks to that get function not being overloaded, we don't have to perform any
+	// overload resolution with evil looking casts :)
+	typedef Tensor &(Term::*getter_t)(std::size_t);
+
+	std::function< Tensor &(std::size_t) > getterFunction =
+		std::bind(static_cast< getter_t >(&Term::get), this, std::placeholders::_1);
+
+	return Iterable< Tensor >(0, size(), getterFunction, this);
 }
 
 bool Term::equals(const Term &other, std::underlying_type_t< CompareOption::Options > options) const {
