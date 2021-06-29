@@ -14,7 +14,7 @@ TEST(IndexSubstitution, getter) {
 	ct::Index firstIndex  = idx("i+");
 	ct::Index secondIndex = idx("j+");
 
-	auto pair = std::make_pair(firstIndex, secondIndex);
+	auto pair = ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex);
 
 	constexpr ct::IndexSubstitution::factor_t factor = -1;
 	ct::IndexSubstitution substitution(pair, factor);
@@ -31,7 +31,7 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("j+"), idx("i+"), idx("a"), idx("b") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = -1;
-		ct::IndexSubstitution substitution(std::make_pair(idx("i"), idx("j")), factor);
+		ct::IndexSubstitution substitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), factor);
 
 		ct::Tensor copy(original);
 		ASSERT_EQ(substitution.apply(copy), factor);
@@ -45,7 +45,8 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("j+"), idx("i+"), idx("b"), idx("a") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = 4;
-		ct::IndexSubstitution substitution({ std::make_pair(idx("i"), idx("j")), std::make_pair(idx("a"), idx("b")) },
+		ct::IndexSubstitution substitution({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")),
+											 ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")) },
 										   factor);
 
 		ct::Tensor copy(original);
@@ -60,7 +61,8 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("a+"), idx("b+"), idx("i"), idx("j") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = -13;
-		ct::IndexSubstitution substitution({ std::make_pair(idx("i"), idx("a")), std::make_pair(idx("b"), idx("j")) },
+		ct::IndexSubstitution substitution({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("a")),
+											 ct::IndexSubstitution::index_pair_t(idx("b"), idx("j")) },
 										   factor);
 
 		ct::Tensor copy(original);

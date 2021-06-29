@@ -23,6 +23,7 @@ class IndexSpaceResolver;
 namespace Contractor::Terms {
 
 class ContractionResult;
+class IndexSubstitution;
 
 /**
  * A class representing an element formally holding a value. An element may be attached to
@@ -173,9 +174,10 @@ public:
 	 * must refer to the same element.
 	 *
 	 * @param other The Tensor to compare to
-	 * @returns A list of mappings of indices from this Tensor to the other one
+	 * @returns An IndexSubstitution that describes the mapping of indices. When applying the
+	 * substitution to this Tensor, it will have the same indices as the given one.
 	 */
-	std::vector< std::pair< Index, Index > > getIndexMapping(const Tensor &other) const;
+	IndexSubstitution getIndexMapping(const Tensor &other) const;
 
 	/**
 	 * Contracts this Tensor with the given one

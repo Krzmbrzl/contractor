@@ -40,7 +40,7 @@ std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
 		stream << currentPair.first << "<->" << currentPair.second << ", ";
 	}
 
-	stream << ") -> " << sub.getFactor() ;
+	stream << ") -> " << sub.getFactor();
 
 	return stream;
 }
@@ -62,13 +62,9 @@ void IndexSubstitution::setFactor(IndexSubstitution::factor_t factor) {
 }
 
 IndexSubstitution::factor_t IndexSubstitution::apply(Tensor &tensor) const {
-	if (!appliesTo(tensor, false)) {
-		return 1;
-	}
-
 	Tensor::index_list_t &indices = tensor.getIndices();
-	for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
-		for (std::size_t i = 0; i < tensor.getIndices().size(); i++) {
+	for (std::size_t i = 0; i < tensor.getIndices().size(); i++) {
+		for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
 			// Replace all occurrences of the two indices
 			Index::Type originalType = indices[i].getType();
 
@@ -111,7 +107,7 @@ bool IndexSubstitution::appliesTo(const Tensor &tensor, bool bidirectional) cons
 	const Tensor::index_list_t &indices = tensor.getIndices();
 
 	for (const index_pair_t &currentPair : m_substitutions) {
-		auto itFirst = std::find_if(indices.begin(), indices.end(), is_same(currentPair.first));
+		auto itFirst  = std::find_if(indices.begin(), indices.end(), is_same(currentPair.first));
 		auto itSecond = std::find_if(indices.begin(), indices.end(), is_same(currentPair.second));
 
 		bool applies;

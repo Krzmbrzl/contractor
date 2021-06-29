@@ -1,6 +1,7 @@
 #include "terms/Tensor.hpp"
 #include "terms/IndexSpaceMeta.hpp"
 #include "utils/IndexSpaceResolver.hpp"
+#include "terms/IndexSubstitution.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -171,7 +172,7 @@ void Tensor::replaceIndices(const std::vector< std::pair< Index, Index > > &repl
 
 	// Then also replace the indices in the symmetry specifications
 	for (IndexSubstitution &currentSymmetry : m_indexSymmetries) {
-		for (std::pair< Index, Index > &currentSubstitution : currentSymmetry.accessSubstitutions()) {
+		for (IndexSubstitution::index_pair_t &currentSubstitution : currentSymmetry.accessSubstitutions()) {
 			bool replacedFirst  = false;
 			bool replacedSecond = false;
 
@@ -241,22 +242,22 @@ bool Tensor::refersToSameElement(const Tensor &other) const {
 	return true;
 }
 
-std::vector< std::pair< Index, Index > > Tensor::getIndexMapping(const Tensor &other) const {
+IndexSubstitution Tensor::getIndexMapping(const Tensor &other) const {
 	assert(this->refersToSameElement(other));
 
-	std::vector< std::pair< Index, Index > > mapping;
+	IndexSubstitution::substitution_list mapping;
 
 	// If both Tensors refer to the same element, then the index mapping is a simple positional one.
 	// Thus the only thing that needs to be taken care of is to not duplicate an index mapping.
 	for (std::size_t i = 0; i < m_indices.size(); i++) {
-		std::pair< Index, Index > currentPair = std::make_pair(m_indices[i], other.m_indices[i]);
+		IndexSubstitution::index_pair_t currentPair(m_indices[i], other.m_indices[i]);
 
 		if (std::find(mapping.begin(), mapping.end(), currentPair) == mapping.end()) {
 			mapping.push_back(std::move(currentPair));
 		}
 	}
 
-	return mapping;
+	return IndexSubstitution(std::move(mapping), 1);
 }
 
 ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const {

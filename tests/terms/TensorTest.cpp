@@ -38,7 +38,7 @@ TEST(TensorTest, getter) {
 	ASSERT_EQ(annihilatorsOnly.getIndices(), annihilators);
 
 
-	ct::IndexSubstitution p(std::make_pair(creators[0], creators[1]));
+	ct::IndexSubstitution p(ct::IndexSubstitution::index_pair_t(creators[0], creators[1]));
 	ct::Tensor::symmetry_list_t permutations = { ct::IndexSubstitution(p) };
 	creatorsOnly.setIndexSymmetries(permutations);
 	ASSERT_EQ(creatorsOnly.getIndexSymmetries(), permutations);
@@ -437,10 +437,14 @@ TEST(TensorTest, getIndexMapping) {
 	ct::Tensor one("H", { ct::Index(i), ct::Index(j), ct::Index(a), ct::Index(a), ct::Index(b) });
 	ct::Tensor two("H", { ct::Index(k), ct::Index(l), ct::Index(c), ct::Index(c), ct::Index(d) });
 
+	ct::IndexSubstitution expectedMapping(
+		{ ct::IndexSubstitution::index_pair_t(i, k), ct::IndexSubstitution::index_pair_t(j, l),
+		  ct::IndexSubstitution::index_pair_t(a, c), ct::IndexSubstitution::index_pair_t(b, d) },
+		1);
+
 	ASSERT_TRUE(one.refersToSameElement(two));
 
-	ASSERT_THAT(one.getIndexMapping(two), ::testing::UnorderedElementsAre(std::make_pair(i, k), std::make_pair(j, l),
-																		  std::make_pair(a, c), std::make_pair(b, d)));
+	ASSERT_EQ(one.getIndexMapping(two), expectedMapping);
 }
 
 TEST(TensorTest, contract) {

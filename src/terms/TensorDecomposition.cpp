@@ -140,13 +140,12 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 				// But before we can do that, we have to make sure that the actual indices in our replacement
 				// term match the indices of the Tensor that we are about to replace (up to this point we know
 				// only that they refer to the same element which does not uniquely define the actual index IDs)
-				std::vector< std::pair< Index, Index > > mapping =
-					currentSubstitution.getResult().getIndexMapping(currentTensor);
+				IndexSubstitution mapping = currentSubstitution.getResult().getIndexMapping(currentTensor);
 
 				for (Tensor &subTensor : currentSubstitution.accessTensors()) {
-					subTensor.replaceIndices(mapping);
+					mapping.apply(subTensor);
 				}
-				currentSubstitution.accessResult().replaceIndices(mapping);
+				mapping.apply(currentSubstitution.accessResult());
 
 				tensorList.reserve(tensorList.size() + currentSubstitution.size());
 				// Append all Tensors from currentSubstitution to the end of tensorList
