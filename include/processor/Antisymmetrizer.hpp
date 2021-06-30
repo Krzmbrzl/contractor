@@ -118,8 +118,6 @@ public:
 
 			Terms::IndexSubstitution sub(std::move(currentSubs), sign);
 
-			std::cout << sub << std::endl;
-
 			// First check whether the given Tensor already has this symmetry and only consider it, if it doesn't
 			auto it = std::find(tensor.getIndexSymmetries().begin(), tensor.getIndexSymmetries().end(), sub);
 
