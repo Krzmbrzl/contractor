@@ -220,6 +220,9 @@ int main(int argc, const char **argv) {
 			printer << "  " << current << "\n";
 		}
 		printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
+		printer << "Max. formal scaling factors: ";
+		printer.printScaling(factorizer.getLastFormalScaling(), resolver);
+		printer << "\n";
 		printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
 		totalCost += cost;
