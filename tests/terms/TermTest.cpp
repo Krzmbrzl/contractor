@@ -1,9 +1,13 @@
 #include "terms/Term.hpp"
-#include <terms/Tensor.hpp>
+#include "terms/GeneralTerm.hpp"
+#include "terms/IndexSubstitution.hpp"
+#include "terms/Tensor.hpp"
 
 #include <algorithm>
 
 #include <gtest/gtest.h>
+
+#include "IndexHelper.hpp"
 
 namespace ct = Contractor::Terms;
 
@@ -65,4 +69,47 @@ TEST(TermTest, equality) {
 	// no longer holds, whereas a order-unaware compare still has to result in equality
 	ASSERT_EQ(term1.equals(term2), true);
 	ASSERT_EQ(term1.equals(term2, ct::Term::CompareOption::REQUIRE_SAME_ORDER), false);
+}
+
+TEST(TermTest, deduceSymmetry) {
+	{
+		ct::Tensor result("R", { idx("i+"), idx("a") });
+		ct::Tensor A("A", { idx("i+"), idx("j+") });
+
+		ct::GeneralTerm term(result, 1.0, { A });
+
+		term.deduceSymmetry();
+
+		// No symmetry involved so nothing should change
+		ASSERT_EQ(term.getResult(), result);
+	}
+	{
+		ct::Tensor R("R", { idx("i+"), idx("a") });
+		ct::IndexSubstitution symmetry({ idx("i"), idx("a") }, 1);
+		ct::Tensor result("R", { idx("i+"), idx("a") }, { symmetry });
+		ct::Tensor A("A", { idx("i+"), idx("a") }, { symmetry });
+
+		ct::GeneralTerm term(R, 1.0, { A });
+
+		term.deduceSymmetry();
+
+		ASSERT_EQ(term.getResult(), result);
+	}
+	{
+		ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+
+		ct::IndexSubstitution symmetry({ idx("i"), idx("j") }, -1);
+
+		ct::Tensor result("R", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { symmetry });
+
+		ct::Tensor A("A", { idx("i+"), idx("j+"), idx("a"), idx("c") },
+					 { symmetry, ct::IndexSubstitution({ idx("a"), idx("c") }, -1) });
+		ct::Tensor B("B", { idx("c+"), idx("b") }, {});
+
+		ct::GeneralTerm term(R, 1.0, { A });
+
+		term.deduceSymmetry();
+
+		ASSERT_EQ(term.getResult(), result);
+	}
 }

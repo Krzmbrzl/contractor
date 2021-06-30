@@ -155,6 +155,16 @@ int main(int argc, const char **argv) {
 				}
 			}
 		}
+
+		// Based on the symmetries of the Tensors within this Term, deduce the symmetries of the result Tensor
+		// Note that if we have multiple contributions to a single result Tensor on paper, this process here will
+		// at first (in the general case) produce different result Tensors as they will differ in their symmetries.
+		// Thus we will only arrive at equal result Tensors again, after symmetrization.
+		currentTerm.deduceSymmetry();
+
+		printer << "- ";
+		printer.printSymmetries(currentTerm.getResult());
+		printer << "\n";
 	}
 
 	printer << "\n\n";

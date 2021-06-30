@@ -99,6 +99,12 @@ public:
 	virtual bool equals(const Term &other,
 						std::underlying_type_t< CompareOption::Options > options = CompareOption::NONE) const;
 
+	/**
+	 * Deduces the symmetry of the result Tensor of this Term based on the Tensors contained
+	 * in the Term (and their symmetry).
+	 */
+	void deduceSymmetry();
+
 protected:
 	Tensor m_result;
 	factor_t m_prefactor;

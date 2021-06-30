@@ -94,4 +94,18 @@ bool Term::equals(const Term &other, std::underlying_type_t< CompareOption::Opti
 	}
 }
 
+void Term::deduceSymmetry() {
+	Tensor::symmetry_list_t resultSymmetries;
+
+	for (const Tensor &currentTensor : getTensors()) {
+		for (const IndexSubstitution &currentSymmetry : currentTensor.getIndexSymmetries()) {
+			if (currentSymmetry.appliesTo(getResult(), true)) {
+				resultSymmetries.push_back(currentSymmetry);
+			}
+		}
+	}
+
+	accessResult().setIndexSymmetries(std::move(resultSymmetries));
+}
+
 }; // namespace Contractor::Terms
