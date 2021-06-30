@@ -221,7 +221,7 @@ struct ContractionResult {
 	/**
 	 * The Tensor representing the contracted result
 	 */
-	Tensor result;
+	Tensor resultTensor;
 	/**
 	 * The cost of the contraction. The cost equals the amount of iterations that
 	 * are needed to contract all common indices (with all their possible values).

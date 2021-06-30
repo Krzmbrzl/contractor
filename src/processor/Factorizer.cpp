@@ -147,16 +147,16 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 				// at this point.
 
 				ct::ContractionResult::cost_t intermediateSize = 1;
-				for (const ct::Index &current : result.result.getIndices()) {
+				for (const ct::Index &current : result.resultTensor.getIndices()) {
 					intermediateSize *= m_resolver.getMeta(current.getSpace()).getSize();
 				}
 
 				// Copy the result Tensor of this Tensor to the list of Tensors available for further
 				// contractions
-				tensors.push_back(result.result);
+				tensors.push_back(result.resultTensor);
 
 				// Store the current contraction
-				factorizedTerms.push_back(ct::BinaryTerm(std::move(result.result), 1.0, left, right));
+				factorizedTerms.push_back(ct::BinaryTerm(std::move(result.resultTensor), 1.0, left, right));
 
 				// Factorize the remaining Tensors recursively
 				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms,

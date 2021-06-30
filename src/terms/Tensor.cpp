@@ -321,7 +321,7 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 		result.cost *= resolver.getMeta(currentResultIndex.getSpace()).getSize();
 	}
 
-	result.result = Tensor(resultName, std::move(resultIndices));
+	result.resultTensor = Tensor(resultName, std::move(resultIndices));
 
 	// As a final step we want to figure out whether any of the index symmetries from the original Tensors still apply
 	// to the result Tensor.
@@ -330,12 +330,12 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	// show in the result Tensor.
 	Tensor::symmetry_list_t resultSymmetries;
 	for (const IndexSubstitution &currentSymmetry : boost::join(m_indexSymmetries, other.getIndexSymmetries())) {
-		if (currentSymmetry.appliesTo(result.result, true)) {
+		if (currentSymmetry.appliesTo(result.resultTensor, true)) {
 			resultSymmetries.push_back(currentSymmetry);
 		}
 	}
 
-	result.result.setIndexSymmetries(std::move(resultSymmetries));
+	result.resultTensor.setIndexSymmetries(std::move(resultSymmetries));
 
 	return result;
 }

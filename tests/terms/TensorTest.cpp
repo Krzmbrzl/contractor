@@ -464,7 +464,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -480,7 +480,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -497,7 +497,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -514,7 +514,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -530,7 +530,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -546,7 +546,7 @@ TEST(TensorTest, contract) {
 
 		ct::ContractionResult result = t2.contract(t1, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
 		ASSERT_EQ(result.spaceExponents, exponents);
 	}
@@ -565,7 +565,7 @@ TEST(TensorTest, contractWithSymmetry) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 	}
 	{
 		// A_B[j,b] = A[ij,ab] B[a,i]
@@ -580,7 +580,7 @@ TEST(TensorTest, contractWithSymmetry) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 	}
 	{
 		// A_B[j,b] = A[ij,ab] B[a,i]
@@ -593,6 +593,6 @@ TEST(TensorTest, contractWithSymmetry) {
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
-		ASSERT_EQ(result.result, expectedResult);
+		ASSERT_EQ(result.resultTensor, expectedResult);
 	}
 }
