@@ -12,11 +12,11 @@ namespace cp = Contractor::Processor;
 namespace ct = Contractor::Terms;
 
 template< typename term_t > void test_01() {
-	// R[ij,ab] = A[i,a] B[j,b]
+	// R[ij,ab] <- A[i,a] B[j,b]
 	// -> Should result in
-	// R'[ij,ab] = 1/4 (A[i,a]B[j,b] - A[j,a]B[i,b] - A[i,b]B[j,a] + A[j,b]B[i,a])
+	// R[ij,ab] = 1/4 (A[i,a]B[j,b] - A[j,a]B[i,b] - A[i,b]B[j,a] + A[j,b]B[i,a])
 	ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
-	ct::Tensor R_prime("R'", { idx("i+"), idx("j+"), idx("a"), idx("b") },
+	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
 					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1),
 						 ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")), -1) });
 
@@ -51,13 +51,13 @@ template< typename term_t > void test_01() {
 }
 
 template< typename term_t > void test_02() {
-	// R[ij,ab] = A[ij,ac] B[c,b]
+	// R[ij,ab] <- A[ij,ac] B[c,b]
 	// But this time we assume that R is already anti-symmetric with respect to i<->j exchange
 	// -> Should result in
-	// R'[ij,ab] = 1/2 (A[ij,ac] B[c,b] - A[ij,bc] B[c,a])
+	// R[ij,ab] = 1/2 (A[ij,ac] B[c,b] - A[ij,bc] B[c,a])
 	ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
 				 { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1) });
-	ct::Tensor R_prime("R'", { idx("i+"), idx("j+"), idx("a"), idx("b") },
+	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
 					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1),
 						 ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")), -1) });
 

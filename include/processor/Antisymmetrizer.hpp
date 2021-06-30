@@ -46,11 +46,9 @@ public:
 
 		Terms::Tensor::symmetry_list_t symmetries = term.getResult().getIndexSymmetries();
 
-		bool performedAntisymmetrization = false;
 		for (const Terms::IndexSubstitution &current : boost::join(creatorSubs, annihilatorSubs)) {
 			if (!current.isNoOp()) {
 				symmetries.push_back(current);
-				performedAntisymmetrization = true;
 			}
 		}
 
@@ -58,11 +56,6 @@ public:
 		for (const Terms::IndexSubstitution &currentCreatorSub : creatorSubs) {
 			for (const Terms::IndexSubstitution &currentAnnihilatorSub : annihilatorSubs) {
 				term_t termCopy = term;
-
-				if (performedAntisymmetrization) {
-					// Append a prime to the Tensor name to indicate that the Tensor is now antisymmetrized
-					termCopy.accessResult().setName(std::string(termCopy.getResult().getName()) + "'");
-				}
 
 				Terms::IndexSubstitution::factor_t factor = 1;
 
