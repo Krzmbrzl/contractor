@@ -30,6 +30,18 @@ public:
 
 	friend constexpr bool operator!=(const IndexSpace &lhs, const IndexSpace &rhs) { return !(lhs == rhs); }
 
+	friend constexpr bool operator<(const IndexSpace &lhs, const IndexSpace &rhs) { return lhs.getID() < rhs.getID(); }
+
+	friend constexpr bool operator>(const IndexSpace &lhs, const IndexSpace &rhs) { return lhs.getID() > rhs.getID(); }
+
+	friend constexpr bool operator<=(const IndexSpace &lhs, const IndexSpace &rhs) {
+		return lhs.getID() <= rhs.getID();
+	}
+
+	friend constexpr bool operator>=(const IndexSpace &lhs, const IndexSpace &rhs) {
+		return lhs.getID() >= rhs.getID();
+	}
+
 	friend std::ostream &operator<<(std::ostream &out, const IndexSpace &space) {
 		// We have to cast the uint8_t in order for it to not get rendered as a char (which uint8_t is usually typedef'd
 		// to)
