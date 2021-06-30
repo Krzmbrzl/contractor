@@ -14,6 +14,8 @@ namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
 namespace cp = Contractor::Processor;
 
+using ExponentsMap = std::unordered_map< ct::IndexSpace, unsigned int >;
+
 TEST(FactorizerTest, factorize) {
 	ct::ContractionResult::cost_t occupiedSize = resolver.getMeta(idx("i").getSpace()).getSize();
 	ct::ContractionResult::cost_t virtualSize  = resolver.getMeta(idx("a").getSpace()).getSize();
@@ -47,7 +49,6 @@ TEST(FactorizerTest, factorize) {
 		ct::ContractionResult::cost_t expectedContractionCost = 0;
 		// T_T[il] = T[ikdc] T[cdlk]    N_o^3 N_v^2
 		ct::BinaryTerm intermdediate1(intermediateResult2, 1.0, ct::Tensor(tensors[0]), ct::Tensor(tensors[3]));
-		// *2 as the indices contain an implicit spin and run over alpha and beta cases
 		expectedContractionCost += pow(occupiedSize, 3) * pow(virtualSize, 2);
 		// H_T[li] = H[jlba] T[abji]    N_o^3 N_v^2
 		ct::BinaryTerm intermdediate2(intermediateResult1, 1.0, ct::Tensor(tensors[1]), ct::Tensor(tensors[2]));
@@ -57,23 +58,30 @@ TEST(FactorizerTest, factorize) {
 									  ct::Tensor(intermediateResult2));
 		expectedContractionCost += pow(occupiedSize, 2);
 
+		ExponentsMap formalScaling;
+		formalScaling[idx("i").getSpace()] = 3;
+		formalScaling[idx("a").getSpace()] = 2;
 
 		// LCCD[] = T[ikdc] H[jlba] T[abji] T[cdlk]
 		ct::GeneralTerm inTerm(
 			resultTensor, 2.0,
 			{ ct::Tensor(tensors[0]), ct::Tensor(tensors[1]), ct::Tensor(tensors[2]), ct::Tensor(tensors[3]) });
 
-		std::vector< ct::BinaryTerm > outTerms = factorizer.factorize(inTerm);
+		std::vector< ct::BinaryTerm > outTerms        = factorizer.factorize(inTerm);
 		ct::ContractionResult::cost_t contractionCost = factorizer.getLastFactorizationCost();
 
 		ASSERT_THAT(outTerms, ::testing::UnorderedElementsAre(intermdediate1, intermdediate2, expectedResult));
 		ASSERT_EQ(contractionCost, expectedContractionCost);
+		ASSERT_EQ(factorizer.getLastFormalScaling(), formalScaling);
 	}
 	{
 		// Term with only a single Tensor in it -> Factorization doesn't actually do anything
 		ct::Tensor tensor("T", { ct::Index(i), ct::Index(a) });
 
 		ct::ContractionResult::cost_t expectedContractionCost = occupiedSize * virtualSize;
+		ExponentsMap formalScaling;
+		formalScaling[idx("i").getSpace()] = 1;
+		formalScaling[idx("a").getSpace()] = 1;
 
 		ct::GeneralTerm inTerm(tensor, -3.0, { ct::Tensor(tensor) });
 		ct::BinaryTerm expectedTerm(tensor, -3.0, tensor);
@@ -84,6 +92,7 @@ TEST(FactorizerTest, factorize) {
 		ASSERT_EQ(resultingTerms.size(), 1);
 		ASSERT_EQ(resultingTerms[0], expectedTerm);
 		ASSERT_EQ(factorizationCost, expectedContractionCost);
+		ASSERT_EQ(factorizer.getLastFormalScaling(), formalScaling);
 	}
 	{
 		// BinaryTerm for which factorization doesn't do anything
@@ -92,6 +101,9 @@ TEST(FactorizerTest, factorize) {
 											  ct::Tensor("T2", { ct::Index(j), ct::Index(a) }) };
 
 		ct::ContractionResult::cost_t expectedContractionCost = virtualSize * pow(occupiedSize, 2);
+		ExponentsMap formalScaling;
+		formalScaling[idx("i").getSpace()] = 2;
+		formalScaling[idx("a").getSpace()] = 1;
 
 		for (std::size_t ii = 0; ii < tensors.size(); ++ii) {
 			for (std::size_t jj = 0; jj < tensors.size(); ++jj) {
@@ -110,6 +122,7 @@ TEST(FactorizerTest, factorize) {
 				ASSERT_EQ(resultingTerms.size(), 1);
 				ASSERT_EQ(resultingTerms[0], expectedTerm);
 				ASSERT_EQ(factorizationCost, expectedContractionCost);
+				ASSERT_EQ(factorizer.getLastFormalScaling(), formalScaling);
 			}
 		}
 	}
@@ -143,12 +156,17 @@ TEST(FactorizerTest, factorize) {
 						* static_cast< int >(std::pow(resolver.getMeta(idx("a").getSpace()).getSize(), 2));
 		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
 
+		ExponentsMap formalScaling;
+		formalScaling[idx("i").getSpace()] = 4;
+		formalScaling[idx("a").getSpace()] = 2;
+
 		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm);
 		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
 
 		ASSERT_EQ(factorizedTerms.size(), 2);
 		ASSERT_EQ(actualCost, expectedCost);
 		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediateTerm, result));
+		ASSERT_EQ(factorizer.getLastFormalScaling(), formalScaling);
 	}
 	{
 		// O[a⁺b⁺i⁻j⁻] += 0.5 * B[k⁺d⁻qⁿ] * B[l⁺c⁻qⁿ] * T[c⁺d⁺k⁻i⁻] * T[a⁺b⁺l⁻j⁻]
@@ -167,7 +185,7 @@ TEST(FactorizerTest, factorize) {
 		expectedCost += pow(occupiedSize, 2) * pow(virtualSize, 2) * externalSize;
 
 		// B_B_T[l⁺i⁻] = B_T[qⁿc⁺i⁻] * B[l⁺c⁻qⁿ]
-		ct::Tensor B1_T1_B2("B_B_T", { idx("l+"), idx("i")});
+		ct::Tensor B1_T1_B2("B_B_T", { idx("l+"), idx("i") });
 		ct::BinaryTerm intermediate2(ct::Tensor(B1_T1_B2), 1.0, ct::Tensor(B1_T1), ct::Tensor(B2));
 		expectedCost += pow(occupiedSize, 2) * virtualSize * externalSize;
 
@@ -176,11 +194,17 @@ TEST(FactorizerTest, factorize) {
 		expectedCost += pow(occupiedSize, 3) * pow(virtualSize, 2);
 
 
-		std::vector<ct::BinaryTerm> factorizedTerms = factorizer.factorize(inTerm);
-		ct::ContractionResult::cost_t actualCost = factorizer.getLastFactorizationCost();
+		ExponentsMap formalScaling;
+		formalScaling[idx("i").getSpace()] += 3;
+		formalScaling[idx("a").getSpace()] += 2;
+		formalScaling[idx("q").getSpace()] += 1;
+
+		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm);
+		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
 
 		ASSERT_EQ(factorizedTerms.size(), 3);
 		ASSERT_EQ(actualCost, expectedCost);
 		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediate1, intermediate2, resultTerm));
+		ASSERT_EQ(factorizer.getLastFormalScaling(), formalScaling);
 	}
 }
