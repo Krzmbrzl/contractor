@@ -52,6 +52,8 @@ public:
 	void printTensorType(const Terms::Tensor &tensor, const Utils::IndexSpaceResolver &resolver);
 	void printSymmetries(const Terms::Tensor &tensor);
 
+	void printHeadline(const std::string_view headline);
+
 	std::string getLegend(int maxSpaceID = -1) const;
 
 protected:
@@ -63,6 +65,7 @@ protected:
 	std::string m_noneSpinSymbol;
 	std::string m_creatorSymbol;
 	std::string m_annihilatorSymbol;
+	std::string m_underlineChar;
 
 	std::ostream *m_stream              = nullptr;
 	boost::format m_floatingPointFormat = boost::format("%|1$f|");

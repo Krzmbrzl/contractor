@@ -26,6 +26,8 @@ PrettyPrinter::PrettyPrinter(std::ostream &stream, bool asciiOnly) {
 		m_creatorSymbol     = "⁺";
 		m_annihilatorSymbol = "⁻";
 	}
+
+	m_underlineChar = "=";
 }
 
 void PrettyPrinter::setStream(std::ostream &stream) {
@@ -299,6 +301,18 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 	} else {
 		*m_stream << "\n  (None)";
 	}
+}
+
+void PrettyPrinter::printHeadline(const std::string_view headline) {
+	// Print the headline
+	*m_stream << headline << "\n";
+
+	// Underline it
+	for (std::size_t i = 0; i < headline.size(); ++i) {
+		*m_stream << m_underlineChar;
+	}
+
+	*m_stream << "\n";
 }
 
 std::string PrettyPrinter::getLegend(int maxSpaceID) const {

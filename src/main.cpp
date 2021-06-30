@@ -121,25 +121,28 @@ int main(int argc, const char **argv) {
 	// TODO: Validate that the Terms as read in so far actually make sense
 
 	// Print/Log what has been read in so far
-	printer << resolver << "\n";
+	printer << resolver << "\n\n";
 
-	printer << "These are the specified Tensor symmetries:\n";
+	printer.printHeadline("Specified Tensor symmetries");
 	for (const ct::Tensor &current : symmetries) {
 		printer.printSymmetries(current);
 		printer << "\n";
 	}
 
-	printer << "\n\nThese are the read in Terms:\n" << terms << "\n\n";
+	printer << "\n\n";
+
+	printer.printHeadline("Read terms");
+	printer << terms << "\n\n";
 
 	// Print decomposition
-	printer << "These are the specified substitutions:\n";
+	printer.printHeadline("Specified substitutions");
 	for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
 		printer << currentDecomposition << "\n";
 	}
 	printer << "\n\n";
 
 	// Transfer symmetry to the Tensor objects in terms
-	printer << "Applying symmetry to read-in terms:\n";
+	printer.printHeadline("Applying specified symmetry");
 	for (ct::GeneralTerm &currentTerm : terms) {
 		printer << "In " << currentTerm << ":\n";
 		for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
@@ -170,7 +173,7 @@ int main(int argc, const char **argv) {
 	printer << "\n\n";
 
 	// Apply decomposition
-	printer << "Applying substitutions:\n";
+	printer.printHeadline("Applying substitutions");
 	std::vector< ct::GeneralTerm > decomposedTerms;
 	for (const ct::GeneralTerm &currentTerm : terms) {
 		bool wasDecomposed = false;
@@ -201,10 +204,11 @@ int main(int argc, const char **argv) {
 
 	printer << "\n\n";
 
-	printer << "Terms after having applied the substsitutions:\n" << decomposedTerms << "\n\n";
+	printer.printHeadline("Terms after substitutions have been applied");
+	printer << decomposedTerms << "\n\n";
 
 	// Factorize terms
-	printer << "Factorization into binary terms:\n";
+	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
 	ct::ContractionResult::cost_t totalCost = 0;
 	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
