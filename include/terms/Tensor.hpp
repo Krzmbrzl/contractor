@@ -11,6 +11,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -228,6 +229,11 @@ struct ContractionResult {
 	 * A cost of 0  means that no (real) contraction was possible.
 	 */
 	cost_t cost;
+	/**
+	 * A map containing the exponents of the formal scaling of this contraction
+	 * in terms of the different index spaces.
+	 */
+	std::unordered_map< IndexSpace, unsigned int > spaceExponents;
 };
 
 

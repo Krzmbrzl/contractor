@@ -1,7 +1,7 @@
 #include "terms/Tensor.hpp"
 #include "terms/IndexSpaceMeta.hpp"
-#include "utils/IndexSpaceResolver.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -261,7 +261,8 @@ IndexSubstitution Tensor::getIndexMapping(const Tensor &other) const {
 }
 
 ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceResolver &resolver) const {
-	ContractionResult::cost_t cost = 1;
+	ContractionResult result;
+	result.cost = 1;
 
 	std::vector< Index > contractedIndices;
 	Tensor::index_list_t resultIndices;
@@ -274,8 +275,10 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 			// The tensors share an index
 			unsigned int currentCost = resolver.getMeta(currentIndex.getSpace()).getSize();
 
+			result.spaceExponents[currentIndex.getSpace()] += 1;
+
 			// Costs are multiplicative
-			cost *= currentCost;
+			result.cost *= currentCost;
 
 			contractedIndices.push_back(currentIndex);
 		} else {
@@ -313,10 +316,12 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	// result Tensor. However for the total operation cost we now also have to figure
 	// out how expensive it is to compute all entries in the result tensor
 	for (const Index &currentResultIndex : resultIndices) {
-		cost *= resolver.getMeta(currentResultIndex.getSpace()).getSize();
+		result.spaceExponents[currentResultIndex.getSpace()] += 1;
+
+		result.cost *= resolver.getMeta(currentResultIndex.getSpace()).getSize();
 	}
 
-	Tensor result(resultName, std::move(resultIndices));
+	result.result = Tensor(resultName, std::move(resultIndices));
 
 	// As a final step we want to figure out whether any of the index symmetries from the original Tensors still apply
 	// to the result Tensor.
@@ -325,14 +330,14 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	// show in the result Tensor.
 	Tensor::symmetry_list_t resultSymmetries;
 	for (const IndexSubstitution &currentSymmetry : boost::join(m_indexSymmetries, other.getIndexSymmetries())) {
-		if (currentSymmetry.appliesTo(result, true)) {
+		if (currentSymmetry.appliesTo(result.result, true)) {
 			resultSymmetries.push_back(currentSymmetry);
 		}
 	}
 
-	result.setIndexSymmetries(std::move(resultSymmetries));
+	result.result.setIndexSymmetries(std::move(resultSymmetries));
 
-	return { std::move(result), cost };
+	return result;
 }
 
 bool canonical_index_less(const Index &lhs, const Index &rhs) {

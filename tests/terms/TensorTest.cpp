@@ -5,6 +5,7 @@
 #include "IndexHelper.hpp"
 
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
 #include <gmock/gmock.h>
@@ -13,6 +14,7 @@
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
 
+using ExponentsMap = decltype(ct::ContractionResult::spaceExponents);
 
 TEST(TensorTest, getter) {
 	ct::Tensor empty1("H");
@@ -457,11 +459,14 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", {});
 		ct::ContractionResult::cost_t expectedCost = occupiedSize;
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 1;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 	{
 		// No contraction possible
@@ -470,11 +475,14 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", { idx("i+"), idx("j") });
 		ct::ContractionResult::cost_t expectedCost = pow(occupiedSize, 2);
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 	{
 		// Contraction over a single common index with other indices present as well
@@ -483,11 +491,15 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", { idx("a"), idx("b+") });
 		ct::ContractionResult::cost_t expectedCost = occupiedSize * pow(virtualSize, 2);
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 1;
+		exponents[idx("a").getSpace()] = 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 	{
 		// Contraction over two common indices
@@ -496,11 +508,15 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", { idx("b") });
 		ct::ContractionResult::cost_t expectedCost = occupiedSize * pow(virtualSize, 2);
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 1;
+		exponents[idx("a").getSpace()] = 2;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 	{
 		// "Contraction" with scalar
@@ -509,11 +525,14 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", { idx("i") });
 		ct::ContractionResult::cost_t expectedCost = occupiedSize;
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 1;
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 	{
 		// "Contraction" with scalar (reversed)
@@ -522,11 +541,14 @@ TEST(TensorTest, contract) {
 
 		ct::Tensor expectedResult("T1_T2", { idx("i") });
 		ct::ContractionResult::cost_t expectedCost = occupiedSize;
+		ExponentsMap exponents;
+		exponents[idx("i").getSpace()] = 1;
 
 		ct::ContractionResult result = t2.contract(t1, resolver);
 
 		ASSERT_EQ(result.result, expectedResult);
 		ASSERT_EQ(result.cost, expectedCost);
+		ASSERT_EQ(result.spaceExponents, exponents);
 	}
 }
 
