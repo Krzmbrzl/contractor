@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include <boost/format.hpp>
@@ -51,6 +52,8 @@ public:
 
 	void printTensorType(const Terms::Tensor &tensor, const Utils::IndexSpaceResolver &resolver);
 	void printSymmetries(const Terms::Tensor &tensor);
+	void printScaling(const std::unordered_map< Terms::IndexSpace, unsigned int > &scaling,
+					  const Utils::IndexSpaceResolver &resolver);
 
 	void printHeadline(const std::string_view headline);
 

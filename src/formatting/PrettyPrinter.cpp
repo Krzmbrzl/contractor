@@ -303,6 +303,25 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 	}
 }
 
+void PrettyPrinter::printScaling(const std::unordered_map< Terms::IndexSpace, unsigned int > &scaling,
+								 const Utils::IndexSpaceResolver &resolver) {
+	std::vector< Terms::IndexSpace > spaces;
+	for (const auto &current : scaling) {
+		spaces.push_back(current.first);
+	}
+
+	std::sort(spaces.begin(), spaces.end());
+
+	for (std::size_t i = 0; i < spaces.size(); ++i) {
+		const Terms::IndexSpace &current = spaces[i];
+		*m_stream << "N_" << resolver.getMeta(current).getLabel() << "^" << scaling.at(current);
+
+		if (i + i < spaces.size()) {
+			*m_stream << ", ";
+		}
+	}
+}
+
 void PrettyPrinter::printHeadline(const std::string_view headline) {
 	// Print the headline
 	*m_stream << headline << "\n";
