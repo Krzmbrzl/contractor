@@ -83,13 +83,13 @@ public:
 	 */
 	void replace(const Terms::Tensor &tensor, const Terms::Tensor &with);
 
-protected:
-	std::vector< Terms::Term * > m_terms;
-
 	/**
 	 * Sort the contained Terms into to proper order
 	 */
 	void sortTerms();
+
+protected:
+	std::vector< Terms::Term * > m_terms;
 };
 
 }; // namespace Contractor::Utils

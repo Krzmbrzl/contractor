@@ -87,8 +87,6 @@ void TermList::replace(const ct::Tensor &tensor, const ct::Tensor &with) {
 			}
 		}
 	}
-
-	sortTerms();
 }
 
 void TermList::sortTerms() {
