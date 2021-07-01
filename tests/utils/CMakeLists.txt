@@ -7,6 +7,7 @@ add_executable(${COMPONENT_NAME}_test
 	IndexSpaceResolverTest.cpp
 	PairingGeneratorTest.cpp
 	HeapsAlgorithmTest.cpp
+	TermListTest.cpp
 )
 
 target_include_directories(${COMPONENT_NAME}_test
