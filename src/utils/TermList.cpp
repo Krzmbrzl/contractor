@@ -75,7 +75,7 @@ std::size_t TermList::size() const {
 	return m_terms.size();
 }
 
-void TermList::replace(const ct::Tensor &tensor, const ct::Tensor &with) {
+void TermList::replace(const ct::Tensor &tensor, const ct::Tensor &with, bool replaceResults) {
 	// We have to make a copy of the Tensor as it can happen that tensor is a reference to a Tensor
 	// in our list. That means that as soon as we replace that instance with the replacement, tensor
 	// now is equal to the replacement even though they originally weren't.
@@ -83,7 +83,7 @@ void TermList::replace(const ct::Tensor &tensor, const ct::Tensor &with) {
 	const ct::Tensor tensorCopy = tensor;
 
 	for (ct::Term *currentTerm : m_terms) {
-		if (currentTerm->getResult() == tensorCopy) {
+		if (replaceResults && currentTerm->getResult() == tensorCopy) {
 			currentTerm->accessResult() = with;
 		}
 

@@ -80,8 +80,9 @@ public:
 	 *
 	 * @param tensor The Tensor to replace
 	 * @param with Its replacement
+	 * @param replaceResults Whether result Tensors should also be replaced
 	 */
-	void replace(const Terms::Tensor &tensor, const Terms::Tensor &with);
+	void replace(const Terms::Tensor &tensor, const Terms::Tensor &with, bool replaceResults = false);
 
 	/**
 	 * Sort the contained Terms into to proper order

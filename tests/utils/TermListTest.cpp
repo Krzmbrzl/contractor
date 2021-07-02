@@ -1,9 +1,12 @@
 #include "utils/TermList.hpp"
 #include "terms/GeneralTerm.hpp"
+#include "terms/IndexSubstitution.hpp"
 #include "terms/Tensor.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "IndexHelper.hpp"
 
 namespace ct = Contractor::Terms;
 namespace cu = Contractor::Utils;
@@ -71,9 +74,31 @@ TEST(TermListTest, replace) {
 
 		ct::GeneralTerm term1_alt(A, 2.0, { B_alt });
 		ct::GeneralTerm term2_alt(A, 3.0, { B_alt, C });
-		ct::GeneralTerm term3_alt(B_alt, 4.0, { C });
 
 		list.replace(B, B_alt);
+
+		ASSERT_EQ(list[0], term3);
+		ASSERT_THAT(list[1], ::testing::AnyOf(::testing::Eq(term1_alt), ::testing::Eq(term2_alt)));
+		ASSERT_THAT(list[2], ::testing::AnyOf(::testing::Eq(term1_alt), ::testing::Eq(term2_alt)));
+		ASSERT_NE(list[1], list[2]);
+	}
+	{
+		ct::Tensor B_symAlt("B", {}, { ct::IndexSubstitution({ idx("i"), idx("a") }, 1) });
+
+		ct::GeneralTerm term1(A, 2.0, { B });
+		ct::GeneralTerm term2(A, 3.0, { B, C });
+		ct::GeneralTerm term3(B, 4.0, { C });
+
+		cu::TermList list;
+		list.add(term1, false);
+		list.add(term2, false);
+		list.add(term3, true);
+
+		ct::GeneralTerm term1_alt(A, 2.0, { B_symAlt });
+		ct::GeneralTerm term2_alt(A, 3.0, { B_symAlt, C });
+		ct::GeneralTerm term3_alt(B_symAlt, 4.0, { C });
+
+		list.replace(B, B_symAlt, true);
 
 		ASSERT_EQ(list[0], term3_alt);
 		ASSERT_THAT(list[1], ::testing::AnyOf(::testing::Eq(term1_alt), ::testing::Eq(term2_alt)));
