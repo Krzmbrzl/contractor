@@ -159,7 +159,6 @@ template<> struct hash< Contractor::Terms::Index > {
 	std::size_t operator()(const Contractor::Terms::Index &index) const {
 		return std::hash< Contractor::Terms::IndexSpace >{}(index.getSpace())
 			   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1)
-			   ^ (std::hash< Contractor::Terms::Index::Type >{}(index.getType()) << 2)
 			   ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 3);
 	}
 };
