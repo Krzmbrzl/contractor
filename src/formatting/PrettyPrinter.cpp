@@ -3,7 +3,6 @@
 #include "terms/IndexSubstitution.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
-#include "terms/Term.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
 #include <cassert>
@@ -303,7 +302,7 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 	}
 }
 
-void PrettyPrinter::printScaling(const std::unordered_map< Terms::IndexSpace, unsigned int > &scaling,
+void PrettyPrinter::printScaling(const Terms::Term::FormalScalingMap &scaling,
 								 const Utils::IndexSpaceResolver &resolver) {
 	std::vector< Terms::IndexSpace > spaces;
 	for (const auto &current : scaling) {
@@ -317,7 +316,7 @@ void PrettyPrinter::printScaling(const std::unordered_map< Terms::IndexSpace, un
 		*m_stream << "N_" << resolver.getMeta(current).getLabel() << "^" << scaling.at(current);
 
 		if (i + i < spaces.size()) {
-			*m_stream << ", ";
+			*m_stream << " ";
 		}
 	}
 }

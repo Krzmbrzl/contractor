@@ -218,11 +218,11 @@ int main(int argc, const char **argv) {
 		printer << currentGeneral << " factorizes to\n";
 		for (const ct::BinaryTerm &current : currentBinary) {
 			printer << "  " << current << "\n";
+			printer << "  -> ";
+			printer.printScaling(current.getFormalScaling(), resolver);
+			printer << "\n";
 		}
 		printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
-		printer << "Max. formal scaling factors: ";
-		printer.printScaling(factorizer.getLastFormalScaling(), resolver);
-		printer << "\n";
 		printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
 		totalCost += cost;

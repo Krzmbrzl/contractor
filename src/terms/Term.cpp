@@ -108,4 +108,31 @@ void Term::deduceSymmetry() {
 	accessResult().setIndexSymmetries(std::move(resultSymmetries));
 }
 
+Term::IndexSet Term::getUniqueIndices() const {
+	Term::IndexSet indices;
+
+	// Start with the result indices
+	for (const Index &currentIndex : getResult().getIndices()) {
+		indices.insert(currentIndex);
+	}
+
+	for (const Tensor &currentTensor : getTensors()) {
+		for (const Index &currentIndex : currentTensor.getIndices()) {
+			indices.insert(currentIndex);
+		}
+	}
+
+	return indices;
+}
+
+Term::FormalScalingMap Term::getFormalScaling() const {
+	Term::FormalScalingMap scaling;
+
+	for (const Index &currentIndex : getUniqueIndices()) {
+		scaling[currentIndex.getSpace()] += 1;
+	}
+
+	return scaling;
+}
+
 }; // namespace Contractor::Terms

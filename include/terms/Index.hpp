@@ -14,6 +14,12 @@ namespace Contractor::Terms {
  */
 class Index {
 public:
+	struct index_is_same {
+		bool operator()(const Index &lhs, const Index &rhs) const {
+			return Index::isSame(lhs, rhs);
+		}
+	};
+
 	/**
 	 * The type used for storing the ID of an Index
 	 */

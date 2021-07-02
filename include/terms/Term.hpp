@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <ostream>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace Contractor::Terms {
 
@@ -25,6 +27,10 @@ public:
 	 * The type used to represent the pre-factor of a term
 	 */
 	using factor_t = float;
+
+	using FormalScalingMap = std::unordered_map< IndexSpace, unsigned int >;
+
+	using IndexSet = std::unordered_set< Index, std::hash< Index >, Index::index_is_same >;
 
 	/**
 	 * Different available options that can be used when using Term::equals
@@ -104,6 +110,18 @@ public:
 	 * in the Term (and their symmetry).
 	 */
 	void deduceSymmetry();
+
+	/**
+	 * @returns The set of unique indices in this Term (disregarding the index Type)
+	 */
+	IndexSet getUniqueIndices() const;
+
+	/**
+	 * @returns The formal scaling of this Term in terms of the different index spaces. The scaling is returned
+	 * as a map of index spaces to an exponent. Index spaces that are not contained in the map are assumed to
+	 * have an exponent of 0.
+	 */
+	FormalScalingMap getFormalScaling() const;
 
 protected:
 	Tensor m_result;

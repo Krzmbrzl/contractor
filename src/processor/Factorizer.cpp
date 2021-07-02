@@ -23,10 +23,6 @@ ct::ContractionResult::cost_t Factorizer::getLastBiggestIntermediateSize() const
 	return m_biggestIntermediateSize;
 }
 
-const std::unordered_map< Terms::IndexSpace, unsigned int > Factorizer::getLastFormalScaling() const {
-	return m_bestScaling;
-}
-
 const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm &term) {
 	// Initialize the best cost for this factorization with the maximum possible
 	// value so that all possible factorizations will result in a better cost than that
@@ -37,24 +33,13 @@ const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm
 	std::vector< ct::Tensor > tensors = term.accessTensorList();
 	std::vector< ct::BinaryTerm > factorizedTerms;
 
-	bool foundFactorization = doFactorize(0, {}, 0, tensors, factorizedTerms, term);
+	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term);
 	assert(foundFactorization);
-
-	// Remove all zero-entries from the scaling map
-	auto it = m_bestScaling.begin();
-	while (it != m_bestScaling.end()) {
-		if (it->second == 0) {
-			it = m_bestScaling.erase(it);
-		} else {
-			it++;
-		}
-	}
 
 	return m_bestFactorization;
 }
 
 bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
-							 const std::unordered_map< ct::IndexSpace, unsigned int > &formalScalingSoFar,
 							 const ct::ContractionResult::cost_t &biggestIntermediate,
 							 std::vector< ct::Tensor > &tensors, std::vector< ct::BinaryTerm > &factorizedTerms,
 							 const ct::GeneralTerm &term) {
@@ -69,7 +54,6 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 
 			m_bestCost                = costSoFar;
 			m_biggestIntermediateSize = biggestIntermediate;
-			m_bestScaling             = formalScalingSoFar;
 
 			return true;
 		} else {
@@ -77,7 +61,6 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 		}
 	} else if (tensors.size() == 1) {
 		ct::ContractionResult::cost_t cost = costSoFar;
-		std::unordered_map< ct::IndexSpace, unsigned int > formalScaling;
 
 		if (factorizedTerms.empty()) {
 			// This function has been called with only a single Tensor right from the beginning
@@ -90,13 +73,9 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			cost = 1;
 			for (const ct::Index &current : tensors[0].getIndices()) {
 				cost *= m_resolver.getMeta(current.getSpace()).getSize();
-				formalScaling[current.getSpace()] += 1;
 			}
 			cost += costSoFar;
 
-			for (const auto &current : formalScalingSoFar) {
-				formalScaling[current.first] = std::max(formalScaling[current.first], current.second);
-			}
 		} else {
 			// The factorization has completed since the last Tensor that remains is only the result
 			// of the last contraction. Since there are no other Tensors left to contract with, we have
@@ -106,15 +85,13 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			ct::BinaryTerm &resultTerm = factorizedTerms[factorizedTerms.size() - 1];
 			resultTerm.setResult(term.getResult());
 			resultTerm.setPrefactor(term.getPrefactor());
-
-			formalScaling = formalScalingSoFar;
 		}
 
 		ct::Tensor copy = std::move(tensors[0]);
 		tensors.pop_back();
 
 		// Call the final iteration of this function
-		bool result = doFactorize(cost, formalScaling, biggestIntermediate, tensors, factorizedTerms, term);
+		bool result = doFactorize(cost, biggestIntermediate, tensors, factorizedTerms, term);
 
 		// Back-insert the Tensor again
 		tensors.push_back(std::move(copy));
@@ -147,7 +124,6 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			}
 
 			cost_t cost = costSoFar;
-			std::unordered_map< ct::IndexSpace, unsigned int > formalScaling;
 
 			// Move the respective Tensors out of the list
 			auto itLeft = tensors.begin() + currentPair.first;
@@ -164,13 +140,6 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			ct::ContractionResult result = left.contract(right, m_resolver);
 
 			cost += result.cost;
-			for (const auto &current : result.spaceExponents) {
-				formalScaling[current.first] += current.second;
-			}
-
-			for (const auto &current : formalScalingSoFar) {
-				formalScaling[current.first] = std::max(formalScaling[current.first], current.second);
-			}
 
 			if (cost <= m_bestCost) {
 				// If the cost at this point is already higher than the best cost found so far, then
@@ -191,8 +160,8 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 				factorizedTerms.push_back(ct::BinaryTerm(std::move(result.resultTensor), 1.0, left, right));
 
 				// Factorize the remaining Tensors recursively
-				if (doFactorize(cost, formalScaling, std::max(biggestIntermediate, intermediateSize), tensors,
-								factorizedTerms, term)) {
+				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms,
+								term)) {
 					foundBetterFactorization = true;
 				}
 			}

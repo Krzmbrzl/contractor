@@ -4,6 +4,7 @@
 #include "terms/Index.hpp"
 #include "terms/IndexSpace.hpp"
 #include "terms/Tensor.hpp"
+#include "terms/Term.hpp"
 
 #include <ostream>
 #include <string>
@@ -52,8 +53,7 @@ public:
 
 	void printTensorType(const Terms::Tensor &tensor, const Utils::IndexSpaceResolver &resolver);
 	void printSymmetries(const Terms::Tensor &tensor);
-	void printScaling(const std::unordered_map< Terms::IndexSpace, unsigned int > &scaling,
-					  const Utils::IndexSpaceResolver &resolver);
+	void printScaling(const Terms::Term::FormalScalingMap &scaling, const Utils::IndexSpaceResolver &resolver);
 
 	void printHeadline(const std::string_view headline);
 
