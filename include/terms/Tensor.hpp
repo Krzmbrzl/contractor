@@ -92,6 +92,10 @@ public:
 	 */
 	const symmetry_list_t &getIndexSymmetries() const;
 	/**
+	 * @returns A mutable list of allowed index exchanges (encoded as pairwise substitutions) for this Tensor
+	 */
+	symmetry_list_t &accessIndexSymmetries();
+	/**
 	 * Sets the allowed index exchanges (encoded as pairwise substitutions) for this Tensor
 	 *
 	 * @param symmetries The allowed exchanges

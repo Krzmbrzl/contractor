@@ -106,6 +106,10 @@ const Tensor::symmetry_list_t &Tensor::getIndexSymmetries() const {
 	return m_indexSymmetries;
 }
 
+Tensor::symmetry_list_t &Tensor::accessIndexSymmetries() {
+	return m_indexSymmetries;
+}
+
 void Tensor::setIndexSymmetries(const Tensor::symmetry_list_t &symmetries) {
 	m_indexSymmetries = symmetries;
 }
