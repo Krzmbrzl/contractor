@@ -2,6 +2,7 @@
 #define CONTRACTOR_TERMS_INDEXSUBSTITUTION_HPP_
 
 #include "terms/Index.hpp"
+#include "terms/IndexPair.hpp"
 
 #include <ostream>
 #include <utility>
@@ -17,27 +18,6 @@ class Tensor;
  */
 class IndexSubstitution {
 public:
-	struct IndexPair {
-		::Contractor::Terms::Index first;
-		::Contractor::Terms::Index second;
-
-		IndexPair() = default;
-		IndexPair(const Index &first, const Index &second) : first(first), second(second) {}
-		IndexPair(Index &&first, Index &&second) : first(first), second(second) {}
-		IndexPair(const IndexPair &other) = default;
-		IndexPair(IndexPair &&other)      = default;
-
-		IndexPair &operator=(const IndexPair &other) = default;
-		IndexPair &operator=(IndexPair &&other) = default;
-
-		friend bool operator==(const IndexPair &lhs, const IndexPair &rhs) {
-			return Index::isSame(lhs.first, rhs.first) && Index::isSame(lhs.second, rhs.second)
-				   || Index::isSame(lhs.first, rhs.second) && Index::isSame(lhs.second, rhs.first);
-		}
-
-		friend bool operator!=(const IndexPair &lhs, const IndexPair &rhs) { return !(lhs == rhs); }
-	};
-
 	/**
 	 * The type used for representing an index pair that is to be exchanged (substituted for one another)
 	 */
