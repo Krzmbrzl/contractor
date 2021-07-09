@@ -15,9 +15,7 @@ namespace Contractor::Terms {
 class Index {
 public:
 	struct index_is_same {
-		bool operator()(const Index &lhs, const Index &rhs) const {
-			return Index::isSame(lhs, rhs);
-		}
+		bool operator()(const Index &lhs, const Index &rhs) const { return Index::isSame(lhs, rhs); }
 	};
 
 	/**
@@ -67,6 +65,10 @@ public:
 	}
 
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
+
+	friend constexpr bool operator<(const Index &lhs, const Index &rhs) {
+		return lhs.getSpace() < rhs.getSpace() && lhs.getID() < rhs.getID() && lhs.getSpin() < rhs.getSpin();
+	}
 
 	friend std::ostream &operator<<(std::ostream &out, Spin spin) {
 		switch (spin) {

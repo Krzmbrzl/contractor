@@ -31,7 +31,8 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("j+"), idx("i+"), idx("a"), idx("b") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = -1;
-		ct::IndexSubstitution substitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), factor);
+		ct::IndexSubstitution substitution =
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, factor);
 
 		ct::Tensor copy(original);
 		ASSERT_EQ(substitution.apply(copy), factor);
@@ -45,9 +46,8 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("j+"), idx("i+"), idx("b"), idx("a") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = 4;
-		ct::IndexSubstitution substitution({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")),
-											 ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")) },
-										   factor);
+		ct::IndexSubstitution substitution =
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") }, { idx("a"), idx("b") } }, factor);
 
 		ct::Tensor copy(original);
 		ASSERT_EQ(substitution.apply(copy), factor);
@@ -61,9 +61,8 @@ TEST(IndexSubstitutionTest, apply) {
 		ct::Tensor substituted("H", { idx("a+"), idx("b+"), idx("i"), idx("j") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = -13;
-		ct::IndexSubstitution substitution({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("a")),
-											 ct::IndexSubstitution::index_pair_t(idx("b"), idx("j")) },
-										   factor);
+		ct::IndexSubstitution substitution =
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") }, { idx("b"), idx("j") } }, factor);
 
 		ct::Tensor copy(original);
 		ASSERT_EQ(substitution.apply(copy), factor);
@@ -81,7 +80,8 @@ TEST(IndexSubstitutionTest, applyWithDuplicateIndices) {
 		ct::Tensor expected("H", { idx("a+"), idx("a+"), idx("i"), idx("j") });
 
 		constexpr ct::IndexSubstitution::factor_t factor = -1;
-		ct::IndexSubstitution substitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("a")), factor);
+		ct::IndexSubstitution substitution =
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, factor);
 
 		ct::Tensor substituted(original);
 		ASSERT_EQ(substitution.apply(substituted), factor);
@@ -139,15 +139,71 @@ TEST(IndexSubstitutionTest, appliesTo) {
 
 		ct::Tensor T("T", { idx("b"), idx("a") });
 
-		ASSERT_TRUE(sub.appliesTo(T, true));
-		ASSERT_TRUE(sub.appliesTo(T, false));
+		ASSERT_TRUE(sub.appliesTo(T));
 	}
 	{
-		ct::IndexSubstitution sub({ idx("a"), idx("c") });
+		ct::IndexSubstitution sub({ idx("b"), idx("a") });
 
-		ct::Tensor T("T", { idx("b"), idx("a") });
+		ct::Tensor T("T", { idx("a"), idx("c") });
 
-		ASSERT_FALSE(sub.appliesTo(T, true));
-		ASSERT_TRUE(sub.appliesTo(T, false));
+		ASSERT_FALSE(sub.appliesTo(T));
+	}
+}
+
+TEST(IndexSubstitutionTest, multiply) {
+	std::vector< ct::Index > indices = { idx("i+"), idx("j+"), idx("a"), idx("b") };
+
+	{
+		// i->j and j->i (== exchange i and j)
+		ct::IndexSubstitution sub1 = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, -1);
+		// i->a and a->i (== exchange i and a)
+		ct::IndexSubstitution sub2 = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, -2);
+
+		// i->j and j->a and a->i (== cycle (ija))
+		ct::IndexSubstitution expectedResult({ { idx("i"), idx("j") }, { idx("j"), idx("a") }, { idx("a"), idx("i") } },
+											 2);
+
+		ct::IndexSubstitution result = sub2 * sub1;
+
+		ASSERT_EQ(result, expectedResult);
+
+		// Also verify on concrete example
+		decltype(indices) direct    = indices;
+		decltype(indices) composite = indices;
+
+		sub1.apply(direct);
+		sub2.apply(direct);
+		expectedResult.apply(composite);
+
+		ASSERT_EQ(direct, composite);
+	}
+	{
+		ct::IndexSubstitution sub =
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") }, { idx("j"), idx("b") } });
+
+		ct::IndexSubstitution result = sub * sub;
+
+		ASSERT_TRUE(result.isIdentity());
+
+		// Also verify on concrete example
+		decltype(indices) direct = indices;
+
+		sub.apply(direct);
+		sub.apply(direct);
+
+		ASSERT_EQ(direct, indices);
+	}
+	{
+		ct::IndexSubstitution sub = ct::IndexSubstitution::createCyclicPermutation({ idx("i"), idx("j"), idx("a") });
+
+		ct::IndexSubstitution prod = sub * sub;
+
+		ASSERT_EQ(prod, ct::IndexSubstitution::createCyclicPermutation({ idx("i"), idx("a"), idx("j") }));
+
+		ct::IndexSubstitution result = sub * sub * sub;
+		ct::IndexSubstitution identity;
+
+		ASSERT_TRUE(identity.isIdentity());
+		ASSERT_EQ(result, identity);
 	}
 }

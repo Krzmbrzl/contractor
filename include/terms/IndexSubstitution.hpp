@@ -30,7 +30,31 @@ public:
 	/**
 	 * The type of the prefactor associated with this subsitution
 	 */
-	using factor_t = int;
+	using factor_t = float;
+
+	/**
+	 * Creates a susbtitution that permutes the given indices. That is within a pair the produced substitution
+	 * will replace first with second AND second with first.
+	 *
+	 * @param pairs Pairs to create permutations of
+	 * @param factor The factor to associate with the produced operation
+	 * @returns The produced substitution object
+	 */
+	static IndexSubstitution createPermutation(const std::vector< IndexPair > &pairs, factor_t factor = 1);
+	/**
+	 * Creates an IndexSubstitution object representing the cyclic permutation of the given
+	 * indices.
+	 *
+	 * @param indices List of indices to cycle
+	 * @param factor The factor to associate with the produced operation
+	 * @returns The produced substitution object
+	 */
+	static IndexSubstitution createCyclicPermutation(const std::vector< Index > &indices, factor_t factor = 1);
+
+	/**
+	 * @returns The identity operation (no-op)
+	 */
+	static IndexSubstitution identity();
 
 	explicit IndexSubstitution(const index_pair_t &substitute, factor_t factor = 1);
 	explicit IndexSubstitution(index_pair_t &&substitute, factor_t factor = 1);
@@ -47,6 +71,7 @@ public:
 	friend bool operator==(const IndexSubstitution &lhs, const IndexSubstitution &rhs);
 	friend bool operator!=(const IndexSubstitution &lhs, const IndexSubstitution &rhs);
 	friend std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub);
+	friend IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitution &rhs);
 
 	/**
 	 * @returns A list of pairwise substitutions represented by this object
@@ -77,6 +102,22 @@ public:
 	factor_t apply(Tensor &tensor) const;
 
 	/**
+	 * Applies the substitutions to the given index list (in-place).
+	 *
+	 * @param indices The list of indices to work on
+	 * @returns The prefactor resulting from the performed index substitution
+	 */
+	factor_t apply(std::vector< Index > &indices) const;
+
+	/**
+	 * Applies the substitutions to the given IndexSubstitution (in-place).
+	 *
+	 * @param substitution The IndexSubstitution to work on
+	 * @returns The prefactor resulting from the performed index substitution
+	 */
+	factor_t apply(IndexSubstitution &substitution) const;
+
+	/**
 	 * Replaces the given index
 	 *
 	 * @param source The index to replace
@@ -86,15 +127,26 @@ public:
 
 	/**
 	 * @param tensor The Tensor to check
-	 * @param bidirectional Whether it is required that each permutation can be applied
-	 * in both directions. That means for i<>j the Tensor has to contain both: i and j that
-	 * are replaced with one another, whereas in the unidirectional case only i or j is
-	 * required to be present.
 	 * @returns Whether this substitution applies to the given Tensor
 	 */
-	bool appliesTo(const Tensor &tensor, bool bidirectional) const;
+	bool appliesTo(const Tensor &tensor) const;
 
-	bool isNoOp() const;
+	/**
+	 * @param indices The list of indices to check
+	 * @returns Whether this substitution applies to the given Tensor
+	 */
+	bool appliesTo(const std::vector< Index > &indices) const;
+
+	/**
+	 * @returns Whether this substitution is the identity operation (no-op)
+	 */
+	bool isIdentity() const;
+
+	/**
+	 * @param invertFactor Whether the factor should be inverted as well
+	 * @returns The inverse substitution that will undo the changes made by this substitution
+	 */
+	IndexSubstitution inverse(bool invertFactor = true) const;
 
 protected:
 	substitution_list m_substitutions;

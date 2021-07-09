@@ -16,9 +16,17 @@ template< typename term_t > void test_01() {
 	// -> Should result in
 	// R[ij,ab] = 1/4 (A[i,a]B[j,b] - A[j,a]B[i,b] - A[i,b]B[j,a] + A[j,b]B[i,a])
 	ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
-	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
-					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1),
-						 ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")), -1) });
+	ct::IndexSubstitution perm1 =
+		ct::IndexSubstitution::createPermutation({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")) }, -1);
+	ct::IndexSubstitution perm2 =
+		ct::IndexSubstitution::createPermutation({ ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")) }, -1);
+
+	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+
+	ct::PermutationGroup symmetry(R_prime.getIndices());
+	symmetry.addGenerator(perm1);
+	symmetry.addGenerator(perm2);
+	R_prime.setSymmetry(symmetry);
 
 	ct::Tensor A1("A", { idx("i+"), idx("a") });
 	ct::Tensor A2("A", { idx("j+"), idx("a") });
@@ -46,6 +54,7 @@ template< typename term_t > void test_01() {
 
 	const std::vector< term_t > &actualTerms = antisymmetrizer.antisymmetrize(origTerm);
 
+	ASSERT_EQ(actualTerms.size(), expectedTerms.size());
 	ASSERT_THAT(actualTerms, ::testing::UnorderedElementsAreArray(expectedTerms));
 	ASSERT_FLOAT_EQ(antisymmetrizer.getPrefactor(), 1.0 / 4);
 }
@@ -55,11 +64,22 @@ template< typename term_t > void test_02() {
 	// But this time we assume that R is already anti-symmetric with respect to i<->j exchange
 	// -> Should result in
 	// R[ij,ab] = 1/2 (A[ij,ac] B[c,b] - A[ij,bc] B[c,a])
-	ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
-				 { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1) });
-	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") },
-					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")), -1),
-						 ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")), -1) });
+	ct::IndexSubstitution perm1 =
+		ct::IndexSubstitution::createPermutation({ ct::IndexSubstitution::index_pair_t(idx("i"), idx("j")) }, -1);
+	ct::IndexSubstitution perm2 =
+		ct::IndexSubstitution::createPermutation({ ct::IndexSubstitution::index_pair_t(idx("a"), idx("b")) }, -1);
+
+	ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+	ct::Tensor R_prime("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+
+	ct::PermutationGroup symmetry(R.getIndices());
+	symmetry.addGenerator(perm1);
+	R.setSymmetry(symmetry);
+
+	symmetry.setRootSequence(R_prime.getIndices());
+	symmetry.addGenerator(perm2);
+	R_prime.setSymmetry(symmetry);
+
 
 	ct::Tensor A1("A", { idx("i+"), idx("j+"), idx("a"), idx("c") });
 	ct::Tensor A2("A", { idx("i+"), idx("j+"), idx("b"), idx("c") });
@@ -82,6 +102,12 @@ template< typename term_t > void test_02() {
 
 	const std::vector< term_t > &actualTerms = antisymmetrizer.antisymmetrize(origTerm);
 
+	std::cerr << "Actual:" << std::endl;
+	std::cerr << actualTerms[0] << std::endl;
+	std::cerr << "Expected:" << std::endl;
+	std::cerr << expectedTerms[0] << std::endl;
+
+	ASSERT_EQ(actualTerms.size(), expectedTerms.size());
 	ASSERT_THAT(actualTerms, ::testing::UnorderedElementsAreArray(expectedTerms));
 	ASSERT_FLOAT_EQ(antisymmetrizer.getPrefactor(), 1.0 / 2);
 }

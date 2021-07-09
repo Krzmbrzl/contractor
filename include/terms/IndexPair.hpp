@@ -19,8 +19,7 @@ struct IndexPair {
 	IndexPair &operator=(IndexPair &&other) = default;
 
 	friend bool operator==(const IndexPair &lhs, const IndexPair &rhs) {
-		return Index::isSame(lhs.first, rhs.first) && Index::isSame(lhs.second, rhs.second)
-			   || Index::isSame(lhs.first, rhs.second) && Index::isSame(lhs.second, rhs.first);
+		return Index::isSame(lhs.first, rhs.first) && Index::isSame(lhs.second, rhs.second);
 	}
 
 	friend bool operator!=(const IndexPair &lhs, const IndexPair &rhs) { return !(lhs == rhs); }

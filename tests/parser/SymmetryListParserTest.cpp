@@ -64,7 +64,7 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
-		std::string content = "H[HP,PH]: 1-2 -> -2";
+		std::string content = "H[HP,PH]: 1-2 -> -1";
 		std::stringstream sstream(content);
 
 		cp::SymmetryListParser parser(resolver);
@@ -75,18 +75,22 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 		ct::Index thirdIndex  = idx("b");
 		ct::Index fourthIndex = idx("j");
 
-		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
+		ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation({ { firstIndex, secondIndex } }, -1);
 
 		ct::Tensor expectedTensor(
-			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexSubstitution(firstSubstitution) });
+			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
+
+		ct::PermutationGroup symmetry(expectedTensor.getIndices());
+		symmetry.addGenerator(perm1);
+		expectedTensor.setSymmetry(symmetry);
+
 
 		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
 		ASSERT_EQ(symmetrySpecs.size(), 1);
 		ASSERT_EQ(symmetrySpecs[0], expectedTensor);
 	}
 	{
-		std::string content = "H[HP,PH]: 1-2 -> -2, 3-4 -> 1";
+		std::string content = "H[HP,PH]: 1-2 -> -1, 3-4 -> 1";
 		std::stringstream sstream(content);
 
 		cp::SymmetryListParser parser(resolver);
@@ -97,12 +101,19 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 		ct::Index thirdIndex  = idx("b");
 		ct::Index fourthIndex = idx("j");
 
-		ct::IndexSubstitution firstSubstitution(ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex), -2);
-		ct::IndexSubstitution secondSubstitution(ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex), 1);
+		ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation({ { firstIndex, secondIndex } }, -1);
+		ct::IndexSubstitution perm2 =
+			ct::IndexSubstitution::createCyclicPermutation({ { thirdIndex, fourthIndex } }, 1);
 
 		ct::Tensor expectedTensor(
-			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexSubstitution(firstSubstitution), ct::IndexSubstitution(secondSubstitution) });
+			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
+
+		ct::PermutationGroup symmetry(expectedTensor.getIndices());
+		symmetry.addGenerator(perm1);
+		symmetry.addGenerator(perm2);
+		expectedTensor.setSymmetry(symmetry);
+
+		std::cout << "Test: " << symmetry.size() << std::endl;
 
 		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
 		ASSERT_EQ(symmetrySpecs.size(), 1);
@@ -120,13 +131,15 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 		ct::Index thirdIndex  = idx("b");
 		ct::Index fourthIndex = idx("j");
 
-		ct::IndexSubstitution firstSubstitution({ ct::IndexSubstitution::index_pair_t(firstIndex, secondIndex),
-												  ct::IndexSubstitution::index_pair_t(thirdIndex, fourthIndex) },
-												-1);
+		ct::IndexSubstitution perm =
+			ct::IndexSubstitution::createPermutation({ { firstIndex, secondIndex }, { thirdIndex, fourthIndex } }, -1);
 
 		ct::Tensor expectedTensor(
-			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) },
-			{ ct::IndexSubstitution(firstSubstitution) });
+			"H", { ct::Index(firstIndex), ct::Index(secondIndex), ct::Index(thirdIndex), ct::Index(fourthIndex) });
+
+		ct::PermutationGroup symmetry(expectedTensor.getIndices());
+		symmetry.addGenerator(perm);
+		expectedTensor.setSymmetry(symmetry);
 
 		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
 		ASSERT_EQ(symmetrySpecs.size(), 1);
@@ -139,11 +152,19 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 		cp::SymmetryListParser parser(resolver);
 		parser.setSource(sstream);
 
-		ct::IndexSubstitution sub1({ ct::IndexSubstitution::index_pair_t(idx("i+"), idx("a+")) }, -1);
-		ct::IndexSubstitution sub2({ ct::IndexSubstitution::index_pair_t(idx("a+"), idx("b+")) }, -1);
+		ct::IndexSubstitution perm1 = ct::IndexSubstitution::createCyclicPermutation({ { idx("i+"), idx("a+") } }, -1);
+		ct::IndexSubstitution perm2 = ct::IndexSubstitution::createCyclicPermutation({ { idx("a+"), idx("b+") } }, -1);
 
-		ct::Tensor tensor1("H", { idx("i+"), idx("a+"), idx("b"), idx("j") }, { ct::IndexSubstitution(sub1) });
-		ct::Tensor tensor2("H", { idx("a+"), idx("b+"), idx("c"), idx("i") }, { ct::IndexSubstitution(sub2) });
+		ct::Tensor tensor1("H", { idx("i+"), idx("a+"), idx("b"), idx("j") });
+		ct::Tensor tensor2("H", { idx("a+"), idx("b+"), idx("c"), idx("i") });
+
+		ct::PermutationGroup sym1(tensor1.getIndices());
+		sym1.addGenerator(perm1);
+		tensor1.setSymmetry(sym1);
+
+		ct::PermutationGroup sym2(tensor2.getIndices());
+		sym2.addGenerator(perm2);
+		tensor2.setSymmetry(sym2);
 
 		std::vector< ct::Tensor > symmetrySpecs = parser.parseSymmetrySpecs();
 		ASSERT_EQ(symmetrySpecs.size(), 2);
@@ -152,7 +173,7 @@ TEST(SymmetryListParserTest, parseSymmetrySpecs) {
 }
 
 TEST(SymmetryListParserTest, whitespaceVariations) {
-	std::string content = "H[HP,PH]: 1-2 -> -2";
+	std::string content = "H[HP,PH]: 1-2 -> -1";
 	std::stringstream sstream(content);
 
 	cp::SymmetryListParser parser(resolver);
@@ -162,14 +183,14 @@ TEST(SymmetryListParserTest, whitespaceVariations) {
 	ASSERT_EQ(specs.size(), 1);
 	ct::Tensor tensor1 = specs[0];
 
-	content = "H[HP,PH]:      1-2   ->   -2";
+	content = "H[HP,PH]:      1-2   ->   -1";
 	sstream = std::stringstream(content);
 	parser.setSource(sstream);
 	specs = parser.parseSymmetrySpecs();
 	ASSERT_EQ(specs.size(), 1);
 	ct::Tensor tensor2 = specs[0];
 
-	content = "H[HP,PH]:1-2->-2";
+	content = "H[HP,PH]:1-2->-1";
 	sstream = std::stringstream(content);
 	parser.setSource(sstream);
 	specs = parser.parseSymmetrySpecs();
@@ -190,10 +211,14 @@ TEST(SymmetryListParserTest, parse) {
 	std::stringstream sstream(content);
 
 	ct::Tensor tensor1("H");
-	ct::Index index1 = idx("a+");
-	ct::Index index2 = idx("b");
-	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) },
-					   { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2), 1) });
+	ct::Index index1           = idx("a+");
+	ct::Index index2           = idx("b");
+	ct::IndexSubstitution perm = ct::IndexSubstitution::createPermutation({ { index1, index2 } }, 1);
+	ct::Tensor tensor2("G", { ct::Index(index1), ct::Index(index2) });
+
+	ct::PermutationGroup symmetry(tensor2.getIndices());
+	symmetry.addGenerator(perm);
+	tensor2.setSymmetry(symmetry);
 
 	cp::SymmetryListParser parser(resolver);
 	std::vector< ct::Tensor > result = parser.parse(sstream);

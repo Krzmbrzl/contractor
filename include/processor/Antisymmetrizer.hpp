@@ -44,11 +44,10 @@ public:
 		std::vector< Terms::IndexSubstitution > creatorSubs     = antisymmetrize(creators, term.getResult());
 		std::vector< Terms::IndexSubstitution > annihilatorSubs = antisymmetrize(annihilators, term.getResult());
 
-		Terms::Tensor::symmetry_list_t symmetries = term.getResult().getIndexSymmetries();
-
+		Terms::PermutationGroup symmetry = term.getResult().getSymmetry();
 		for (const Terms::IndexSubstitution &current : boost::join(creatorSubs, annihilatorSubs)) {
-			if (!current.isNoOp()) {
-				symmetries.push_back(current);
+			if (!current.isIdentity()) {
+				symmetry.addGenerator(current, false);
 			}
 		}
 
@@ -68,12 +67,14 @@ public:
 
 				termCopy.setPrefactor(factor * term.getPrefactor());
 
-				termCopy.accessResult().setIndexSymmetries(std::move(symmetries));
+				symmetry.setRootSequence(termCopy.getResult().getIndices());
+				termCopy.accessResult().setSymmetry(symmetry);
 
 				m_resultingTerms.push_back(std::move(termCopy));
 			}
 		}
 
+		assert(!m_resultingTerms.empty());
 		return m_resultingTerms;
 	}
 
@@ -82,6 +83,9 @@ public:
 	std::vector< Terms::IndexSubstitution > antisymmetrize(const std::vector< Terms::Index > &indices,
 														   const Terms::Tensor &tensor) {
 		std::vector< Terms::IndexSubstitution > substitutions;
+
+		// The identity substitution should always be present
+		substitutions.push_back(Terms::IndexSubstitution::identity());
 
 		std::vector< Terms::Index > indicesCopy = indices;
 		Utils::HeapsAlgorithm heapAlg(indicesCopy);
@@ -116,12 +120,10 @@ public:
 
 			int sign = heapAlg.getParity() ? 1 : -1;
 
-			Terms::IndexSubstitution sub(std::move(currentSubs), sign);
+			Terms::IndexSubstitution sub = Terms::IndexSubstitution::createPermutation(std::move(currentSubs), sign);
 
 			// First check whether the given Tensor already has this symmetry and only consider it, if it doesn't
-			auto it = std::find(tensor.getIndexSymmetries().begin(), tensor.getIndexSymmetries().end(), sub);
-
-			if (it == tensor.getIndexSymmetries().end()) {
+			if (!tensor.getSymmetry().contains(sub)) {
 				substitutions.push_back(std::move(sub));
 			}
 		} while (heapAlg.nextPermutation());

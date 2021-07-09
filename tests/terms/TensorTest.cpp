@@ -40,10 +40,11 @@ TEST(TensorTest, getter) {
 	ASSERT_EQ(annihilatorsOnly.getIndices(), annihilators);
 
 
-	ct::IndexSubstitution p(ct::IndexSubstitution::index_pair_t(creators[0], creators[1]));
-	ct::Tensor::symmetry_list_t permutations = { ct::IndexSubstitution(p) };
-	creatorsOnly.setIndexSymmetries(permutations);
-	ASSERT_EQ(creatorsOnly.getIndexSymmetries(), permutations);
+	ct::IndexSubstitution permuation = ct::IndexSubstitution::createPermutation({ { creators[0], creators[1] } });
+	ct::PermutationGroup symmetry(creatorsOnly.getIndices());
+	symmetry.addGenerator(permuation);
+	creatorsOnly.setSymmetry(symmetry);
+	ASSERT_EQ(creatorsOnly.getSymmetry(), symmetry);
 }
 
 TEST(TensorTest, equality) {
@@ -84,12 +85,18 @@ TEST(TensorTest, equality) {
 	}
 
 	{
-		ct::IndexSubstitution p(ct::IndexSubstitution::index_pair_t(idx("i+"), idx("j+")));
-		ct::Tensor::symmetry_list_t permutations = { ct::IndexSubstitution(p) };
+		ct::IndexSubstitution permuation = ct::IndexSubstitution::createPermutation({ { idx("i+"), idx("j+") } });
 
-		ct::Tensor element1("H", { idx("i+"), idx("j+") }, permutations);
+		ct::Tensor element1("H", { idx("i+"), idx("j+") });
 		ct::Tensor element2("H", { idx("a+"), idx("j+") });
-		ct::Tensor element3("H", { idx("i+"), idx("j+") }, permutations);
+		ct::Tensor element3("H", { idx("i+"), idx("j+") });
+
+		ct::PermutationGroup symmetry(element1.getIndices());
+		symmetry.addGenerator(permuation);
+		element1.setSymmetry(symmetry);
+
+		symmetry.setRootSequence(element3.getIndices());
+		element3.setSymmetry(symmetry);
 
 		ASSERT_NE(element1, element2);
 		ASSERT_EQ(element1, element3);
@@ -238,48 +245,56 @@ TEST(TensorTest, transferSymmetry) {
 		ASSERT_EQ(transformed, original);
 	}
 	{
-		ct::Index si1 = idx("i+");
-		ct::Index si2 = idx("j+");
-		ct::Index si3 = idx("j");
-		ct::Index si4 = idx("j");
-		ct::IndexSubstitution sp1(ct::IndexSubstitution::index_pair_t(si1, si2));
-		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexSubstitution(sp1) };
-		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+		ct::Index si1                          = idx("i+");
+		ct::Index si2                          = idx("j+");
+		ct::Index si3                          = idx("j");
+		ct::Index si4                          = idx("j");
+		ct::Tensor::index_list_t sourceIndices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor symmetrySource("H", sourceIndices);
+		ct::PermutationGroup sourceSymmetry(symmetrySource.getIndices());
+		sourceSymmetry.addGenerator(ct::IndexSubstitution({ si1, si2 }));
+		symmetrySource.setSymmetry(sourceSymmetry);
 
-		ct::Index i1 = idx("k+");
-		ct::Index i2 = idx("l+");
-		ct::Index i3 = idx("k");
-		ct::Index i4 = idx("l");
-		ct::IndexSubstitution p1(ct::IndexSubstitution::index_pair_t(si1, si2));
-		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t symmetries = { ct::IndexSubstitution(p1) };
-		const ct::Tensor expected("H", indices, symmetries);
-		ct::Tensor transformed("H", indices);
+		ct::Index i1                     = idx("k+");
+		ct::Index i2                     = idx("l+");
+		ct::Index i3                     = idx("k");
+		ct::Index i4                     = idx("l");
+		ct::Tensor::index_list_t indices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+
+		ct::Tensor expected("H", indices);
+		ct::Tensor transformed = expected;
+
+		ct::PermutationGroup expectedSymmetry(expected.getIndices());
+		expectedSymmetry.addGenerator(ct::IndexSubstitution({ si1, si2 }));
+		expected.setSymmetry(expectedSymmetry);
 
 		ct::Tensor::transferSymmetry(symmetrySource, transformed);
 
 		ASSERT_EQ(transformed, expected);
 	}
 	{
-		ct::Index si1 = idx("i+");
-		ct::Index si2 = idx("j+");
-		ct::Index si3 = idx("j");
-		ct::Index si4 = idx("j");
-		ct::IndexSubstitution sp1(ct::IndexSubstitution::index_pair_t(si1, si2));
-		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexSubstitution(sp1) };
-		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+		ct::Index si1                          = idx("i+");
+		ct::Index si2                          = idx("j+");
+		ct::Index si3                          = idx("j");
+		ct::Index si4                          = idx("j");
+		ct::Tensor::index_list_t sourceIndices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor symmetrySource("H", sourceIndices);
 
-		ct::Index i1 = idx("l+");
-		ct::Index i2 = idx("k+");
-		ct::Index i3 = idx("j");
-		ct::Index i4 = idx("m");
-		ct::IndexSubstitution p1(ct::IndexSubstitution::index_pair_t(si1, si2));
-		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t symmetries = { ct::IndexSubstitution(p1) };
-		const ct::Tensor expected("H", indices, symmetries);
-		ct::Tensor transformed("H", indices);
+		ct::PermutationGroup sourceSymmetry(symmetrySource.getIndices());
+		sourceSymmetry.addGenerator(ct::IndexSubstitution({ si1, si2 }));
+		symmetrySource.setSymmetry(sourceSymmetry);
+
+		ct::Index i1                     = idx("l+");
+		ct::Index i2                     = idx("k+");
+		ct::Index i3                     = idx("j");
+		ct::Index i4                     = idx("m");
+		ct::Tensor::index_list_t indices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor expected("H", indices);
+		ct::Tensor transformed = expected;
+
+		ct::PermutationGroup expectedSymmetry(expected.getIndices());
+		expectedSymmetry.addGenerator(ct::IndexSubstitution({ si1, si2 }));
+		expected.setSymmetry(expectedSymmetry);
 
 		ct::Tensor::transferSymmetry(symmetrySource, transformed);
 
@@ -287,24 +302,28 @@ TEST(TensorTest, transferSymmetry) {
 	}
 	{
 		// Duplicate indices
-		ct::Index si1 = idx("i+");
-		ct::Index si2 = idx("i+");
-		ct::Index si3 = idx("j");
-		ct::Index si4 = idx("j");
-		ct::IndexSubstitution sp1(ct::IndexSubstitution::index_pair_t(si1, si3));
-		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexSubstitution(sp1) };
-		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+		ct::Index si1                          = idx("i+");
+		ct::Index si2                          = idx("i+");
+		ct::Index si3                          = idx("j");
+		ct::Index si4                          = idx("j");
+		ct::Tensor::index_list_t sourceIndices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor symmetrySource("H", sourceIndices);
 
-		ct::Index i1 = idx("p+");
-		ct::Index i2 = idx("p+");
-		ct::Index i3 = idx("j");
-		ct::Index i4 = idx("l");
-		ct::IndexSubstitution p1(ct::IndexSubstitution::index_pair_t(si1, si3));
-		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t symmetries = { ct::IndexSubstitution(p1) };
-		const ct::Tensor expected("H", indices, symmetries);
-		ct::Tensor transformed("H", indices);
+		ct::PermutationGroup sourceSymmetry(symmetrySource.getIndices());
+		sourceSymmetry.addGenerator(ct::IndexSubstitution({ si1, si3 }));
+		symmetrySource.setSymmetry(sourceSymmetry);
+
+		ct::Index i1                     = idx("p+");
+		ct::Index i2                     = idx("p+");
+		ct::Index i3                     = idx("j");
+		ct::Index i4                     = idx("l");
+		ct::Tensor::index_list_t indices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor expected("H", indices);
+		ct::Tensor transformed = expected;
+
+		ct::PermutationGroup expectedSymmetry(expected.getIndices());
+		expectedSymmetry.addGenerator(ct::IndexSubstitution({ si1, si3 }));
+		expected.setSymmetry(expectedSymmetry);
 
 		ct::Tensor::transferSymmetry(symmetrySource, transformed);
 
@@ -312,107 +331,58 @@ TEST(TensorTest, transferSymmetry) {
 	}
 	{
 		// Destination tensor already has some symmetry (which will be overwritten)
-		ct::Index si1 = idx("i+");
-		ct::Index si2 = idx("j+");
-		ct::Index si3 = idx("j");
-		ct::Index si4 = idx("j");
-		ct::IndexSubstitution sp1(ct::IndexSubstitution::index_pair_t(si1, si3));
-		ct::Tensor::index_list_t sourceIndices     = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t sourceSymmetry = { ct::IndexSubstitution(sp1) };
-		const ct::Tensor symmetrySource("H", sourceIndices, sourceSymmetry);
+		ct::Index si1                          = idx("i+");
+		ct::Index si2                          = idx("j+");
+		ct::Index si3                          = idx("j");
+		ct::Index si4                          = idx("j");
+		ct::Tensor::index_list_t sourceIndices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor symmetrySource("H", sourceIndices);
 
-		ct::Index i1 = idx("l+");
-		ct::Index i2 = idx("k+");
-		ct::Index i3 = idx("j");
-		ct::Index i4 = idx("m");
-		ct::IndexSubstitution p1(ct::IndexSubstitution::index_pair_t(si1, si3));
-		ct::Tensor::index_list_t indices       = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
-		ct::Tensor::symmetry_list_t symmetries = { ct::IndexSubstitution(p1) };
-		const ct::Tensor expected("H", indices, symmetries);
-		ct::Tensor transformed("H", indices,
-							   { ct::IndexSubstitution({ ct::IndexSubstitution::index_pair_t(i3, i4) }) });
+		ct::PermutationGroup sourceSymmetry(symmetrySource.getIndices());
+		sourceSymmetry.addGenerator(ct::IndexSubstitution({ si1, si3 }));
+		symmetrySource.setSymmetry(sourceSymmetry);
+
+		ct::Index i1                     = idx("l+");
+		ct::Index i2                     = idx("k+");
+		ct::Index i3                     = idx("j");
+		ct::Index i4                     = idx("m");
+		ct::Tensor::index_list_t indices = { ct::Index(si1), ct::Index(si2), ct::Index(si3), ct::Index(si4) };
+		ct::Tensor expected("H", indices);
+		ct::Tensor transformed = expected;
+
+		ct::PermutationGroup transformedSymmtry(transformed.getIndices());
+		transformedSymmtry.addGenerator(ct::IndexSubstitution({ i3, i4 }));
+		transformed.setSymmetry(transformedSymmtry);
+
+		ct::PermutationGroup expectedSymmetry(expected.getIndices());
+		expectedSymmetry.addGenerator(ct::IndexSubstitution({ si1, si3 }));
+		expected.setSymmetry(expectedSymmetry);
 
 		ct::Tensor::transferSymmetry(symmetrySource, transformed);
 
 		ASSERT_EQ(transformed, expected);
 	}
-}
-
-TEST(TensorTest, replaceIndex) {
 	{
-		ct::Index index1 = idx("j+");
-		ct::Index index2 = idx("k+");
-		ct::Index index3 = idx("l+");
+		ct::Tensor source("H", { idx("i+"), idx("a+"), idx("b"), idx("j") });
+		ct::Tensor target("H", { idx("k+"), idx("b+"), idx("c"), idx("j") });
 
-		ct::Tensor expected("H", { ct::Index(index3), ct::Index(index2) },
-							{ ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index3, index2)) });
+		ct::PermutationGroup sourceSymmetry(source.getIndices());
+		sourceSymmetry.addGenerator(ct::IndexSubstitution::createCyclicPermutation({ { idx("a"), idx("i") } }, -1),
+									false);
+		sourceSymmetry.addGenerator(ct::IndexSubstitution::createCyclicPermutation({ { idx("b"), idx("j") } }, -1));
+		source.setSymmetry(sourceSymmetry);
 
-		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
-						  { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2)) });
-		actual.replaceIndex(index1, index3);
+		ct::Tensor expectedResult = target;
 
-		ASSERT_EQ(actual, expected);
-	}
-	{
-		ct::Index index1 = idx("j+");
-		ct::Index index2 = idx("k+");
-		ct::Index index3 = idx("l+");
+		ct::PermutationGroup expectedSymmetry(expectedResult.getIndices());
+		expectedSymmetry.addGenerator(ct::IndexSubstitution::createCyclicPermutation({ { idx("k"), idx("b") } }, -1),
+									  false);
+		expectedSymmetry.addGenerator(ct::IndexSubstitution::createCyclicPermutation({ { idx("c"), idx("j") } }, -1));
+		expectedResult.setSymmetry(expectedSymmetry);
 
-		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index3) },
-							{ ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index3)) });
+		ct::Tensor::transferSymmetry(source, target);
 
-		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
-						  { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2)) });
-		actual.replaceIndex(index2, index3);
-
-		ASSERT_EQ(actual, expected);
-	}
-	{
-		// Replacing a non-existent index is a no-op
-		ct::Index index1 = idx("j+");
-		ct::Index index2 = idx("k+");
-		ct::Index index3 = idx("l+");
-		ct::Index dummy  = idx("m+");
-
-		ct::Tensor expected("H", { ct::Index(index1), ct::Index(index2) },
-							{ ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2)) });
-
-		ct::Tensor actual("H", { ct::Index(index1), ct::Index(index2) },
-						  { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(index1, index2)) });
-		actual.replaceIndex(dummy, index3);
-
-		ASSERT_EQ(actual, expected);
-	}
-}
-
-TEST(TensorTest, replaceIndices) {
-	{
-		ct::Tensor expected("H", { idx("i"), idx("j") });
-		ct::Tensor actual("H", { idx("j"), idx("i") });
-
-		// Switch i and j by replacing i->j and j->i
-		// Note that if we were to apply these separately using the replaceIndex function we'd end
-		// up with either H[ii] or H[jj] instead of the desired H[ij]
-		std::vector< std::pair< ct::Index, ct::Index > > replacements = { { idx("i"), idx("j") },
-																		  { idx("j"), idx("i") } };
-
-		actual.replaceIndices(replacements);
-
-		ASSERT_EQ(actual, expected);
-	}
-	{
-		// Do the same but this time include index symmetries
-		ct::Tensor expected("H", { idx("i"), idx("j") },
-							{ ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("i"), idx("j"))) });
-		ct::Tensor actual("H", { idx("j"), idx("i") },
-						  { ct::IndexSubstitution(ct::IndexSubstitution::index_pair_t(idx("j"), idx("i"))) });
-
-		std::vector< std::pair< ct::Index, ct::Index > > replacements = { { idx("i"), idx("j") },
-																		  { idx("j"), idx("i") } };
-
-		actual.replaceIndices(replacements);
-
-		ASSERT_EQ(actual, expected);
+		ASSERT_EQ(target, expectedResult);
 	}
 }
 
@@ -555,28 +525,26 @@ TEST(TensorTest, contract) {
 TEST(TensorTest, contractWithSymmetry) {
 	{
 		// A_B[ij,ab] = A[i,a,q] B[j,b,q]
-		ct::IndexSubstitution sym1({ idx("i"), idx("a") }, 1);
-		ct::IndexSubstitution sym2({ idx("j"), idx("b") }, 1);
+		ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, 1);
+		ct::IndexSubstitution perm2 = ct::IndexSubstitution::createPermutation({ { idx("j"), idx("b") } }, 1);
 
-		ct::Tensor t1("A", { idx("i+"), idx("a"), idx("q!") }, { sym1 });
-		ct::Tensor t2("B", { idx("j+"), idx("b"), idx("q!") }, { sym2 });
+		ct::Tensor t1("A", { idx("i+"), idx("a"), idx("q!") });
+		ct::Tensor t2("B", { idx("j+"), idx("b"), idx("q!") });
 
-		ct::Tensor expectedResult("A_B", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1, sym2 });
+		ct::PermutationGroup sym1(t1.getIndices());
+		sym1.addGenerator(perm1);
+		t1.setSymmetry(sym1);
 
-		ct::ContractionResult result = t1.contract(t2, resolver);
+		ct::PermutationGroup sym2(t2.getIndices());
+		sym2.addGenerator(perm2);
+		t2.setSymmetry(sym2);
 
-		ASSERT_EQ(result.resultTensor, expectedResult);
-	}
-	{
-		// A_B[j,b] = A[ij,ab] B[a,i]
-		ct::IndexSubstitution sym1({ idx("i"), idx("a") }, 1);
-		ct::IndexSubstitution sym2({ idx("j"), idx("b") }, 1);
-		ct::IndexSubstitution sym3({ idx("a"), idx("i") }, 1);
+		ct::Tensor expectedResult("A_B", { idx("i+"), idx("j+"), idx("a"), idx("b") });
 
-		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1, sym2 });
-		ct::Tensor t2("B", { idx("a+"), idx("i") }, { sym3 });
-
-		ct::Tensor expectedResult("A_B", { idx("j+"), idx("b") }, { sym2 });
+		ct::PermutationGroup expectedSymmetry(expectedResult.getIndices());
+		expectedSymmetry.addGenerator(perm1, false);
+		expectedSymmetry.addGenerator(perm2, false);
+		expectedResult.setSymmetry(expectedSymmetry);
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
@@ -584,10 +552,42 @@ TEST(TensorTest, contractWithSymmetry) {
 	}
 	{
 		// A_B[j,b] = A[ij,ab] B[a,i]
-		ct::IndexSubstitution sym1({ idx("i"), idx("b") }, -1);
+		ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, 1);
+		ct::IndexSubstitution perm2 = ct::IndexSubstitution::createPermutation({ { idx("j"), idx("b") } }, 1);
+		ct::IndexSubstitution perm3 = ct::IndexSubstitution::createPermutation({ { idx("a"), idx("i") } }, 1);
 
-		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { sym1 });
+		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") });
 		ct::Tensor t2("B", { idx("a+"), idx("i") });
+
+		ct::PermutationGroup sym1(t1.getIndices());
+		sym1.addGenerator(perm1);
+		sym1.addGenerator(perm2);
+		t1.setSymmetry(sym1);
+
+		ct::PermutationGroup sym2(t2.getIndices());
+		sym2.addGenerator(perm3);
+		t2.setSymmetry(sym2);
+
+		ct::Tensor expectedResult("A_B", { idx("j+"), idx("b") });
+
+		ct::PermutationGroup expectedSymmetry(expectedResult.getIndices());
+		expectedSymmetry.addGenerator(perm2);
+		expectedResult.setSymmetry(expectedSymmetry);
+
+		ct::ContractionResult result = t1.contract(t2, resolver);
+
+		ASSERT_EQ(result.resultTensor, expectedResult);
+	}
+	{
+		// A_B[j,b] = A[ij,ab] B[a,i]
+		ct::IndexSubstitution perm = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("b") } }, -1);
+
+		ct::Tensor t1("A", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::Tensor t2("B", { idx("a+"), idx("i") });
+
+		ct::PermutationGroup sym(t1.getIndices());
+		sym.addGenerator(perm);
+		t1.setSymmetry(sym);
 
 		ct::Tensor expectedResult("A_B", { idx("j+"), idx("b") }, {});
 

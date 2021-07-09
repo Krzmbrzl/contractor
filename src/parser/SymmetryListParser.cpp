@@ -1,5 +1,6 @@
 #include "parser/SymmetryListParser.hpp"
 #include "parser/DecompositionParser.hpp"
+#include "terms/PermutationGroup.hpp"
 
 #include <type_traits>
 #include <unordered_map>
@@ -108,7 +109,7 @@ std::vector< Terms::Tensor > SymmetryListParser::parseSymmetrySpecs() {
 			}
 
 
-			Terms::Tensor::symmetry_list_t symmetries;
+			ct::PermutationGroup symmetry(indices);
 			while (m_reader.hasInput() && m_reader.peek() != '\n') {
 				std::vector< std::pair< std::size_t, std::size_t > > indexPairs;
 				bool stop = false;
@@ -139,17 +140,15 @@ std::vector< Terms::Tensor > SymmetryListParser::parseSymmetrySpecs() {
 				m_reader.expect("->");
 				m_reader.skipWS(false);
 
-				static_assert(std::is_integral_v< Terms::IndexSubstitution::factor_t >,
-							  "Expected the factor of an IndexSubstitution to be integral");
 				Terms::IndexSubstitution::factor_t factor = m_reader.parseInt();
 
-				Terms::IndexSubstitution::substitution_list allowedSubstitutions;
+				std::vector< ct::IndexPair > exchangableIndices;
 				for (const auto &currentPair : indexPairs) {
-					allowedSubstitutions.push_back(Terms::IndexSubstitution::index_pair_t(indices[currentPair.first],
-																						  indices[currentPair.second]));
+					exchangableIndices.push_back(
+						ct::IndexPair(indices[currentPair.first], indices[currentPair.second]));
 				}
 
-				symmetries.push_back(Terms::IndexSubstitution(std::move(allowedSubstitutions), factor));
+				symmetry.addGenerator(ct::IndexSubstitution::createPermutation(exchangableIndices, factor));
 
 				if (m_reader.hasInput() && m_reader.peek() == ',') {
 					m_reader.expect(",");
@@ -157,7 +156,7 @@ std::vector< Terms::Tensor > SymmetryListParser::parseSymmetrySpecs() {
 				m_reader.skipWS(false);
 			}
 
-			Terms::Tensor symmetryTensor(name, std::move(indices), std::move(symmetries));
+			Terms::Tensor symmetryTensor(name, std::move(indices), std::move(symmetry));
 
 			symmetryTensors.push_back(std::move(symmetryTensor));
 		}

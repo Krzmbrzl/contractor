@@ -85,9 +85,16 @@ TEST(TermTest, deduceSymmetry) {
 	}
 	{
 		ct::Tensor R("R", { idx("i+"), idx("a") });
-		ct::IndexSubstitution symmetry({ idx("i"), idx("a") }, 1);
-		ct::Tensor result("R", { idx("i+"), idx("a") }, { symmetry });
-		ct::Tensor A("A", { idx("i+"), idx("a") }, { symmetry });
+		ct::IndexSubstitution permutation = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, 1);
+		ct::Tensor result("R", { idx("i+"), idx("a") });
+		ct::Tensor A("A", { idx("i+"), idx("a") });
+
+		ct::PermutationGroup symmetry(result.getIndices());
+		symmetry.addGenerator(permutation);
+		result.setSymmetry(symmetry);
+
+		symmetry.setRootSequence(A.getIndices());
+		A.setSymmetry(symmetry);
 
 		ct::GeneralTerm term(R, 1.0, { A });
 
@@ -98,12 +105,20 @@ TEST(TermTest, deduceSymmetry) {
 	{
 		ct::Tensor R("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
 
-		ct::IndexSubstitution symmetry({ idx("i"), idx("j") }, -1);
+		ct::IndexSubstitution permutation = ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, -1);
 
-		ct::Tensor result("R", { idx("i+"), idx("j+"), idx("a"), idx("b") }, { symmetry });
+		ct::Tensor result("R", { idx("i+"), idx("j+"), idx("a"), idx("b") });
 
-		ct::Tensor A("A", { idx("i+"), idx("j+"), idx("a"), idx("c") },
-					 { symmetry, ct::IndexSubstitution({ idx("a"), idx("c") }, -1) });
+		ct::PermutationGroup symmetry(result.getIndices());
+		symmetry.addGenerator(permutation);
+		result.setSymmetry(symmetry);
+
+		ct::Tensor A("A", { idx("i+"), idx("j+"), idx("a"), idx("c") });
+
+		symmetry.setRootSequence(A.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("c") } }, -1));
+		A.setSymmetry(symmetry);
+
 		ct::Tensor B("B", { idx("c+"), idx("b") }, {});
 
 		ct::GeneralTerm term(R, 1.0, { A });

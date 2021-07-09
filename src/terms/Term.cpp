@@ -95,17 +95,19 @@ bool Term::equals(const Term &other, std::underlying_type_t< CompareOption::Opti
 }
 
 void Term::deduceSymmetry() {
-	Tensor::symmetry_list_t resultSymmetries;
+	PermutationGroup symmetry(getResult().getIndices());
 
 	for (const Tensor &currentTensor : getTensors()) {
-		for (const IndexSubstitution &currentSymmetry : currentTensor.getIndexSymmetries()) {
-			if (currentSymmetry.appliesTo(getResult(), true)) {
-				resultSymmetries.push_back(currentSymmetry);
+		for (const IndexSubstitution &currentSymmetry : currentTensor.getSymmetry().getGenerators()) {
+			if (currentSymmetry.appliesTo(getResult())) {
+				symmetry.addGenerator(currentSymmetry, false);
 			}
 		}
 	}
 
-	accessResult().setIndexSymmetries(std::move(resultSymmetries));
+	symmetry.regenerateGroup();
+
+	accessResult().setSymmetry(std::move(symmetry));
 }
 
 Term::IndexSet Term::getUniqueIndices() const {

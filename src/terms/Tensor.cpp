@@ -16,58 +16,33 @@ void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 	assert(source.refersToSameElement(destination));
 	assert(source.getIndices().size() == destination.getIndices().size());
 
-	Tensor::symmetry_list_t symmetries;
-	for (const IndexSubstitution &currentSubstitution : source.getIndexSymmetries()) {
-		IndexSubstitution::substitution_list substitutions;
-		for (const IndexSubstitution::index_pair_t &currentPair : currentSubstitution.getSubstitutions()) {
-			// Find the indices of the Index objects that are part of the current IndexSubstitution
-			bool foundFirst  = false;
-			bool foundSecond = false;
-			std::size_t first, second;
+	const IndexSubstitution mapping = source.getIndexMapping(destination);
 
-			for (std::size_t i = 0; i < source.getIndices().size(); i++) {
-				// Note that it does not matter if we overwrite a previously found index as that only
-				// happens for equal indices anyways.
-				if (source.getIndices()[i] == currentPair.first) {
-					foundFirst = true;
-					first      = i;
-				}
-				if (source.getIndices()[i] == currentPair.second) {
-					foundSecond = true;
-					second      = i;
-				}
+	PermutationGroup symmetry(destination.getIndices());
+	for (const IndexSubstitution &currentSymOp : source.getSymmetry().getGenerators()) {
+		IndexSubstitution copy = currentSymOp;
+		mapping.apply(copy);
 
-				if (foundFirst && foundSecond) {
-					break;
-				}
-			}
-
-			// Given that the given tensors both refer to the same element, the symmetry operations also
-			// apply to the Index objects at the same indices. Thus we can simply use the indices from
-			// source in order to obtain the corresponding Index objects in destination.
-			substitutions.push_back(
-				IndexSubstitution::index_pair_t(destination.getIndices()[first], destination.getIndices()[second]));
-		}
-
-		symmetries.push_back(IndexSubstitution(std::move(substitutions), currentSubstitution.getFactor()));
+		symmetry.addGenerator(std::move(copy), false);
 	}
 
-	destination.setIndexSymmetries(std::move(symmetries));
+	symmetry.regenerateGroup();
+
+	destination.setSymmetry(std::move(symmetry));
 }
 
-Tensor::Tensor(const std::string_view name, const Tensor::index_list_t &indices,
-			   const Tensor::symmetry_list_t &indexSymmetries)
-	: m_indices(indices), m_name(name), m_indexSymmetries(indexSymmetries) {
+Tensor::Tensor(const std::string_view name, const Tensor::index_list_t &indices, const PermutationGroup &symmetry)
+	: m_indices(indices), m_name(name), m_symmetry(symmetry) {
 	sortIndices();
 }
 
-Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, Tensor::symmetry_list_t &&indexSymmetries)
-	: m_indices(indices), m_name(name), m_indexSymmetries(indexSymmetries) {
+Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, PermutationGroup &&symmetry)
+	: m_indices(indices), m_name(name), m_symmetry(std::move(symmetry)) {
 	sortIndices();
 }
 
 bool operator==(const Tensor &lhs, const Tensor &rhs) {
-	return lhs.m_name == rhs.m_name && lhs.m_indices == rhs.m_indices && lhs.m_indexSymmetries == rhs.m_indexSymmetries;
+	return lhs.m_name == rhs.m_name && lhs.m_indices == rhs.m_indices && lhs.m_symmetry == rhs.m_symmetry;
 }
 
 bool operator!=(const Tensor &lhs, const Tensor &rhs) {
@@ -83,7 +58,9 @@ std::ostream &operator<<(std::ostream &out, const Tensor &element) {
 		}
 	}
 
-	return out << "]";
+	out << "] " << element.m_symmetry;
+
+	return out;
 }
 
 const Tensor::index_list_t &Tensor::getIndices() const {
@@ -102,20 +79,18 @@ void Tensor::setName(const std::string_view &name) {
 	m_name = name;
 }
 
-const Tensor::symmetry_list_t &Tensor::getIndexSymmetries() const {
-	return m_indexSymmetries;
+const PermutationGroup &Tensor::getSymmetry() const {
+	return m_symmetry;
 }
 
-Tensor::symmetry_list_t &Tensor::accessIndexSymmetries() {
-	return m_indexSymmetries;
+PermutationGroup &Tensor::accessSymmetry() {
+	return m_symmetry;
 }
 
-void Tensor::setIndexSymmetries(const Tensor::symmetry_list_t &symmetries) {
-	m_indexSymmetries = symmetries;
-}
+void Tensor::setSymmetry(const PermutationGroup &symmetry) {
+	assert(symmetry.contains(m_indices));
 
-void Tensor::setIndexSymmetries(Tensor::symmetry_list_t &&symmetries) {
-	m_indexSymmetries = symmetries;
+	m_symmetry = symmetry;
 }
 
 int Tensor::getS() const {
@@ -144,60 +119,6 @@ bool Tensor::isAntisymmetrized() const {
 
 void Tensor::setAntisymmetrized(bool antisymmetrized) {
 	m_antisymmetrized = antisymmetrized;
-}
-
-void Tensor::replaceIndex(const Index &source, const Index &replacement) {
-	for (std::size_t i = 0; i < m_indices.size(); i++) {
-		if (m_indices[i] == source) {
-			m_indices[i] = Index(replacement);
-		}
-	}
-	for (IndexSubstitution &currentSubstitution : m_indexSymmetries) {
-		currentSubstitution.replaceIndex(source, replacement);
-	}
-}
-
-void Tensor::replaceIndices(const std::vector< std::pair< Index, Index > > &replacements) {
-	// First replace the indices in the index list
-	auto indexIt = m_indices.begin();
-	while (indexIt != m_indices.end()) {
-		for (const auto &currentPair : replacements) {
-			if (*indexIt == currentPair.first) {
-				*indexIt = currentPair.second;
-
-				// It is important to break out of the for loop here in order to avoid replacing
-				// the replacement again in consecutive iterations
-				break;
-			}
-		}
-
-		indexIt++;
-	}
-
-	// Then also replace the indices in the symmetry specifications
-	for (IndexSubstitution &currentSymmetry : m_indexSymmetries) {
-		for (IndexSubstitution::index_pair_t &currentSubstitution : currentSymmetry.accessSubstitutions()) {
-			bool replacedFirst  = false;
-			bool replacedSecond = false;
-
-			for (const auto &currentReplacement : replacements) {
-				if (!replacedFirst && currentSubstitution.first == currentReplacement.first) {
-					currentSubstitution.first = currentReplacement.second;
-
-					replacedFirst = true;
-				}
-				if (!replacedSecond && currentSubstitution.second == currentReplacement.first) {
-					currentSubstitution.second = currentReplacement.second;
-
-					replacedSecond = true;
-				}
-
-				if (replacedFirst && replacedSecond) {
-					break;
-				}
-			}
-		}
-	}
 }
 
 bool Tensor::refersToSameElement(const Tensor &other) const {
@@ -332,14 +253,17 @@ ContractionResult Tensor::contract(const Tensor &other, const Utils::IndexSpaceR
 	// Note that the indices in the result are the same as in the Tensors it consists of. There is also no ambiguity for
 	// where each index came from since indices that occur in both Tensors are being contracted and thus no longer
 	// show in the result Tensor.
-	Tensor::symmetry_list_t resultSymmetries;
-	for (const IndexSubstitution &currentSymmetry : boost::join(m_indexSymmetries, other.getIndexSymmetries())) {
-		if (currentSymmetry.appliesTo(result.resultTensor, true)) {
-			resultSymmetries.push_back(currentSymmetry);
+	PermutationGroup resultSymmetry(result.resultTensor.getIndices());
+	for (const IndexSubstitution &currentSymmetry :
+		 boost::join(m_symmetry.getGenerators(), other.getSymmetry().getGenerators())) {
+		if (currentSymmetry.appliesTo(result.resultTensor)) {
+			resultSymmetry.addGenerator(currentSymmetry, false);
 		}
 	}
 
-	result.resultTensor.setIndexSymmetries(std::move(resultSymmetries));
+	resultSymmetry.regenerateGroup();
+
+	result.resultTensor.setSymmetry(std::move(resultSymmetry));
 
 	return result;
 }
@@ -350,6 +274,8 @@ bool canonical_index_less(const Index &lhs, const Index &rhs) {
 
 void Tensor::sortIndices() {
 	std::stable_sort(m_indices.begin(), m_indices.end(), canonical_index_less);
+
+	m_symmetry.setRootSequence(m_indices);
 }
 
 

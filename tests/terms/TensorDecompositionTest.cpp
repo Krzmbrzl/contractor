@@ -202,7 +202,7 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(indices[0].getSpace(), indices[1].getSpace());
 
 		std::swap(indices[0], indices[1]);
-		ct::Tensor altSubstitute(substitute.getName(), indices, substitute.getIndexSymmetries());
+		ct::Tensor altSubstitute(substitute.getName(), indices, substitute.getSymmetry());
 
 		ASSERT_TRUE(altSubstitute.refersToSameElement(substitute));
 

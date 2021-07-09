@@ -1,6 +1,7 @@
 #include "formatting/PrettyPrinter.hpp"
 #include "terms/Index.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/PermutationGroup.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
 #include "utils/IndexSpaceResolver.hpp"
@@ -167,7 +168,7 @@ void PrettyPrinter::print(const Terms::IndexSubstitution &substitution) {
 		const Terms::IndexSubstitution::index_pair_t &current = substitution.getSubstitutions()[i];
 
 		print(current.first, false);
-		*m_stream << " <> ";
+		*m_stream << " -> ";
 		print(current.second, false);
 
 		if (i + 1 < substitution.getSubstitutions().size()) {
@@ -178,6 +179,22 @@ void PrettyPrinter::print(const Terms::IndexSubstitution &substitution) {
 	if (substitution.getFactor() != 1) {
 		*m_stream << " and apply a factor of ";
 		print(substitution.getFactor());
+	}
+}
+
+void PrettyPrinter::print(const Terms::PermutationGroup &group) {
+	assert(m_stream != nullptr);
+
+	*m_stream << "Permutation group working on [";
+	for (const Terms::Index &current : group.getCanonicalRepresentation()) {
+		*m_stream << current;
+	}
+	*m_stream << "] with the following generators:\n";
+
+	for (const Terms::IndexSubstitution &current : group.getGenerators()) {
+		*m_stream << "  - ";
+		print(current);
+		*m_stream << "\n";
 	}
 }
 
@@ -292,8 +309,13 @@ void PrettyPrinter::printSymmetries(const Terms::Tensor &tensor) {
 	print(tensor);
 	*m_stream << ":";
 
-	if (tensor.getIndexSymmetries().size() > 0) {
-		for (const Terms::IndexSubstitution &currentSym : tensor.getIndexSymmetries()) {
+	// Every Tensor has the identity "symmetry" but we don't want to print that as it's trivial
+	if (tensor.getSymmetry().size() > 1) {
+		for (const Terms::IndexSubstitution &currentSym : tensor.getSymmetry().getGenerators()) {
+			if (currentSym.isIdentity()) {
+				continue;
+			}
+
 			*m_stream << "\n  ";
 			print(currentSym);
 		}

@@ -83,7 +83,10 @@ TEST(TermListTest, replace) {
 		ASSERT_NE(list[1], list[2]);
 	}
 	{
-		ct::Tensor B_symAlt("B", {}, { ct::IndexSubstitution({ idx("i"), idx("a") }, 1) });
+		ct::Tensor B_symAlt("B", { idx("i"), idx("a") });
+		ct::PermutationGroup symmetry(B_symAlt.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, 1));
+		B_symAlt.setSymmetry(symmetry);
 
 		ct::GeneralTerm term1(A, 2.0, { B });
 		ct::GeneralTerm term2(A, 3.0, { B, C });

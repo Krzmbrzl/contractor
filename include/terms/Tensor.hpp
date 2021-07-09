@@ -3,6 +3,7 @@
 
 #include "terms/Index.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/PermutationGroup.hpp"
 #include "utils/IterableView.hpp"
 
 #include <boost/multiprecision/cpp_int.hpp>
@@ -38,8 +39,7 @@ public:
 	/**
 	 * Type that is used for storing the list of attached indices
 	 */
-	using index_list_t    = std::vector< Index >;
-	using symmetry_list_t = std::vector< IndexSubstitution >;
+	using index_list_t = std::vector< Index >;
 
 
 	/**
@@ -54,10 +54,8 @@ public:
 	 */
 	static void transferSymmetry(const Tensor &source, Tensor &destination);
 
-	explicit Tensor(const std::string_view name, const index_list_t &indices,
-					const symmetry_list_t &indexSymmetries = {});
-	explicit Tensor(const std::string_view name = "", index_list_t &&indices = {},
-					symmetry_list_t &&indexSymmetries = {});
+	explicit Tensor(const std::string_view name, const index_list_t &indices, const PermutationGroup &symmetry = {});
+	explicit Tensor(const std::string_view name = "", index_list_t &&indices = {}, PermutationGroup &&symmetry = {});
 
 	Tensor(const Tensor &other) = default;
 	Tensor(Tensor &&other)      = default;
@@ -87,26 +85,11 @@ public:
 
 	void setName(const std::string_view &name);
 
-	/**
-	 * @returns A list of allowed index exchanges (encoded as pairwise substitutions) for this Tensor
-	 */
-	const symmetry_list_t &getIndexSymmetries() const;
-	/**
-	 * @returns A mutable list of allowed index exchanges (encoded as pairwise substitutions) for this Tensor
-	 */
-	symmetry_list_t &accessIndexSymmetries();
-	/**
-	 * Sets the allowed index exchanges (encoded as pairwise substitutions) for this Tensor
-	 *
-	 * @param symmetries The allowed exchanges
-	 */
-	void setIndexSymmetries(const symmetry_list_t &symmetries);
-	/**
-	 * Sets the allowed index exchanges (encoded as pairwise substitutions) for this Tensor
-	 *
-	 * @param symmetries The allowed exchanges
-	 */
-	void setIndexSymmetries(symmetry_list_t &&symmetries);
+	const PermutationGroup &getSymmetry() const;
+
+	PermutationGroup &accessSymmetry();
+
+	void setSymmetry(const PermutationGroup &symmetry);
 
 	/**
 	 * @returns The total spin S property of this Tensor.
@@ -150,22 +133,6 @@ public:
 	void setAntisymmetrized(bool antisymmetrized);
 
 	/**
-	 * Replaces the given index
-	 *
-	 * @param source The index to replace
-	 * @param replacement The index to replace with
-	 */
-	void replaceIndex(const Index &source, const Index &replacement);
-
-	/**
-	 * Perform the given index replacements making sure no double-replacements
-	 * occur (that is an index gets replaced and then its replacement gets replaced again).
-	 *
-	 * @param replacements A list of index replacements to be carried out
-	 */
-	void replaceIndices(const std::vector< std::pair< Index, Index > > &replacements);
-
-	/**
 	 * @param other The Tensor to compare to
 	 * @returns Whether both Tensors are actually referring to the same element. This differs
 	 * from equality as the actual index IDs are not important for this, only the relative
@@ -204,7 +171,7 @@ public:
 protected:
 	index_list_t m_indices;
 	std::string m_name;
-	symmetry_list_t m_indexSymmetries;
+	PermutationGroup m_symmetry;
 	int m_S                = std::numeric_limits< int >::max();
 	int m_doubleMs         = 0;
 	bool m_antisymmetrized = true;

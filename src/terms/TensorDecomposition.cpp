@@ -113,9 +113,11 @@ GeneralTerm makeIndicesUnique(const GeneralTerm &substitution, const Term &term)
 		Index replacement(currentIndex);
 		replacement.setID(newID);
 
+		const IndexSubstitution substitution({ currentIndex, std::move(replacement) });
+
 		// Replace this Index in all Tensors in the substitution
 		for (Tensor &currentTensor : copy.accessTensors()) {
-			currentTensor.replaceIndex(currentIndex, replacement);
+			substitution.apply(currentTensor);
 		}
 	}
 
