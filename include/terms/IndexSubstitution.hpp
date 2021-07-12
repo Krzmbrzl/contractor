@@ -155,4 +155,21 @@ protected:
 
 }; // namespace Contractor::Terms
 
+// Provide template specialization of std::hash for the IndexSubstitution class
+namespace std {
+template<> struct hash< Contractor::Terms::IndexSubstitution > {
+	std::size_t operator()(const Contractor::Terms::IndexSubstitution &sub) const {
+		std::size_t hash = 0;
+		for (const Contractor::Terms::IndexSubstitution::index_pair_t &currentPair : sub.getSubstitutions()) {
+			hash += std::hash< Contractor::Terms::Index >{}(currentPair.first)
+					^ std::hash< Contractor::Terms::Index >{}(currentPair.second) << 1;
+		}
+
+		hash ^= std::hash< Contractor::Terms::IndexSubstitution::factor_t >{}(sub.getFactor()) << 2;
+
+		return hash;
+	}
+};
+}; // namespace std
+
 #endif // CONTRACTOR_TERMS_INDEXSUBSTITUTION_HPP_

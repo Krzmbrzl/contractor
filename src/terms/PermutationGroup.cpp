@@ -4,8 +4,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/range/join.hpp>
-
 namespace Contractor::Terms {
 
 PermutationGroup::PermutationGroup(const Element &startConfiguration) : m_permutations({ startConfiguration }) {

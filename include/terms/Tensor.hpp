@@ -210,4 +210,25 @@ struct ContractionResult {
 
 }; // namespace Contractor::Terms
 
+// Provide template specialization of std::hash for the Tensor class
+namespace std {
+template<> struct hash< Contractor::Terms::Tensor > {
+	std::size_t operator()(const Contractor::Terms::Tensor &tensor) const {
+		std::size_t hash = 0;
+		for (std::size_t i = 0; i < tensor.getIndices().size(); ++i) {
+			// Include the position of the index in order to ensure that a different index sequence will result
+			// in a different hash value. In order for symmetry-equivalent tensors to arrive at the same hash,
+			// we use the "canonical" index sequence for this Tensor
+			hash += std::hash< Contractor::Terms::Index >{}(tensor.getSymmetry().getCanonicalRepresentation()[i])
+					^ std::hash< std::size_t >{}(i);
+		}
+
+		hash ^= std::hash< std::string_view >{}(tensor.getName()) << 1;
+		hash ^= std::hash< Contractor::Terms::PermutationGroup >{}(tensor.getSymmetry()) << 2;
+
+		return hash;
+	}
+};
+}; // namespace std
+
 #endif // CONTRACTOR_TERMS_TENSOR_HPP_

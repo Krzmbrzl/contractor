@@ -7,6 +7,8 @@
 #include <ostream>
 #include <vector>
 
+#include <boost/range/join.hpp>
+
 namespace Contractor::Terms {
 
 /*
@@ -134,5 +136,21 @@ protected:
 };
 
 }; // namespace Contractor::Terms
+
+// Provide template specialization of std::hash for the PermutationGroup class
+namespace std {
+template<> struct hash< Contractor::Terms::PermutationGroup > {
+	std::size_t operator()(const Contractor::Terms::PermutationGroup &group) const {
+		std::size_t hash = 0;
+
+		auto it = boost::join(group.getGenerators(), group.getAdditionalSymmetryOperations());
+		for (auto i = it.begin(); i != it.end(); ++i) {
+			hash += std::hash< Contractor::Terms::IndexSubstitution >{}(*i);
+		}
+
+		return hash;
+	}
+};
+}; // namespace std
 
 #endif // CONTRACTOR_TERMS_PERMUTATIONGROUP_HPP_
