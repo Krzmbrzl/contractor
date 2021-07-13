@@ -214,6 +214,11 @@ void PermutationGroup::generateSymmetryOperations(const IndexSubstitution &prece
 			generateSymmetryOperations(currentPermutation);
 		}
 	}
+
+	// Assert that there are no duplicates in the symmetry operations
+	auto allSymmetryOperations = boost::join(m_generators, m_additionalElements);
+	assert(std::adjacent_find(allSymmetryOperations.begin(), allSymmetryOperations.end())
+		   == allSymmetryOperations.end());
 }
 
 }; // namespace Contractor::Terms
