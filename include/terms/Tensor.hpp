@@ -122,15 +122,16 @@ public:
 	void setDoubleMs(int doubleMs);
 
 	/**
-	 * @returns Whether this Tensor is describing an anti-symmetrized quantity
+	 * @returns Whether this Tensor is fully anti-symmetrized. That means that pairwise exchange
+	 * of creator or annihilator indices leads only to a sign-change.
 	 */
 	bool isAntisymmetrized() const;
+
 	/**
-	 * Sets whether this Tensor is describing an anti-symmetrized quantity
-	 *
-	 * @param antisymmetrized
+	 * @returns Whether this Tensor is partially anti-symmetrized. That means that at least the creator
+	 * or the annihilator indices are antisymmetrized (pairwise exchange leads only to sign-change).
 	 */
-	void setAntisymmetrized(bool antisymmetrized);
+	bool isPartiallyAntisymmetrized() const;
 
 	/**
 	 * @param other The Tensor to compare to
@@ -172,9 +173,8 @@ protected:
 	index_list_t m_indices;
 	std::string m_name;
 	PermutationGroup m_symmetry;
-	int m_S                = std::numeric_limits< int >::max();
-	int m_doubleMs         = 0;
-	bool m_antisymmetrized = true;
+	int m_S        = std::numeric_limits< int >::max();
+	int m_doubleMs = 0;
 };
 
 /**

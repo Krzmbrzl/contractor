@@ -71,8 +71,11 @@ void SpinIntegrator::process(const Terms::Tensor &tensor) {
 	}
 
 	std::vector< IndexGroup > groups;
-	if (tensor.isAntisymmetrized()) {
-		// If the Tensor is anti-symmetrized, there is only a single index group (all creators
+	if (tensor.isPartiallyAntisymmetrized()) {
+		// Checking for partial antisymmetrization only makes sense for an equal amount of creators and annihialtors
+		assert(creators.size() == annihilators.size());
+
+		// If the Tensor is (partially) anti-symmetrized, there is only a single index group (all creators
 		// and all annihilators)
 		groups.push_back({ std::move(creators), std::move(annihilators) });
 	} else {

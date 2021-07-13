@@ -113,12 +113,67 @@ void Tensor::setDoubleMs(int doubleMs) {
 	m_doubleMs = doubleMs;
 }
 
-bool Tensor::isAntisymmetrized() const {
-	return m_antisymmetrized;
+std::vector< IndexSubstitution > createAntisymmetricExchanges(const Tensor::index_list_t &indices,
+															  Index::Type indexType) {
+	std::vector< IndexSubstitution > substitutions;
+
+	// Assert that the indices are sorted into the groups creator, annihilator, other
+	auto begin = std::find_if(indices.begin(), indices.end(),
+							  [indexType](const Index &current) { return current.getType() == indexType; });
+	auto end   = std::find_if(begin, indices.end(),
+                            [indexType](const Index &current) { return current.getType() != indexType; });
+
+	// Create all creator-pairings
+	for (auto i = begin; i != end; ++i) {
+		for (auto j = i + 1; j != end; ++j) {
+			substitutions.push_back(IndexSubstitution::createPermutation({ { *i, *j } }, -1));
+		}
+	}
+
+	return substitutions;
 }
 
-void Tensor::setAntisymmetrized(bool antisymmetrized) {
-	m_antisymmetrized = antisymmetrized;
+bool Tensor::isAntisymmetrized() const {
+	std::vector< IndexSubstitution > creatorExchanges = createAntisymmetricExchanges(m_indices, Index::Type::Creator);
+	std::vector< IndexSubstitution > annihilatorExchanges =
+		createAntisymmetricExchanges(m_indices, Index::Type::Annihilator);
+
+	auto joined = boost::join(creatorExchanges, annihilatorExchanges);
+	for (const IndexSubstitution &current : joined) {
+		if (!m_symmetry.contains(current)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Tensor::isPartiallyAntisymmetrized() const {
+	std::vector< IndexSubstitution > creatorExchanges = createAntisymmetricExchanges(m_indices, Index::Type::Creator);
+
+	bool isPartiallyAntisymmetric = !creatorExchanges.empty();
+
+	for (const IndexSubstitution &current : creatorExchanges) {
+		if (!m_symmetry.contains(current)) {
+			isPartiallyAntisymmetric = false;
+			break;
+		}
+	}
+
+	if (isPartiallyAntisymmetric) {
+		return true;
+	}
+
+	std::vector< IndexSubstitution > annihilatorExchanges =
+		createAntisymmetricExchanges(m_indices, Index::Type::Annihilator);
+
+	for (const IndexSubstitution &current : annihilatorExchanges) {
+		if (!m_symmetry.contains(current)) {
+			return false;
+		}
+	}
+
+	return !annihilatorExchanges.empty() || (annihilatorExchanges.empty() && creatorExchanges.empty());
 }
 
 bool Tensor::refersToSameElement(const Tensor &other) const {

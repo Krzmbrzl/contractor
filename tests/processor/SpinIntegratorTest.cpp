@@ -51,6 +51,10 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// A Tensor with two creator/annihilator pairs that posesses full anti-symmetry with respect to exchange of
 		// creator or annihilator indices. For this we expect 6 cases: aa/aa, ab/ab, ab/ba, ba/ba, ba/ab, bb/bb
 		ct::Tensor tensor("S", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+
+		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
+
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
@@ -93,8 +97,9 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// Same as above but this time the Tensor shall not be antisymmetrized. That reduces the possibilities
 		// to aa/aa ab/ab ba/ba bb/bb
 		ct::Tensor tensor("S", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		tensor.setAntisymmetrized(false);
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
+
+		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
 
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
 
@@ -128,10 +133,11 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// following spin cases for ij/ab: aa/bb, ab/ab, ba/ba, bb/bb
 		// Note that this is equal to the version of a single non-symmetrized 4-index Tensor
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		tensor.setAntisymmetrized(false);
 		ct::GeneralTerm term(tensor, 1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("i-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("j-"), idx("q!") }) });
+
+		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
 
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
 
@@ -171,6 +177,10 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// Note that the other spin-cases or not zero for the result Tensor as a whole (because
 		// it was anti-symmetrized) but it is for this specific part of the Term.
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+
+		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
+
 		ct::GeneralTerm term(tensor, 1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("i-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("j-"), idx("q!") }) });
@@ -206,6 +216,10 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// Term (with i and j exchanged): H[ab,ij] = - T[a,j,q] T[b,i,q]
 		// Therefore we expect the spin-cases for ab/ij aa/aa, ba/ab, ab/ba, bb/bb
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+
+		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
+
 		ct::GeneralTerm term(tensor, -1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("j-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("i-"), idx("q!") }) });
@@ -249,6 +263,14 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor R("R", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 		ct::Tensor G("G", { idx("c+"), idx("a+"), idx("k-"), idx("i-") });
 		ct::Tensor T("T", { idx("k+"), idx("b+"), idx("c-"), idx("j-") });
+
+		R.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+		G.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("c"), idx("a") } }, -1));
+		T.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("k"), idx("b") } }, -1));
+
+		ASSERT_TRUE(R.isPartiallyAntisymmetrized());
+		ASSERT_TRUE(G.isPartiallyAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(R, 1.0, { G, T });
 

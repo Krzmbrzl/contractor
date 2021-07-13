@@ -1,5 +1,6 @@
 #include "terms/Tensor.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/PermutationGroup.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
 #include "IndexHelper.hpp"
@@ -594,5 +595,96 @@ TEST(TensorTest, contractWithSymmetry) {
 		ct::ContractionResult result = t1.contract(t2, resolver);
 
 		ASSERT_EQ(result.resultTensor, expectedResult);
+	}
+}
+
+TEST(TensorTest, antisymmetric) {
+	{
+		// There are no exchanges possible and thus 100% of all exchanges are allowed
+		ct::Tensor T("T");
+
+		ASSERT_TRUE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i"), idx("j") });
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_FALSE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		// There are no exchanges possible and thus 100% of all exchanges are allowed
+		ct::Tensor T("T", { idx("i+"), idx("j") });
+
+		ASSERT_TRUE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i"), idx("j+") });
+
+		ASSERT_TRUE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+") });
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_FALSE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_FALSE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::PermutationGroup symmetry(T.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, -1));
+		T.setSymmetry(symmetry);
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::PermutationGroup symmetry(T.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, -1));
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+		T.setSymmetry(symmetry);
+
+		ASSERT_TRUE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::PermutationGroup symmetry(T.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, 1));
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+		T.setSymmetry(symmetry);
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::PermutationGroup symmetry(T.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") } }, -1));
+		symmetry.addGenerator(
+			ct::IndexSubstitution::createPermutation({ { idx("i"), idx("j") }, { idx("a"), idx("b") } }, 1));
+		T.setSymmetry(symmetry);
+
+		ASSERT_TRUE(T.isAntisymmetrized());
+		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
+	}
+	{
+		ct::Tensor T("T", { idx("i+"), idx("j+"), idx("a"), idx("b") });
+		ct::PermutationGroup symmetry(T.getIndices());
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }, -1));
+		symmetry.addGenerator(ct::IndexSubstitution::createPermutation({ { idx("j"), idx("b") } }, -1));
+		T.setSymmetry(symmetry);
+
+		ASSERT_FALSE(T.isAntisymmetrized());
+		ASSERT_FALSE(T.isPartiallyAntisymmetrized());
 	}
 }
