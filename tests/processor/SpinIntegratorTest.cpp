@@ -363,4 +363,77 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ASSERT_THAT(substitutions,
 					::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6, sub7, sub8, sub9, sub10));
 	}
+	{
+		// O2[ab,ij] = - H[k,j] * T2[ab,ik]
+		// Note that the spin of k is fixed by the spin of j
+		// In this example we expect the following spin cases for ab/ijk:
+		// aa/aaa
+		// ab/baa
+		// ab/abb
+		// ba/baa
+		// ba/abb
+		// bb/bbb
+		ct::Tensor O2("O2", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+		ct::Tensor H("O2", { idx("k+"), idx("j-") });
+		ct::Tensor T2("O2", { idx("a+"), idx("b+"), idx("i-"), idx("k-") });
+
+		O2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+		T2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+
+		ASSERT_TRUE(O2.isPartiallyAntisymmetrized());
+		ASSERT_TRUE(H.isPartiallyAntisymmetrized());
+		ASSERT_TRUE(T2.isPartiallyAntisymmetrized());
+
+		ct::GeneralTerm term(O2, -1.0, { H, T2 });
+
+		std::cout << "-----------------" << std::endl;
+
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+
+
+		// aa/aaa
+		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-/") },
+									 { idx("k-"), idx("k-/") } });
+
+		// ab/baa
+		ct::IndexSubstitution sub2({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") },
+									 { idx("k-"), idx("k-/") } });
+
+		// ab/abb
+		ct::IndexSubstitution sub3({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") },
+									 { idx("k-"), idx("k-\\") } });
+
+		// ba/baa
+		ct::IndexSubstitution sub4({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") },
+									 { idx("k-"), idx("k-/") } });
+
+		// ba/abb
+		ct::IndexSubstitution sub5({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") },
+									 { idx("k-"), idx("k-\\") } });
+
+		// bb/bbb
+		ct::IndexSubstitution sub6({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-\\") },
+									 { idx("k-"), idx("k-\\") } });
+
+		ASSERT_EQ(substitutions.size(), 6);
+		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));
+	}
 }

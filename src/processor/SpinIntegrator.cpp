@@ -262,7 +262,7 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 
 		if (currentDoubleMs != targetDoubleMs) {
 			// The current value of Ms is in conflict with the target Ms value but we have used all
-			// indices to try and conter this but we were not successful.
+			// indices to try and counter this but we were not successful.
 			// Therefore the current substitution must be impossible (zero-contribution)
 			currentSubstitution.setFactor(0);
 
@@ -274,8 +274,12 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 		// also including cases where pairwise beta-spins are introduced (creator & annihilator together)
 		// that don't actually change the overall Ms.
 		int remainingPairs = std::min(creatorIsBeta.size(), annihilatorIsBeta.size()) - fixedIndices;
+		// Note: remainingPairs may become negative. This can happen for instance in a case where there
+		// were originally 2 indices but one of them got fixed through a previous substitution.
+		// A negative remainingPairs means that that there are no pairs left to be permuted. However
+		// we have to add the "identity-permutation" in order to account for the fixing of that single
+		// index.
 
-		assert(remainingPairs >= 0);
 		assert(creatorIsBeta.size() == creatorIndices.size());
 		assert(annihilatorIsBeta.size() == annihilatorIndices.size());
 
