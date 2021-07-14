@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 
 namespace ct  = Contractor::Terms;
 namespace cu  = Contractor::Utils;
@@ -181,6 +182,109 @@ int main(int argc, const char **argv) {
 	}
 
 	printer << "\n\n";
+
+
+	// Store the original result Tensors in order to be able to selectively symmetrize these in the
+	// end.
+	std::unordered_set< ct::Tensor > originalResultTensors;
+
+	// Verify that all Terms are what we expect them to be
+	decltype(terms) copy(std::move(terms));
+	terms.clear();
+	for (ct::GeneralTerm &currentTerm : copy) {
+		originalResultTensors.insert(currentTerm.getResult());
+
+		// Note that we assume that the indices in the Tensors are already ordered "canonically" at this point
+		switch (currentTerm.getResult().getIndices().size()) {
+			case 0:
+			case 2:
+				// These are expected quantities that don't need any antisymmtrization
+				terms.push_back(std::move(currentTerm));
+				break;
+			case 4: {
+				// This is an expected quantity that does need antisymmtrization
+				// We expect the result Tensor to be of type [PP,HH]
+				bool isCorrect = currentTerm.getResult().getIndices()[0].getSpace() == resolver.resolve("virtual")
+								 && currentTerm.getResult().getIndices()[1].getSpace() == resolver.resolve("virtual")
+								 && currentTerm.getResult().getIndices()[2].getSpace() == resolver.resolve("occupied")
+								 && currentTerm.getResult().getIndices()[3].getSpace() == resolver.resolve("occupied");
+
+				if (!isCorrect) {
+					printer << currentTerm << "\n";
+					std::cerr << "Found 4-index result Tensor that is not of type [virt. virt., occ. occ.]"
+							  << std::endl;
+					return Contractor::ExitCodes::UNEXPECTED_RESULT_TENSOR;
+				} else {
+					// Check if antisymmetrization is needed
+					ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation(
+						{ { currentTerm.getResult().getIndices()[0], currentTerm.getResult().getIndices()[1] } }, -1);
+					ct::IndexSubstitution perm2 = ct::IndexSubstitution::createPermutation(
+						{ { currentTerm.getResult().getIndices()[2], currentTerm.getResult().getIndices()[3] } }, -1);
+
+
+					if (!currentTerm.getResult().getSymmetry().contains(perm1)
+						&& !currentTerm.getResult().getSymmetry().contains(perm2)) {
+						// None of the index pairs is antisymmetric yet -> Antisymmetrization is needed
+						ct::IndexSubstitution antisymmetrization;
+						if (resolver.getMeta(resolver.resolve("occupied")).getSize()
+							> resolver.getMeta(resolver.resolve("virtual")).getSize()) {
+							// The occupied space is larger than the virtual one -> exchange occupied indices
+							antisymmetrization = perm1;
+						} else {
+							// The virtual space is larger than the occupied one -> exchange virtual indices
+							antisymmetrization = perm1;
+						}
+
+						// Store the about-to-be-created symmetry on the result Tensor
+						currentTerm.accessResult().accessSymmetry().addGenerator(antisymmetrization);
+
+						double prefactor = 1.0 / 4.0;
+						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+							// For every index-pair in the result Tensor that sit on the same Tensor on the rhs of the
+							// equation, the prefactor is increased by a factor of two
+							auto it1 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
+												 currentTerm.getResult().getIndices()[0]);
+							auto it2 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
+												 currentTerm.getResult().getIndices()[1]);
+							auto it3 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
+												 currentTerm.getResult().getIndices()[2]);
+							auto it4 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
+												 currentTerm.getResult().getIndices()[3]);
+
+							if (it1 != currentTensor.getIndices().end() && it2 != currentTensor.getIndices().end()) {
+								prefactor *= 2;
+							}
+							if (it3 != currentTensor.getIndices().end() && it4 != currentTensor.getIndices().end()) {
+								prefactor *= 2;
+							}
+						}
+
+						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
+
+						// Now add the Term as-is
+						terms.push_back(currentTerm);
+						// But also with the indices swapped
+						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+							antisymmetrization.apply(currentTensor);
+						}
+						currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
+						terms.push_back(std::move(currentTerm));
+					} else {
+						terms.push_back(std::move(currentTerm));
+					}
+				}
+				break;
+			}
+			default:
+				std::cerr << "[ERROR] Encountered result Tensor with unexpected amount of indices ("
+						  << currentTerm.getResult().getIndices().size() << ")" << std::endl;
+				return Contractor::ExitCodes::RESULT_WITH_WRONG_INDEX_COUNT;
+		}
+	}
+
+	printer.printHeadline("Terms after applying initial antisymmetrization");
+	printer << terms << "\n\n";
+
 
 	// Apply decomposition
 	printer.printHeadline("Applying substitutions");
