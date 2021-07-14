@@ -6,6 +6,7 @@
 #include "parser/IndexSpaceParser.cpp"
 #include "parser/SymmetryListParser.cpp"
 #include "processor/Factorizer.hpp"
+#include "processor/SpinIntegrator.hpp"
 #include "utils/IndexSpaceResolver.cpp"
 
 #include <boost/program_options/errors.hpp>
@@ -352,10 +353,38 @@ int main(int argc, const char **argv) {
 
 
 	// Spin-integration
+	printer.printHeadline("Spin integration");
+	std::vector<ct::BinaryTerm> integratedTerms;
+	cpr::SpinIntegrator integrator;
+	for (const ct::BinaryTerm &currentTerm : factorizedTerms) {
+		printer << currentTerm << " integrates to\n";
+
+		const std::vector<ct::IndexSubstitution> &substitutions = integrator.spinIntegrate(currentTerm);
+
+		for (const ct::IndexSubstitution &currentSub : substitutions) {
+			ct::BinaryTerm copy = currentTerm;
+
+			ct::IndexSubstitution::factor_t factor = currentSub.apply(copy.accessResult());
+			assert(factor == 1);
+
+			for (ct::Tensor &currentTensor : copy.accessTensors()) {
+				currentSub.apply(currentTensor);
+			}
+
+			printer << " - " << copy << "\n";
+
+			integratedTerms.push_back(std::move(copy));
+		}
+	}
+	printer << "\n\n";
+
+
+	printer.printHeadline("Spin-integrated terms");
+	printer << integratedTerms;
 
 	// Spin summation
 
-	// Symmetrization of results
+	// Check and potentially restore particle-1,2-symmetry
 
 	// Conversion to ITF
 
