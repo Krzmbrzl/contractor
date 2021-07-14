@@ -322,6 +322,7 @@ int main(int argc, const char **argv) {
 	printer << decomposedTerms << "\n\n";
 
 	// Factorize terms
+	std::vector< ct::BinaryTerm > factorizedTerms;
 	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
 	ct::ContractionResult::cost_t totalCost = 0;
@@ -340,9 +341,15 @@ int main(int argc, const char **argv) {
 		printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
 		totalCost += cost;
+
+		factorizedTerms.insert(factorizedTerms.end(), currentBinary.begin(), currentBinary.end());
 	}
 
-	printer << "Total # of operations: " << totalCost << "\n\n";
+	printer << "Total # of operations: " << totalCost << "\n\n\n";
+
+	printer.printHeadline("Factorized Terms");
+	printer << factorizedTerms << "\n\n";
+
 
 	// Spin-integration
 
