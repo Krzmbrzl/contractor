@@ -455,7 +455,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(O2, -0.5, { T2, B_B });
 
-		std::cout << "==============================================" << std::endl;
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
 
 		// aaaa/aa
