@@ -9,8 +9,8 @@
 #include <string_view>
 
 static Contractor::Utils::IndexSpaceResolver resolver({
-	Contractor::Terms::IndexSpaceMeta("occupied", 'H', 10, Contractor::Terms::Index::Spin::Both),
 	Contractor::Terms::IndexSpaceMeta("virtual", 'P', 100, Contractor::Terms::Index::Spin::Both),
+	Contractor::Terms::IndexSpaceMeta("occupied", 'H', 10, Contractor::Terms::Index::Spin::Both),
 	Contractor::Terms::IndexSpaceMeta("external", 'Q', 200, Contractor::Terms::Index::Spin::None),
 });
 
