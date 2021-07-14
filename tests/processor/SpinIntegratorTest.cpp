@@ -386,8 +386,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(O2, -1.0, { H, T2 });
 
-		std::cout << "-----------------" << std::endl;
-
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
 
 
@@ -432,6 +430,81 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 									 { idx("i-"), idx("i-\\") },
 									 { idx("j-"), idx("j-\\") },
 									 { idx("k-"), idx("k-\\") } });
+
+		ASSERT_EQ(substitutions.size(), 6);
+		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));
+	}
+	{
+		// O2[ab,ij] = 0.5 * T2[cd,ij] * B_B[ab,cd]
+		// We expect the following spin-cases for abcd/ij
+		// aaaa/aa
+		// abab/ba
+		// abab/ab
+		// baba/ba
+		// baba/ab
+		// bbbb/bb
+		ct::Tensor O2("O2", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+		ct::Tensor T2("T2", { idx("c+"), idx("d+"), idx("i-"), idx("j-") });
+		ct::Tensor B_B("B_B", { idx("a+"), idx("b+"), idx("c-"), idx("d-") });
+
+		O2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+		T2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("c"), idx("d") } }, -1));
+
+		ASSERT_TRUE(O2.isPartiallyAntisymmetrized());
+		ASSERT_TRUE(T2.isPartiallyAntisymmetrized());
+
+		ct::GeneralTerm term(O2, -0.5, { T2, B_B });
+
+		std::cout << "==============================================" << std::endl;
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+
+		// aaaa/aa
+		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("c-"), idx("c-/") },
+									 { idx("d-"), idx("d-/") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-/") } });
+
+		// abab/ba
+		ct::IndexSubstitution sub2({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("c-"), idx("c-/") },
+									 { idx("d-"), idx("d-\\") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") } });
+
+		// abab/ab
+		ct::IndexSubstitution sub3({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("c-"), idx("c-/") },
+									 { idx("d-"), idx("d-\\") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") } });
+
+		// baba/ba
+		ct::IndexSubstitution sub4({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("c-"), idx("c-\\") },
+									 { idx("d-"), idx("d-/") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") } });
+
+		// baba/ab
+		ct::IndexSubstitution sub5({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("c-"), idx("c-\\") },
+									 { idx("d-"), idx("d-/") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") } });
+
+		// bbbb/bb
+		ct::IndexSubstitution sub6({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("c-"), idx("c-\\") },
+									 { idx("d-"), idx("d-\\") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-\\") } });
 
 		ASSERT_EQ(substitutions.size(), 6);
 		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));

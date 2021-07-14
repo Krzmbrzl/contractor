@@ -18,17 +18,27 @@ struct IndexGroup {
 	std::vector< Terms::Index > annihilator;
 };
 
+/**
+ * A class taking care of performing spin-integration
+ */
 class SpinIntegrator {
 public:
 	SpinIntegrator() = default;
 
+	/**
+	 * Carries out spin-integration on the given Term
+	 *
+	 * @param term The Term to intgrate
+	 * @returns A list of substitutions that represent the non-zero spin-cases for the
+	 * given Term (applying the substitution to the term results in the respective spin case)
+	 */
 	const std::vector< Terms::IndexSubstitution > &spinIntegrate(const Terms::Term &term);
 
 protected:
 	std::vector< Terms::IndexSubstitution > m_substitutions;
 
 	void process(const Terms::Tensor &tensor);
-	void process(const IndexGroup &group, int targetDoubleMs);
+	void process(const IndexGroup &group);
 };
 
 }; // namespace Contractor::Processor

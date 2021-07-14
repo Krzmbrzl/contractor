@@ -40,6 +40,10 @@ const std::vector< ct::IndexSubstitution > &SpinIntegrator::spinIntegrate(const 
 	// We don't want to generate duplicates here
 	assert(!containsDuplicate(m_substitutions));
 
+	// We always expect an even amount of spin-cases since if any given spin-case is valid, flipping
+	// all spins will also lead to a valid result. Thus spin-cases always occur pairwise.
+	assert(m_substitutions.size() % 2 == 0);
+
 	return m_substitutions;
 }
 
@@ -50,11 +54,7 @@ void SpinIntegrator::process(const Terms::Tensor &tensor) {
 	// alpha or beta spin as needed.
 
 	if (tensor.getDoubleMs() != 0) {
-		// While the implementation of this entire procedure was created with arbitrary Ms in
-		// mind, it was not really tested with Ms != 0. Therefore we error out if this function
-		// is to be used for such a case as the implementation needs to be properly tested for
-		// cases like that before being used
-		std::runtime_error("Spin-integration was not yet tested for Tensors with Ms != 0!");
+		std::runtime_error("Spin-integration for Tensors with Ms != 0 is not supported!");
 	}
 
 	// First collect a list of creator and annihilator indices in this Tensor
@@ -120,170 +120,122 @@ void SpinIntegrator::process(const Terms::Tensor &tensor) {
 	}
 
 	for (const IndexGroup &currentGroup : groups) {
-		process(currentGroup, tensor.getDoubleMs());
+		process(currentGroup);
 	}
 
 	if (m_substitutions.size() == 1 && m_substitutions[0].getSubstitutions().empty()) {
-		// This is still the smae no-op substitution we added above -> remove it again
+		// This is still the same no-op substitution we added above -> remove it again
 		m_substitutions.pop_back();
 	}
 }
 
-void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
-	std::size_t nPairs    = std::min(group.creator.size(), group.annihilator.size());
-	std::size_t nUnpaired = std::max(group.creator.size(), group.annihilator.size()) - nPairs;
+int applySubstitutition(const ct::IndexSubstitution &sub, const std::vector< ct::Index > &indices,
+						std::vector< std::size_t > &availableIndexIndices) {
+	availableIndexIndices.clear();
 
-	int maxReachableAbsDoubleMs = nPairs * 2 + nUnpaired;
+	int fixedBetaSpins = 0;
+	if (sub.isIdentity()) {
+		// All indices are available
+		availableIndexIndices.resize(indices.size());
 
-	if (std::abs(targetDoubleMs) > maxReachableAbsDoubleMs) {
-		throw std::runtime_error("Unreachable target Ms value (absolute value too big)");
+		std::iota(availableIndexIndices.begin(), availableIndexIndices.end(), 0);
+	} else {
+		for (std::size_t i = 0; i < indices.size(); ++i) {
+			auto it = std::find_if(sub.getSubstitutions().begin(), sub.getSubstitutions().end(),
+								   [indices, i](const ct::IndexSubstitution::index_pair_t &currentExchange) {
+									   return ct::Index::isSame(currentExchange.first, indices[i]);
+								   });
+
+			assert(indices[i].getSpin() == ct::Index::Spin::Both);
+
+			if (it == sub.getSubstitutions().end()) {
+				// The current index was not found in the substitution list, meaning that it is not fixed to a specific
+				// spin by a prior substitution
+				availableIndexIndices.push_back(i);
+			} else {
+				// This index is fixed to a specific spin case already and is thus no longer available for further
+				// "spin-variations"
+				if (it->second.getSpin() == ct::Index::Spin::Beta) {
+					fixedBetaSpins++;
+				}
+			}
+		}
 	}
 
-	// Procedure:
-	// For every substitution in m_substitutions:
-	//   Apply substitution to current index set
-	//   Figure out what the current double Ms value is
-	//   create all valid combinations of alpha/beta distributions for the remaining indices
-	//   if only one possibility:
-	//     add respective substitutions to the current substitution
-	//   else:
-	//     Create additional copies of the current subsitution
-	//     For each possibility:
-	//       append current substitution to one of the copies
-	//     Append all new substitutions to the list
+	return fixedBetaSpins;
+}
+
+void SpinIntegrator::process(const IndexGroup &group) {
+	assert(group.creator.size() == group.annihilator.size());
+
 	std::vector< ct::IndexSubstitution > addedSubstitutions;
 	for (ct::IndexSubstitution &currentSubstitution : m_substitutions) {
-		// "Apply" the current substitution to the group's creator and annihilator
-		// By filtering out all indices that are fixed to a specific spin by this substitution already
-		// While doing this, we also keep track of the current doubleMs value
-		int currentDoubleMs = 0;
-		std::vector< std::size_t > creatorIndices;
-		std::vector< std::size_t > annihilatorIndices;
-		if (currentSubstitution.getSubstitutions().empty()) {
-			// If there are no substitutions, we can use all available indices for our purposes and the
-			// currentDoubleMs value stays at zero
-			creatorIndices.resize(group.creator.size());
-			annihilatorIndices.resize(group.annihilator.size());
+		// Step 1: Apply the current substitution to the given group of indices
+		assert(currentSubstitution.getFactor() == 1);
 
-			std::iota(creatorIndices.begin(), creatorIndices.end(), 0);
-			std::iota(annihilatorIndices.begin(), annihilatorIndices.end(), 0);
+		std::vector< std::size_t > availableCreators;
+		std::vector< std::size_t > availableAnnihilators;
+
+		int betaCreators     = applySubstitutition(currentSubstitution, group.creator, availableCreators);
+		int betaAnnihilators = applySubstitutition(currentSubstitution, group.annihilator, availableAnnihilators);
+
+		std::vector< bool > creatorIsBeta;
+		creatorIsBeta.resize(availableCreators.size(), false);
+		std::vector< bool > annihilatorIsBeta;
+		annihilatorIsBeta.resize(availableAnnihilators.size(), false);
+
+		// Step 2: Balance the amount of beta spins that are distributed and while doing so, check
+		// how many free (as in arbitrary spin) index pairs are left after that. Note that the spins
+		// that are now fixed to be beta are no longer free index pairs.
+		int diff   = std::abs(betaCreators - betaAnnihilators);
+		int nPairs = 0;
+		if (betaCreators > betaAnnihilators) {
+			nPairs = std::min(availableCreators.size(), availableAnnihilators.size() - diff);
+
+			auto it = annihilatorIsBeta.rbegin();
+			while (diff > 0 && it != annihilatorIsBeta.rend()) {
+				*it = true;
+
+				diff--;
+				it++;
+			}
 		} else {
-			const ct::IndexSubstitution::substitution_list &currentSubs = currentSubstitution.getSubstitutions();
+			nPairs = std::min(availableCreators.size() - diff, availableAnnihilators.size());
 
-			for (std::size_t i = 0; i < group.creator.size(); ++i) {
-				const ct::Index currentCreator = group.creator[i];
+			auto it = creatorIsBeta.rbegin();
+			while (diff > 0 && it != creatorIsBeta.rend()) {
+				*it = true;
 
-				auto it = std::find_if(currentSubs.begin(), currentSubs.end(),
-									   [currentCreator](const ct::IndexSubstitution::index_pair_t &pair) {
-										   return ct::Index::isSame(pair.first, currentCreator);
-									   });
-
-				if (it == currentSubs.end()) {
-					// This index is not fixed yet
-					creatorIndices.push_back(i);
-				} else {
-					currentDoubleMs += it->second.getSpin() == ct::Index::Spin::Alpha ? 1 : -1;
-				}
-			}
-
-			for (std::size_t i = 0; i < group.annihilator.size(); ++i) {
-				const ct::Index currentAnnihilator = group.annihilator[i];
-
-				auto it = std::find_if(currentSubs.begin(), currentSubs.end(),
-									   [currentAnnihilator](const ct::IndexSubstitution::index_pair_t &pair) {
-										   return ct::Index::isSame(pair.first, currentAnnihilator);
-									   });
-
-				if (it == currentSubs.end()) {
-					// This index is not fixed yet
-					annihilatorIndices.push_back(i);
-				} else {
-					currentDoubleMs += it->second.getSpin() == ct::Index::Spin::Alpha ? -1 : 1;
-				}
+				diff--;
+				it++;
 			}
 		}
 
-		if (creatorIndices.empty() && annihilatorIndices.empty()) {
-			// Nothing to do with this
-			if (currentDoubleMs != targetDoubleMs) {
-				// The current spin-distribution is in conflict with the target Ms value and since
-				// we don't have any indices left that we can shuffle around, there is no way to
-				// fix this. Therefore this spin-ditribution is an impossible case and thus it
-				// does not contribute
-				currentSubstitution.setFactor(0);
-			}
-
-			continue;
-		}
-
-		std::vector< bool > creatorIsBeta(creatorIndices.size());
-		std::vector< bool > annihilatorIsBeta(annihilatorIndices.size());
-
-		int doubleMsDiff = targetDoubleMs - currentDoubleMs;
-		int fixedIndices = 0;
-
-		if (doubleMsDiff < 0) {
-			// We need to decrease the Ms count -> introduce beta spins in the creators
-			auto rIt = creatorIsBeta.rbegin();
-			while (rIt != creatorIsBeta.rend()) {
-				*rIt = true;
-				currentDoubleMs -= 1;
-				fixedIndices++;
-
-				rIt++;
-
-				if (currentDoubleMs >= targetDoubleMs) {
-					break;
-				}
-			}
-
-			// We have distributed beta spins so far but all spins that are not beta, must be alpha and that's what
-			// we are accounting for here.
-			currentDoubleMs += creatorIsBeta.size() - fixedIndices - annihilatorIsBeta.size();
-		} else if (doubleMsDiff > 0) {
-			// We need to increase the Ms count -> introduce beta spins in the annihilators
-			auto rIt = annihilatorIsBeta.rbegin();
-			while (rIt != annihilatorIsBeta.rend()) {
-				*rIt = true;
-				currentDoubleMs += 1;
-				fixedIndices++;
-
-				rIt++;
-
-				if (currentDoubleMs <= targetDoubleMs) {
-					break;
-				}
-			}
-
-			// We have distributed beta spins so far but all spins that are not beta, must be alpha and that's what
-			// we are accounting for here.
-			currentDoubleMs += creatorIsBeta.size() - (annihilatorIsBeta.size() - fixedIndices);
-		}
-
-		if (currentDoubleMs != targetDoubleMs) {
-			// The current value of Ms is in conflict with the target Ms value but we have used all
-			// indices to try and counter this but we were not successful.
-			// Therefore the current substitution must be impossible (zero-contribution)
+		if (diff > 0) {
+			// It is impossible to balance this case. That means that this will inevitably result in
+			// a zero-contribution due to the orthogionality of spin-cases.
 			currentSubstitution.setFactor(0);
 
 			continue;
 		}
 
-		// Up to here we have prepared one possible spin distribution that fulfills the required
-		// Ms property. Now it is time to create all possible permutations of this distribution
-		// also including cases where pairwise beta-spins are introduced (creator & annihilator together)
-		// that don't actually change the overall Ms.
-		int remainingPairs = std::min(creatorIsBeta.size(), annihilatorIsBeta.size()) - fixedIndices;
-		// Note: remainingPairs may become negative. This can happen for instance in a case where there
-		// were originally 2 indices but one of them got fixed through a previous substitution.
-		// A negative remainingPairs means that that there are no pairs left to be permuted. However
-		// we have to add the "identity-permutation" in order to account for the fixing of that single
-		// index.
+		if (availableAnnihilators.empty() && availableCreators.empty()) {
+			// The current substitution completely fixes all indices -> nothing more to do
+			continue;
+		}
 
-		assert(creatorIsBeta.size() == creatorIndices.size());
-		assert(annihilatorIsBeta.size() == annihilatorIndices.size());
+		assert(nPairs >= 0);
 
-		std::vector< ct::IndexSubstitution::substitution_list > currentSubstitutionPermutations;
+		// Step 3: We start out in a situation where all indices that are not fixed to a specific spin case
+		// yet are assigned to have Alpha spin. As we assume full permutation symmetry within each group of
+		// idices (creators & annihialtors) we will also consider all permutations of spin cases within the
+		// different groups and the overall substitution list is given as the direct product of the possible
+		// permutations of both groups.
+		// After that is done, we check whether we have any free index pairs that have been arbitrarily fixed
+		// to have Alpha spin. If we do, then flip one pair of indices to Beta spin, decrease the amount of
+		// free pairs by one and restart this procedure.
+		// We are done as soon as there are no free pairs remaining.
+		std::vector< ct::IndexSubstitution::substitution_list > additionalSubstitutions;
 		bool cont = false;
 		do {
 			// The vectors being sorted is vital for std::next_permutation to really explore
@@ -295,8 +247,8 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 				do {
 					ct::IndexSubstitution::substitution_list currentPairs;
 					// Create substitution pairs for creators
-					for (std::size_t i = 0; i < creatorIndices.size(); ++i) {
-						ct::Index targetIndex = group.creator[creatorIndices[i]];
+					for (std::size_t i = 0; i < availableCreators.size(); ++i) {
+						ct::Index targetIndex = group.creator[availableCreators[i]];
 
 						assert(targetIndex.getSpin() == ct::Index::Spin::Both);
 
@@ -308,8 +260,8 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 					}
 
 					// Create substitution pairs for annihilators
-					for (std::size_t i = 0; i < annihilatorIndices.size(); ++i) {
-						ct::Index targetIndex = group.annihilator[annihilatorIndices[i]];
+					for (std::size_t i = 0; i < availableAnnihilators.size(); ++i) {
+						ct::Index targetIndex = group.annihilator[availableAnnihilators[i]];
 
 						assert(targetIndex.getSpin() == ct::Index::Spin::Both);
 
@@ -320,11 +272,11 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 						currentPairs.push_back({ std::move(targetIndex), std::move(substitution) });
 					}
 
-					currentSubstitutionPermutations.push_back(std::move(currentPairs));
+					additionalSubstitutions.push_back(std::move(currentPairs));
 				} while (std::next_permutation(annihilatorIsBeta.begin(), annihilatorIsBeta.end()));
 			} while (std::next_permutation(creatorIsBeta.begin(), creatorIsBeta.end()));
 
-			if (remainingPairs > 0) {
+			if (nPairs > 0) {
 				// Flip a creator/annihilator pair to beta spin
 				assert(creatorIsBeta.size() > 0);
 				assert(annihilatorIsBeta.size() > 0);
@@ -351,7 +303,7 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 					*firstAnnihilatorBeta = true;
 				}
 
-				remainingPairs--;
+				nPairs--;
 
 				cont = true;
 			} else {
@@ -359,7 +311,14 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 			}
 		} while (cont);
 
-		if (currentSubstitutionPermutations.empty()) {
+		assert(!containsDuplicate(addedSubstitutions));
+
+		// Step 4: Extend the known subsitutions by the findings of the current processing run.
+		// That means that the current substitution is extended with the new indices that got
+		// fixed in this run and if there is more than one allowed substitution for the new indices,
+		// we also add new substitutions to our list such that all possible combinations are
+		// represented.
+		if (additionalSubstitutions.empty()) {
 			// The current substitution does not need to cover any additional indices
 			continue;
 		}
@@ -368,10 +327,10 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 		// applied to a fresh copy of currentSubstitution and then appended to our global list
 		// of substitutions at the end of this function
 		// All but first
-		for (int i = 1; i < currentSubstitutionPermutations.size(); ++i) {
+		for (int i = 1; i < additionalSubstitutions.size(); ++i) {
 			ct::IndexSubstitution copy(currentSubstitution);
 
-			for (ct::IndexSubstitution::index_pair_t &currentPair : currentSubstitutionPermutations[i]) {
+			for (ct::IndexSubstitution::index_pair_t &currentPair : additionalSubstitutions[i]) {
 				copy.accessSubstitutions().push_back(std::move(currentPair));
 			}
 
@@ -379,15 +338,15 @@ void SpinIntegrator::process(const IndexGroup &group, int targetDoubleMs) {
 		}
 
 		// in-place
-		for (ct::IndexSubstitution::index_pair_t &currentPair : currentSubstitutionPermutations[0]) {
+		for (ct::IndexSubstitution::index_pair_t &currentPair : additionalSubstitutions[0]) {
 			currentSubstitution.accessSubstitutions().push_back(std::move(currentPair));
 		}
 	}
 
-	// Append the new substitutions to the overall list of substitutions
+	// Step 5: Append the new substitutions to the overall list of substitutions
 	m_substitutions.insert(m_substitutions.end(), addedSubstitutions.begin(), addedSubstitutions.end());
 
-	// Remove impossible substitutions (ones that are known to result in a zero-contribution)
+	// Step 6: Remove impossible substitutions (ones that are known to result in a zero-contribution)
 	// This works by shoving all substitutions for which the factor is zero into the back of
 	// the vector and then erasing that back part from the vector.
 	m_substitutions.erase(std::remove_if(m_substitutions.begin(), m_substitutions.end(),
