@@ -123,6 +123,16 @@ int main(int argc, const char **argv) {
 	// Print/Log what has been read in so far
 	printer << resolver << "\n\n";
 
+	try {
+		// Make sure "occupied" and "virtual" index spaces are always defined
+		resolver.resolve("occupied");
+		resolver.resolve("virtual");
+	} catch (const cu::ResolveException &e) {
+		std::cerr << "[ERROR]: Expected \"occupied\" and \"virtual\" index spaces to be defined (" << e.what() << ")"
+				  << std::endl;
+		return Contractor::ExitCodes::MISSING_INDEX_SPACE;
+	}
+
 	printer.printHeadline("Specified Tensor symmetries");
 	for (const ct::Tensor &current : symmetries) {
 		printer.printSymmetries(current);
