@@ -111,6 +111,10 @@ const std::vector< IndexSubstitution > &PermutationGroup::getAdditionalSymmetryO
 	return m_additionalElements;
 }
 
+const std::vector< PermutationGroup::Element > &PermutationGroup::getIndexPermutations() const {
+	return m_permutations;
+}
+
 void PermutationGroup::setRootSequence(const Element &rootSequence) {
 	m_permutations.clear();
 	m_additionalElements.clear();

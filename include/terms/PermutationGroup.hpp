@@ -90,6 +90,12 @@ public:
 	const std::vector< IndexSubstitution > &getAdditionalSymmetryOperations() const;
 
 	/**
+	 * @returns The list of permutations of the index sequence that can be reached by applying the
+	 * permutation operations contained in this group.
+	 */
+	const std::vector< Element > &getIndexPermutations() const;
+
+	/**
 	 * Set the initial index sequence this group shall act on
 	 *
 	 * @param rootSequence The sequence to permute
