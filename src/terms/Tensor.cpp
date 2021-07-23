@@ -33,11 +33,13 @@ void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 
 Tensor::Tensor(const std::string_view name, const Tensor::index_list_t &indices, const PermutationGroup &symmetry)
 	: m_indices(indices), m_name(name), m_symmetry(symmetry) {
+	m_symmetry.setRootSequence(getIndices());
 	sortIndices();
 }
 
 Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, PermutationGroup &&symmetry)
 	: m_indices(indices), m_name(name), m_symmetry(std::move(symmetry)) {
+	m_symmetry.setRootSequence(getIndices());
 	sortIndices();
 }
 
