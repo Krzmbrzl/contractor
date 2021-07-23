@@ -83,8 +83,14 @@ TEST(SpinSummationTest, sum_twoIndexTensors) {
 			ct::Tensor expectedTensor = createAntisymmetricTensor("H", { idx("a+|"), idx("i-|") }, false);
 			ct::GeneralTerm expectedTerm(expectedTensor, 1, { expectedTensor });
 
-			ASSERT_EQ(summedTerms.size(), 1);
-			ASSERT_EQ(summedTerms[0], expectedTerm);
+			if (indexPair.first.getSpin() == ct::Index::Spin::Alpha) {
+				// Canonical spin-case of the original result Tensor
+				ASSERT_EQ(summedTerms.size(), 1);
+				ASSERT_EQ(summedTerms[0], expectedTerm);
+			} else {
+				// Non-canonical spin-case of original result Tensor -> This will be dropped as redundant
+				ASSERT_EQ(summedTerms.size(), 0);
+			}
 		}
 	}
 	{
@@ -96,8 +102,14 @@ TEST(SpinSummationTest, sum_twoIndexTensors) {
 
 			SETUP_SIMPLE_TEST("A", LIST(indexPair.first, indexPair.second), false);
 
-			ASSERT_EQ(summedTerms.size(), 1);
-			ASSERT_EQ(summedTerms[0], term);
+			if (indexPair.first.getSpin() == ct::Index::Spin::Alpha) {
+				// Canonical spin-case of the original result Tensor
+				ASSERT_EQ(summedTerms.size(), 1);
+				ASSERT_EQ(summedTerms[0], term);
+			} else {
+				// Non-canonical spin-case of original result Tensor -> This will be dropped as redundant
+				ASSERT_EQ(summedTerms.size(), 0);
+			}
 		}
 	}
 	{
@@ -198,6 +210,8 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 				std::cout << "Spin case: " << spinSpec << " fully antisymmetric: " << fullAntisymmetrization
 						  << std::endl;
 
+				bool canonicalSpinCase = spinSpec[0] == 'a';
+
 				ct::Tensor result("O", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 				applySpin(result, spinSpec);
 				// Antisymmetrize over ab
@@ -224,8 +238,12 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 
 				ct::GeneralTerm expectedTerm(expectedResultTensor, getSignFor(spinSpec), { dummy });
 
-				ASSERT_EQ(summedTerms.size(), 1);
-				ASSERT_EQ(summedTerms[0], expectedTerm);
+				if (canonicalSpinCase) {
+					ASSERT_EQ(summedTerms.size(), 1);
+					ASSERT_EQ(summedTerms[0], expectedTerm);
+				} else {
+					ASSERT_EQ(summedTerms.size(), 0);
+				}
 			}
 		}
 	}
@@ -369,3 +387,145 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 		}
 	}
 }
+
+void invertSpins(ct::Tensor &tensor) {
+	// use index substitution in order to also adapt symmetry
+	ct::IndexSubstitution::substitution_list subs;
+
+	for (const ct::Index &index : tensor.getIndices()) {
+		ct::Index replacement = index;
+		if (replacement.getSpin() == ct::Index::Spin::Alpha) {
+			replacement.setSpin(ct::Index::Spin::Beta);
+		} else if (replacement.getSpin() == ct::Index::Spin::Beta) {
+			replacement.setSpin(ct::Index::Spin::Alpha);
+		} else {
+			continue;
+		}
+
+		subs.push_back({ index, std::move(replacement) });
+	}
+
+	ct::IndexSubstitution(std::move(subs)).apply(tensor);
+}
+
+TEST(SpinSummationTest, canonicalSpinCase) {
+	ASSERT_TRUE(IS_INTERMEDIATE_TENSOR_NAME("R"));
+	ASSERT_TRUE(IS_INTERMEDIATE_TENSOR_NAME("S"));
+	{
+		// 2-index result
+		for (std::string_view spinSpec : { "aa", "bb" }) {
+			ct::Tensor result("R", { idx("a+"), idx("i-") });
+			applySpin(result, spinSpec);
+
+			ct::GeneralTerm term(result, 1, { result });
+			std::vector< ct::GeneralTerm > terms = { term };
+
+			std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+			if (spinSpec[0] == 'a') {
+				// Canonical spin-case -> shouldn't change
+				ASSERT_EQ(summedTerms.size(), 1);
+				ASSERT_EQ(summedTerms[0], term);
+			} else {
+				// This Term will be sorted out as redundant
+				ASSERT_EQ(summedTerms.size(), 0);
+			}
+		}
+	}
+	{
+		// 2-index rhs
+		for (std::string_view spinSpec : { "aa", "bb" }) {
+			ct::Tensor result("R", { idx("a+/"), idx("i-/") });
+			ct::Tensor S("S", { idx("a+"), idx("i-") });
+			applySpin(S, spinSpec);
+
+			ct::GeneralTerm term(result, 1, { S });
+			std::vector< ct::GeneralTerm > terms = { term };
+
+			std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+			ct::Tensor expectedS = S;
+			if (spinSpec[0] != 'a') {
+				// In the non-canonical case we expect a spin-fip
+				invertSpins(expectedS);
+			}
+
+			ct::GeneralTerm expectedTerm(result, 1, { expectedS });
+
+			// Canonical spin-case -> shouldn't change
+			ASSERT_EQ(summedTerms.size(), 1);
+			ASSERT_EQ(summedTerms[0], expectedTerm);
+		}
+	}
+	{
+		// Mixed-spin 4-index results
+		for (std::string_view spinSpec : { "abab", "abba", "baba", "baab" }) {
+			ct::Tensor result("R", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+			applySpin(result, spinSpec);
+
+			ct::GeneralTerm term(result, 1, { result });
+			std::vector< ct::GeneralTerm > terms = { term };
+
+			std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+			if (spinSpec[0] == 'a') {
+				// Canonical spin-case -> shouldn't change
+				ASSERT_EQ(summedTerms.size(), 1);
+				ASSERT_EQ(summedTerms[0], term);
+			} else {
+				// This Term will be sorted out as redundant
+				ASSERT_EQ(summedTerms.size(), 0);
+			}
+		}
+	}
+	{
+		// Same-spin 4-index results
+		for (std::string_view spinSpec : { "aaaa", "bbbb" }) {
+			ct::Tensor result("R", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+			applySpin(result, spinSpec);
+
+			ct::GeneralTerm term(result, 1, { result });
+			std::vector< ct::GeneralTerm > terms = { term };
+
+			std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+			if (spinSpec[0] == 'a') {
+				// Canonical spin-case -> shouldn't change
+				ASSERT_EQ(summedTerms.size(), 1);
+				ASSERT_EQ(summedTerms[0], term);
+			} else {
+				// This Term will be sorted out as redundant
+				ASSERT_EQ(summedTerms.size(), 0);
+			}
+		}
+	}
+	{
+		// 4-index rhs
+		for (std::string_view spinSpec : { "aaaa", "bbbb", "abab", "baba", "abba", "baab" }) {
+			ct::Tensor result("R", { idx("a+/"), idx("b+/"), idx("i-/"), idx("j-/") });
+			ct::Tensor S("S", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+			applySpin(S, spinSpec);
+
+			ct::GeneralTerm term(result, 1, { S });
+			std::vector< ct::GeneralTerm > terms = { term };
+
+			std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+			ct::Tensor expectedS = S;
+			if (spinSpec[0] != 'a') {
+				// In the non-canonical case we expect a spin-fip
+				invertSpins(expectedS);
+			}
+
+			ct::GeneralTerm expectedTerm(result, 1, { expectedS });
+
+			// Canonical spin-case -> shouldn't change
+			ASSERT_EQ(summedTerms.size(), 1);
+			ASSERT_EQ(summedTerms[0], expectedTerm);
+		}
+	}
+}
+
+#undef LIST
+#undef SETUP_SIMPLE_TEST
+#undef IS_INTERMEDIATE_TENSOR_NAME

@@ -9,6 +9,7 @@
 #include "terms/TensorDecomposition.hpp"
 
 #include <algorithm>
+#include <bitset>
 #include <unordered_set>
 #include <vector>
 
@@ -16,8 +17,15 @@ namespace Contractor::Processor::SpinSummation {
 
 namespace details {
 
+	/**
+	 * @returns Whether the given Index is of Type None
+	 */
 	bool is_NoneType(const Terms::Index &index) { return index.getType() == Terms::Index::Type::None; }
 
+	/**
+	 * @returns An IndexSubstitution with the given sign that will map the given indices to themselves except that all
+	 * of them will now have Spin None
+	 */
 	Terms::IndexSubstitution mapToSpinFreeIndices(const Terms::Tensor::index_list_t &indices, int sign = 1) {
 		Terms::IndexSubstitution::substitution_list substitutions;
 
@@ -40,6 +48,10 @@ namespace details {
 		return Terms::IndexSubstitution(std::move(substitutions), sign);
 	}
 
+	/**
+	 * @returns A TensorDecomposition that will replace the given Tensor with a sum of Tensors that result from applying
+	 * the given replacement substitutions to the original Tensor.
+	 */
 	Terms::TensorDecomposition replaceTensorWith(const Terms::Tensor &tensor,
 												 const std::vector< Terms::IndexSubstitution > &replacements) {
 		Terms::TensorDecomposition::substitution_list_t substitutions;
@@ -56,6 +68,10 @@ namespace details {
 		return Terms::TensorDecomposition(std::move(substitutions));
 	}
 
+	/**
+	 * @returns Whether all creator and all annihilator indices have the same index space
+	 * respectively
+	 */
 	bool indexGroupsAreSameSpace(const Terms::Tensor &tensor) {
 		if (tensor.getIndices().empty()) {
 			return true;
@@ -82,6 +98,9 @@ namespace details {
 		return true;
 	}
 
+	/**
+	 * @returns The amount of indices in the given index list that are of the given type
+	 */
 	unsigned int countIndexType(const Terms::Tensor::index_list_t &indices, Terms::Index::Type type) {
 		unsigned int count   = 0;
 		bool foundTypeBefore = false;
@@ -100,6 +119,9 @@ namespace details {
 		return count;
 	}
 
+	/**
+	 * @returns (One of) the antisymmetry of the given tensor
+	 */
 	Terms::IndexSubstitution findAntisymmetry(const Terms::Tensor &tensor) {
 		assert(tensor.getIndices().size() >= 4);
 		assert(tensor.isPartiallyAntisymmetrized());
@@ -117,6 +139,14 @@ namespace details {
 		return sym;
 	}
 
+	/**
+	 * Creates a mapping from the given Tensor to its corresponding skeleton Tensor.
+	 *
+	 * @param tensor The tensor to map from
+	 * @param sign The sign of the desired mapping
+	 * @param antisymmetrize Whether the mapped Tensor is to be antisymmetrized
+	 * @returns A TensorDecomposition that describes the decomposition of the given tensor into the desired mapping
+	 */
 	Terms::TensorDecomposition mapToSkeletonTensor(const Terms::Tensor &tensor, int sign, bool antisymmetrize) {
 		assert(tensor.getIndices().size() >= 4);
 
@@ -163,30 +193,56 @@ namespace details {
 		return Terms::TensorDecomposition(std::move(substitutions));
 	}
 
-	Terms::TensorDecomposition processTensor(const Terms::Tensor &tensor) {
+	using spin_bitset = std::bitset< 8 >;
+
+	/**
+	 * @returns A bitset representing the given tensor's spin case. 1 means Beta and 0 means Alpha.
+	 */
+	spin_bitset determineSpinCase(const Terms::Tensor &tensor) {
+		// Create a bit-pattern that describes the spin-case of the input (1 bits means beta, 0 bits means alpha)
+		spin_bitset spinCase;
+		assert(spinCase.size() >= tensor.getIndices().size());
+
+		for (int i = 0; i < tensor.getIndices().size(); ++i) {
+			if (tensor.getIndices()[i].getSpin() == Terms::Index::Spin::Beta) {
+				spinCase.set(i);
+			} else if (tensor.getIndices()[i].getType() == Terms::Index::Type::None) {
+				// We expect that there won't come any indices associated with a spin after
+				// this because indices are sorted based on their type
+				break;
+			}
+		}
+
+		return spinCase;
+	}
+
+	/**
+	 * @returns The amount of creator and annihilator indices in the given Tensor
+	 */
+	std::size_t getRelevantIndexCount(const Terms::Tensor &tensor) {
 		// We assume that the indices in this tensor are order such that creators and annihilators
 		// come before additional indices. For our purposes everything except creator and annihilator
 		// indices are irrelevant since these other indices are expected to carry no spin anyway.
 		auto indexEnd = std::find_if(tensor.getIndices().begin(), tensor.getIndices().end(), is_NoneType);
 
-		int relevantIndexCount = std::distance(tensor.getIndices().begin(), indexEnd);
+		return std::distance(tensor.getIndices().begin(), indexEnd);
+	}
 
-		// Create a bit-pattern that describes the spin-case of the input (1 bits means beta, 0 bits means alpha)
-		int spinCase = 0;
-		assert(sizeof(spinCase) >= tensor.getIndices().size());
-		for (int i = 0; i < relevantIndexCount; ++i) {
-			if (tensor.getIndices()[i].getSpin() == Terms::Index::Spin::Beta) {
-				spinCase += 1 << i;
-			}
-		}
-
-		const int allBeta  = (1 << relevantIndexCount) - 1;
-		const int allAlpha = 0;
+	/**
+	 * @returns A TensorDecomposition describing the result of processing the given Tensor
+	 */
+	Terms::TensorDecomposition processTensor(const Terms::Tensor &tensor) {
+		std::size_t relevantIndexCount = getRelevantIndexCount(tensor);
 
 		if (relevantIndexCount % 2 != 0) {
 			// Only allow even number of (relevant) indices
 			throw std::runtime_error("Can't spin-sum a Tensor with an uneven amount of (relevant) indices");
 		}
+
+		spin_bitset spinCase = determineSpinCase(tensor);
+
+		const spin_bitset allBeta = (1 << relevantIndexCount) - 1;
+		const spin_bitset allAlpha;
 
 		if (relevantIndexCount == 0) {
 			// Nothing to do for this Tensor
@@ -206,6 +262,7 @@ namespace details {
 		if (relevantIndexCount == 4) {
 			if (!tensor.isPartiallyAntisymmetrized()) {
 				// Without this property we can't map the Tensor to a skeleton Tensor (without further consideration)
+				std::cerr << tensor << std::endl;
 				throw std::runtime_error(
 					"Unable to spin-sum a 4-index Tensor that is not at least partially antisymmetric");
 			}
@@ -234,7 +291,7 @@ namespace details {
 			// the skeleton Tensor does not show any symmetry.
 			int sign            = 1;
 			bool antisymmetrize = false;
-			switch (spinCase) {
+			switch (spinCase.to_ullong()) {
 				case 0b0000:
 				case 0b1111:
 					// all-alpha or all-beta
@@ -260,14 +317,84 @@ namespace details {
 		throw std::runtime_error("Ran into unimplemented code part during spin summation");
 	}
 
+	/**
+	 * @returns Whether the given spinCase is consider to be a "canonical spin case"
+	 */
+	bool isCanonicalSpinCase(spin_bitset spinCase, std::size_t relevantIndexCount) {
+		std::size_t nBetaSpins  = spinCase.count();
+		std::size_t nAlphaSpins = relevantIndexCount - nBetaSpins;
+
+		if (nBetaSpins > nAlphaSpins) {
+			// More Beta than Alpha spins
+			return false;
+		} else if (nBetaSpins == nAlphaSpins && spinCase.test(0)) {
+			// Equal amount of Alpha and Beta spins but the first spin is Beta instead
+			// of Alpha
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	/**
+	 * This function will map the given Tensor to a "canonical spin case" by use of spin-inversion-symmetry
+	 * where necessary. A "canonical spin case" is one that either contains more Alpha than Beta spins or
+	 * that has an equal amount of them but the first index has spin Alpha.
+	 *
+	 * @param tensor The Tensor to bring into "canonical spin case"
+	 */
+	void mapToCanonicalSpinCase(Terms::Tensor &tensor) {
+		spin_bitset spinCase = determineSpinCase(tensor);
+
+		std::size_t relevantIndexCount = getRelevantIndexCount(tensor);
+
+		if (isCanonicalSpinCase(spinCase, relevantIndexCount)) {
+			return;
+		}
+
+		// Invert spins
+		spinCase.flip();
+
+		// Assemble the index substitution that performs the spin inversion. We use an IndexSubstitution
+		// object instead of manually flipping spins in order to make sure the Tensor's symmetry is
+		// adapted accordingly.
+		Terms::IndexSubstitution::substitution_list spinFlipMapping;
+		for (std::size_t i = 0; i < relevantIndexCount; ++i) {
+			Terms::Index replacement = tensor.getIndices()[i];
+
+			replacement.setSpin(spinCase.test(i) ? Terms::Index::Spin::Beta : Terms::Index::Spin::Alpha);
+
+			spinFlipMapping.push_back({ tensor.getIndices()[i], std::move(replacement) });
+		}
+
+		// Apply the spin-flip
+		Terms::IndexSubstitution(std::move(spinFlipMapping)).apply(tensor);
+	}
+
 }; // namespace details
 
+/**
+ * Performs spin-summation of the given terms (assuming restricted orbitals - that is the spatial part of alpha and beta
+ * electrons are always identical).
+ *
+ * @param terms A list of Terms to spin-sum. All these terms are assumed to be spin-integrated already.
+ * @param nonIntermediateNames A set of names of Tensors which are NOT intermediate Tensors. These are the ones that
+ * will be mapped to skeleton Tensors by this function (and which are expected to be at least partially antisymmetric)
+ */
 template< typename term_t >
 std::vector< term_t > sum(const std::vector< term_t > &terms,
 						  const std::unordered_set< std::string_view > &nonIntermediateNames) {
 	std::vector< term_t > summedTerms;
 
 	for (term_t currentTerm : terms) {
+		if (!details::isCanonicalSpinCase(details::determineSpinCase(currentTerm.getResult()),
+										  details::getRelevantIndexCount(currentTerm.getResult()))) {
+			// We can sort out non-canonical spin cases of the result as we make the assumption that the list of
+			// Terms given to us contains all spin cases of any given Term and thus this list must also hold a
+			// Term for the canonical spin case of this result, which is all that we need for further processing.
+			continue;
+		}
+
 		bool isIntermediate =
 			nonIntermediateNames.find(currentTerm.getResult().getName()) == nonIntermediateNames.end();
 
@@ -302,11 +429,15 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 
 		// Process all Tensors and see how they are to be decomposed
 		std::vector< Terms::TensorDecomposition > decompositions;
-		for (const Terms::Tensor &currentTensor : currentTerm.getTensors()) {
+		for (Terms::Tensor &currentTensor : currentTerm.accessTensors()) {
 			bool isIntermediate = nonIntermediateNames.find(currentTensor.getName()) == nonIntermediateNames.end();
 
 			if (isIntermediate) {
-				// We don't touch intermediates (for now)
+				// Map to canonical spin case
+				details::mapToCanonicalSpinCase(currentTensor);
+
+				// For now we don't want to map intermediate Tensors to skeleton Tensors, so we can end
+				// the current iteration here.
 				continue;
 			}
 
