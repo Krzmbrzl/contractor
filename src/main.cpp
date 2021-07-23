@@ -7,6 +7,7 @@
 #include "parser/SymmetryListParser.cpp"
 #include "processor/Factorizer.hpp"
 #include "processor/SpinIntegrator.hpp"
+#include "processor/SpinSummation.hpp"
 #include "utils/IndexSpaceResolver.cpp"
 
 #include <boost/program_options/errors.hpp>
@@ -17,6 +18,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <string_view>
 #include <unordered_set>
 
 namespace ct  = Contractor::Terms;
@@ -31,6 +33,7 @@ struct CommandLineArguments {
 	std::filesystem::path symmetryFile;
 	std::filesystem::path decompositionFile;
 	bool asciiOnlyOutput;
+	bool restrictedOrbitals;
 };
 
 int processCommandLine(int argc, const char **argv, CommandLineArguments &args) {
@@ -51,6 +54,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Path to the decomposition file (.decomposition)")
 		("ascii-only", boost::program_options::value<bool>(&args.asciiOnlyOutput)->default_value(false)->zero_tokens(),
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
+		("restricted-orbitals", boost::program_options::value<bool>(&args.restrictedOrbitals)->default_value(false)->zero_tokens(),
+		 "Using this flag tells the program that restricted orbitals are used where the spatial parts of alpha/beta pairs is equal")
 	;
 	// clang-format on
 
@@ -185,15 +190,19 @@ int main(int argc, const char **argv) {
 	printer << "\n\n";
 
 
-	// Store the original result Tensors in order to be able to selectively symmetrize these in the
-	// end.
-	std::unordered_set< ct::Tensor > originalResultTensors;
+	// Store the names of the original result Tensors as well as the "base Tensors"
+	std::unordered_set< std::string > resultTensorNames;
+	std::unordered_set< std::string > baseTensorNames;
 
 	// Verify that all Terms are what we expect them to be
 	decltype(terms) copy(std::move(terms));
 	terms.clear();
 	for (ct::GeneralTerm &currentTerm : copy) {
-		originalResultTensors.insert(currentTerm.getResult());
+		resultTensorNames.insert(std::string(currentTerm.getResult().getName()));
+
+		for (const ct::Tensor &currenTensor : currentTerm.getTensors()) {
+			baseTensorNames.insert(std::string(currenTensor.getName()));
+		}
 
 		// Note that we assume that the indices in the Tensors are already ordered "canonically" at this point
 		switch (currentTerm.getResult().getIndices().size()) {
@@ -354,12 +363,12 @@ int main(int argc, const char **argv) {
 
 	// Spin-integration
 	printer.printHeadline("Spin integration");
-	std::vector<ct::BinaryTerm> integratedTerms;
+	std::vector< ct::BinaryTerm > integratedTerms;
 	cpr::SpinIntegrator integrator;
 	for (const ct::BinaryTerm &currentTerm : factorizedTerms) {
 		printer << currentTerm << " integrates to\n";
 
-		const std::vector<ct::IndexSubstitution> &substitutions = integrator.spinIntegrate(currentTerm);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
 
 		for (const ct::IndexSubstitution &currentSub : substitutions) {
 			ct::BinaryTerm copy = currentTerm;
@@ -380,11 +389,28 @@ int main(int argc, const char **argv) {
 
 
 	printer.printHeadline("Spin-integrated terms");
-	printer << integratedTerms;
+	printer << integratedTerms << "\n\n";
 
-	// Spin summation
+	if (args.restrictedOrbitals) {
+		// Spin summation
+		std::unordered_set< std::string_view > nonIntermediateNames;
+		nonIntermediateNames.reserve(resultTensorNames.size() + baseTensorNames.size());
+
+		nonIntermediateNames.insert(resultTensorNames.begin(), resultTensorNames.end());
+		nonIntermediateNames.insert(baseTensorNames.begin(), baseTensorNames.end());
+
+		printer.printHeadline("Terms after spin-summation");
+
+		std::vector< ct::BinaryTerm > summedTerms = cpr::SpinSummation::sum(integratedTerms, nonIntermediateNames);
+
+		printer << summedTerms << "\n\n";
+
+		integratedTerms = std::move(summedTerms);
+	}
 
 	// Check and potentially restore particle-1,2-symmetry
+
+	// Identify redundant terms and simplify equations
 
 	// Conversion to ITF
 
