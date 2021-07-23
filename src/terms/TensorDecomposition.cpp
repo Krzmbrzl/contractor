@@ -190,4 +190,8 @@ const TensorDecomposition::substitution_list_t &TensorDecomposition::getSubstitu
 	return m_substutions;
 }
 
+bool TensorDecomposition::isValid() const {
+	return !m_substutions.empty();
+}
+
 }; // namespace Contractor::Terms

@@ -35,7 +35,7 @@ public:
 	using decomposed_terms_t = std::vector< GeneralTerm >;
 
 	TensorDecomposition(const substitution_list_t &substitutions);
-	TensorDecomposition(substitution_list_t &&substitutions);
+	TensorDecomposition(substitution_list_t &&substitutions = {});
 	~TensorDecomposition() = default;
 
 	friend bool operator==(const TensorDecomposition &lhs, const TensorDecomposition &rhs);
@@ -61,6 +61,8 @@ public:
 	 * actual contents of the Term.
 	 */
 	const substitution_list_t &getSubstitutions() const;
+
+	bool isValid() const;
 
 protected:
 	substitution_list_t m_substutions;
