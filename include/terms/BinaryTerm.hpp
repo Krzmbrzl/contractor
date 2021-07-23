@@ -20,6 +20,8 @@ public:
 	 */
 	static const Tensor DummyRHS;
 
+	static BinaryTerm toBinaryTerm(const Term &term);
+
 	explicit BinaryTerm(const Tensor &result = Tensor(), Term::factor_t prefactor = 1.0, const Tensor &left = Tensor(),
 						const Tensor &right = DummyRHS);
 
