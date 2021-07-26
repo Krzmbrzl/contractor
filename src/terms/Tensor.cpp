@@ -44,7 +44,9 @@ Tensor::Tensor(const std::string_view name, Tensor::index_list_t &&indices, Perm
 }
 
 bool operator==(const Tensor &lhs, const Tensor &rhs) {
-	return lhs.m_name == rhs.m_name && lhs.m_indices == rhs.m_indices && lhs.m_symmetry == rhs.m_symmetry;
+	return lhs.m_name == rhs.m_name && lhs.m_symmetry == rhs.m_symmetry
+		   && lhs.m_symmetry.getCanonicalRepresentation() == rhs.m_symmetry.getCanonicalRepresentation()
+		   && lhs.m_symmetry.getCanonicalRepresentationFactor() == rhs.m_symmetry.getCanonicalRepresentationFactor();
 }
 
 bool operator!=(const Tensor &lhs, const Tensor &rhs) {
