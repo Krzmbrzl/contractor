@@ -41,20 +41,24 @@ IndexSubstitution IndexSubstitution::identity() {
 IndexSubstitution::IndexSubstitution(const IndexSubstitution::index_pair_t &substitution,
 									 IndexSubstitution::factor_t factor)
 	: m_substitutions({ substitution }), m_factor(factor) {
+	removeNoOps();
 }
 
 IndexSubstitution::IndexSubstitution(IndexSubstitution::index_pair_t &&substitution, IndexSubstitution::factor_t factor)
 	: m_substitutions({ substitution }), m_factor(factor) {
+	removeNoOps();
 }
 
 IndexSubstitution::IndexSubstitution(const IndexSubstitution::substitution_list &substitutions,
 									 IndexSubstitution::factor_t factor)
 	: m_substitutions(substitutions), m_factor(factor) {
+	removeNoOps();
 }
 
 IndexSubstitution::IndexSubstitution(IndexSubstitution::substitution_list &&substitutions,
 									 IndexSubstitution::factor_t factor)
 	: m_substitutions(substitutions), m_factor(factor) {
+	removeNoOps();
 }
 
 bool operator==(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
@@ -76,10 +80,6 @@ std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
 
 	return stream;
 }
-
-struct is_noop_exchange {
-	bool operator()(const IndexPair &pair) const { return Index::isSame(pair.first, pair.second); }
-};
 
 IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
 	// The produce of two substiutions is given by first letting rhs act on an imaginary target
@@ -111,10 +111,7 @@ IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitutio
 		}
 	}
 
-	// Get rid of no-op exchanges (index with itself)
-	result.m_substitutions.erase(
-		std::remove_if(result.m_substitutions.begin(), result.m_substitutions.end(), is_noop_exchange()),
-		result.m_substitutions.end());
+	result.removeNoOps();
 
 	result.setFactor(result.getFactor() * lhs.getFactor());
 
@@ -256,6 +253,16 @@ IndexSubstitution IndexSubstitution::inverse(bool invertFactor) const {
 	}
 
 	return IndexSubstitution(std::move(subsitutions), invertFactor ? 1.0 / m_factor : m_factor);
+}
+
+bool is_noop_exchange(const IndexPair &pair) {
+	return pair.first == pair.second;
+}
+
+void IndexSubstitution::removeNoOps() {
+	// Get rid of no-op exchanges (index with itself)
+	m_substitutions.erase(std::remove_if(m_substitutions.begin(), m_substitutions.end(), is_noop_exchange),
+						  m_substitutions.end());
 }
 
 }; // namespace Contractor::Terms

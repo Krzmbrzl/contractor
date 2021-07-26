@@ -151,6 +151,8 @@ public:
 protected:
 	substitution_list m_substitutions;
 	factor_t m_factor;
+
+	void removeNoOps();
 };
 
 }; // namespace Contractor::Terms
