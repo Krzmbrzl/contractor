@@ -8,6 +8,7 @@
 #include "processor/Factorizer.hpp"
 #include "processor/SpinIntegrator.hpp"
 #include "processor/SpinSummation.hpp"
+#include "processor/Symmetrizer.hpp"
 #include "utils/IndexSpaceResolver.cpp"
 
 #include <boost/program_options/errors.hpp>
@@ -191,17 +192,17 @@ int main(int argc, const char **argv) {
 
 
 	// Store the names of the original result Tensors as well as the "base Tensors"
-	std::unordered_set< std::string > resultTensorNames;
-	std::unordered_set< std::string > baseTensorNames;
+	std::unordered_set< std::string > resultTensorNameStrings;
+	std::unordered_set< std::string > baseTensorNameStrings;
 
 	// Verify that all Terms are what we expect them to be
 	decltype(terms) copy(std::move(terms));
 	terms.clear();
 	for (ct::GeneralTerm &currentTerm : copy) {
-		resultTensorNames.insert(std::string(currentTerm.getResult().getName()));
+		resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
 
 		for (const ct::Tensor &currenTensor : currentTerm.getTensors()) {
-			baseTensorNames.insert(std::string(currenTensor.getName()));
+			baseTensorNameStrings.insert(std::string(currenTensor.getName()));
 		}
 
 		// Note that we assume that the indices in the Tensors are already ordered "canonically" at this point
@@ -291,6 +292,13 @@ int main(int argc, const char **argv) {
 				return Contractor::ExitCodes::RESULT_WITH_WRONG_INDEX_COUNT;
 		}
 	}
+
+	// We had to capture the names by value in order to have a fixed (non-changing) reference point in memory to point
+	// our string_views to. Using string_views is more convenient though since that is what we directly have access to
+	// from any Tensor.
+	std::unordered_set< std::string_view > resultTensorNames(resultTensorNameStrings.begin(),
+															 resultTensorNameStrings.end());
+	std::unordered_set< std::string_view > baseTensorNames(baseTensorNameStrings.begin(), baseTensorNameStrings.end());
 
 	printer.printHeadline("Terms after applying initial antisymmetrization");
 	printer << terms << "\n\n";
@@ -409,6 +417,50 @@ int main(int argc, const char **argv) {
 	}
 
 	// Check and potentially restore particle-1,2-symmetry
+	printer.printHeadline("Particle-1,2-symmetrization");
+
+	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
+	std::vector< ct::BinaryTerm > symmetrizedTerms;
+	symmetrizedTerms.reserve(integratedTerms.size());
+	for (ct::BinaryTerm &currentTerm : integratedTerms) {
+		if (resultTensorNames.find(currentTerm.getResult().getName()) != resultTensorNames.end()) {
+			// This is a result-Tensor -> symmetrize
+			// Because we used the proper prefactor further up, we symmetrize blindly at this point (without checking
+			// whether the given Tensor has the desired symmetry already)
+			const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
+
+			printer << currentTerm << " is symmetrized by:\n";
+			for (const ct::BinaryTerm &currentSymTerm : current) {
+				printer << "  - " << currentSymTerm << "\n";
+
+				symmetrizedTerms.push_back(currentSymTerm);
+			}
+		} else {
+			// Non-result Tensor -> leave unchanged
+			symmetrizedTerms.push_back(std::move(currentTerm));
+		}
+	}
+	integratedTerms.clear();
+	printer << "\n\n";
+
+
+	printer.printHeadline("Tensor symmetries");
+	for (const ct::BinaryTerm &currentTerm : symmetrizedTerms) {
+		printer << "In " << currentTerm << "\n";
+		printer << "- ";
+		printer.printSymmetries(currentTerm.getResult());
+		printer << "\n";
+
+		for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+			printer << "- ";
+			printer.printSymmetries(currentTensor);
+			printer << "\n";
+		}
+	}
+	printer << "\n\n";
+
+	printer.printHeadline("Terms after symmetrization");
+	printer << symmetrizedTerms << "\n\n";
 
 	// Identify redundant terms and simplify equations
 

@@ -5,7 +5,7 @@ set(COMPONENT_NAME "processor")
 add_executable(${COMPONENT_NAME}_test
 	FactorizerTest.cpp
 	SpinIntegratorTest.cpp
-	AntisymmetrizerTest.cpp
+	SymmetrizerTest.cpp
 	SpinSummationTest.cpp
 )
 
