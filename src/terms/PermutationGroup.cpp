@@ -89,9 +89,7 @@ void PermutationGroup::addGenerator(IndexSubstitution &&generator, bool regenera
 			"Permutations with a factor different of -1, 1 or 0 can't lead to a finite permutation group!");
 	}
 
-	auto knownOperations = boost::join(m_generators, m_additionalElements);
-
-	if (std::find(knownOperations.begin(), knownOperations.end(), generator) != knownOperations.end()) {
+	if (contains(generator)) {
 		// This symmetry operation is already contained in  this group
 		return;
 	}
