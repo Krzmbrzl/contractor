@@ -11,6 +11,7 @@
 #include "terms/BinaryTerm.cpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/TermGroup.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
 #include <boost/program_options/errors.hpp>
@@ -120,9 +121,9 @@ int main(int argc, const char **argv) {
 	printer << "------------------------------------\n\n";
 
 	// Next parse the given files
-	cu::IndexSpaceResolver resolver          = parse< cp::IndexSpaceParser >(args.indexSpaceFile);
-	cp::GeCCoExportParser::term_list_t terms = parse< cp::GeCCoExportParser >(args.geccoExportFile, resolver);
-	std::vector< ct::Tensor > symmetries     = parse< cp::SymmetryListParser >(args.symmetryFile, resolver);
+	cu::IndexSpaceResolver resolver                 = parse< cp::IndexSpaceParser >(args.indexSpaceFile);
+	cp::GeCCoExportParser::term_list_t initialTerms = parse< cp::GeCCoExportParser >(args.geccoExportFile, resolver);
+	std::vector< ct::Tensor > symmetries            = parse< cp::SymmetryListParser >(args.symmetryFile, resolver);
 	cp::DecompositionParser::decomposition_list_t decompositions =
 		parse< cp::DecompositionParser >(args.decompositionFile, resolver);
 
@@ -152,7 +153,7 @@ int main(int argc, const char **argv) {
 	printer << "\n\n";
 
 	printer.printHeadline("Read terms");
-	printer << terms << "\n\n";
+	printer << initialTerms << "\n\n";
 
 	// Print decomposition
 	printer.printHeadline("Specified substitutions");
@@ -163,7 +164,7 @@ int main(int argc, const char **argv) {
 
 	// Transfer symmetry to the Tensor objects in terms
 	printer.printHeadline("Applying specified symmetry");
-	for (ct::GeneralTerm &currentTerm : terms) {
+	for (ct::GeneralTerm &currentTerm : initialTerms) {
 		printer << "In " << currentTerm << ":\n";
 		for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
 			for (ct::Tensor &currentSymmetry : symmetries) {
@@ -197,10 +198,11 @@ int main(int argc, const char **argv) {
 	std::unordered_set< std::string > resultTensorNameStrings;
 	std::unordered_set< std::string > baseTensorNameStrings;
 
+	std::vector< ct::GeneralTermGroup > termGroups;
+	termGroups.reserve(initialTerms.size());
+
 	// Verify that all Terms are what we expect them to be
-	decltype(terms) copy(std::move(terms));
-	terms.clear();
-	for (ct::GeneralTerm &currentTerm : copy) {
+	for (ct::GeneralTerm &currentTerm : initialTerms) {
 		resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
 
 		for (const ct::Tensor &currenTensor : currentTerm.getTensors()) {
@@ -212,7 +214,7 @@ int main(int argc, const char **argv) {
 			case 0:
 			case 2:
 				// These are expected quantities that don't need any antisymmtrization
-				terms.push_back(std::move(currentTerm));
+				termGroups.push_back(ct::GeneralTermGroup::from(currentTerm));
 				break;
 			case 4: {
 				// This is an expected quantity that does need antisymmtrization
@@ -275,15 +277,18 @@ int main(int argc, const char **argv) {
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
 
 						// Now add the Term as-is
-						terms.push_back(currentTerm);
+						ct::GeneralTermGroup currentGroup(currentTerm);
 						// But also with the indices swapped
 						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
 							antisymmetrization.apply(currentTensor);
 						}
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
-						terms.push_back(std::move(currentTerm));
+
+						currentGroup.addTerm(std::move(currentTerm));
+
+						termGroups.push_back(std::move(currentGroup));
 					} else {
-						terms.push_back(std::move(currentTerm));
+						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
 					}
 				}
 				break;
@@ -303,103 +308,124 @@ int main(int argc, const char **argv) {
 	std::unordered_set< std::string_view > baseTensorNames(baseTensorNameStrings.begin(), baseTensorNameStrings.end());
 
 	printer.printHeadline("Terms after applying initial antisymmetrization");
-	printer << terms << "\n\n";
+	printer << termGroups << "\n\n";
 
 
 	// Apply decomposition
 	printer.printHeadline("Applying substitutions");
-	std::vector< ct::GeneralTerm > decomposedTerms;
-	for (const ct::GeneralTerm &currentTerm : terms) {
-		bool wasDecomposed = false;
+	for (ct::GeneralTermGroup &currentGroup : termGroups) {
+		std::vector< ct::GeneralTerm > decomposedTerms;
+		for (const ct::GeneralTerm &currentTerm : currentGroup) {
+			bool wasDecomposed = false;
 
-		for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
-			bool decompositionApplied = false;
-			ct::TensorDecomposition::decomposed_terms_t decTerms =
-				currentDecomposition.apply(currentTerm, &decompositionApplied);
+			for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
+				bool decompositionApplied = false;
+				ct::TensorDecomposition::decomposed_terms_t decTerms =
+					currentDecomposition.apply(currentTerm, &decompositionApplied);
 
-			if (decompositionApplied) {
-				// Only print the decomposed terms if the decomposition actually applied
-				printer << currentTerm << " expands to\n";
+				if (decompositionApplied) {
+					// Only print the decomposed terms if the decomposition actually applied
+					printer << currentTerm << " expands to\n";
 
-				for (ct::GeneralTerm &current : decTerms) {
-					printer << "  " << current << "\n";
-					decomposedTerms.push_back(std::move(current));
+					for (ct::GeneralTerm &current : decTerms) {
+						printer << "  " << current << "\n";
+						decomposedTerms.push_back(std::move(current));
+					}
+
+					wasDecomposed = true;
 				}
+			}
 
-				wasDecomposed = true;
+			if (!wasDecomposed) {
+				// Add the term to the list nonetheless in order to not lose it for further processing
+				decomposedTerms.push_back(currentTerm);
 			}
 		}
 
-		if (!wasDecomposed) {
-			// Add the term to the list nonetheless in order to not lose it for further processing
-			decomposedTerms.push_back(currentTerm);
-		}
+		currentGroup.setTerms(std::move(decomposedTerms));
 	}
 
 	printer << "\n\n";
 
 	printer.printHeadline("Terms after substitutions have been applied");
-	printer << decomposedTerms << "\n\n";
+	printer << termGroups << "\n\n";
 
 	// Factorize terms
-	std::vector< ct::BinaryTerm > factorizedTerms;
 	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
 	ct::ContractionResult::cost_t totalCost = 0;
-	for (const ct::GeneralTerm &currentGeneral : decomposedTerms) {
-		std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
-		ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
 
-		printer << currentGeneral << " factorizes to\n";
-		for (const ct::BinaryTerm &current : currentBinary) {
-			printer << "  " << current << "\n";
-			printer << "  -> ";
-			printer.printScaling(current.getFormalScaling(), resolver);
-			printer << "\n";
+	std::vector< ct::BinaryTermGroup > factorizedTermGroups;
+
+	for (ct::GeneralTermGroup &currentGroup : termGroups) {
+		ct::BinaryTermGroup currentFactorizedGroup(currentGroup.getOriginalTerm());
+
+		for (const ct::GeneralTerm &currentGeneral : currentGroup) {
+			std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
+			ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
+
+			printer << currentGeneral << " factorizes to\n";
+			for (const ct::BinaryTerm &current : currentBinary) {
+				printer << "  " << current << "\n";
+				printer << "  -> ";
+				printer.printScaling(current.getFormalScaling(), resolver);
+				printer << "\n";
+			}
+			printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
+			printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
+
+			totalCost += cost;
+
+			currentFactorizedGroup.accessTerms().insert(currentFactorizedGroup.accessTerms().end(),
+														std::make_move_iterator(currentBinary.begin()),
+														std::make_move_iterator(currentBinary.end()));
 		}
-		printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
-		printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
-		totalCost += cost;
-
-		factorizedTerms.insert(factorizedTerms.end(), currentBinary.begin(), currentBinary.end());
+		factorizedTermGroups.push_back(std::move(currentFactorizedGroup));
 	}
 
 	printer << "Total # of operations: " << totalCost << "\n\n\n";
 
 	printer.printHeadline("Factorized Terms");
-	printer << factorizedTerms << "\n\n";
+	printer << factorizedTermGroups << "\n\n";
 
 
 	// Spin-integration
 	printer.printHeadline("Spin integration");
-	std::vector< ct::BinaryTerm > integratedTerms;
 	cpr::SpinIntegrator integrator;
-	for (const ct::BinaryTerm &currentTerm : factorizedTerms) {
-		printer << currentTerm << " integrates to\n";
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
+	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		ct::BinaryTermGroup integratedGroup(currentGroup.getOriginalTerm());
 
-		for (const ct::IndexSubstitution &currentSub : substitutions) {
-			ct::BinaryTerm copy = currentTerm;
+		for (const ct::BinaryTerm &currentTerm : currentGroup) {
+			printer << currentTerm << " integrates to\n";
 
-			ct::IndexSubstitution::factor_t factor = currentSub.apply(copy.accessResult());
-			assert(factor == 1);
+			const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
 
-			for (ct::Tensor &currentTensor : copy.accessTensors()) {
-				currentSub.apply(currentTensor);
+			for (const ct::IndexSubstitution &currentSub : substitutions) {
+				ct::BinaryTerm copy = currentTerm;
+
+				ct::IndexSubstitution::factor_t factor = currentSub.apply(copy.accessResult());
+				assert(factor == 1);
+
+				for (ct::Tensor &currentTensor : copy.accessTensors()) {
+					currentSub.apply(currentTensor);
+				}
+
+				printer << " - " << copy << "\n";
+
+				integratedGroup.addTerm(std::move(copy));
 			}
-
-			printer << " - " << copy << "\n";
-
-			integratedTerms.push_back(std::move(copy));
 		}
+
+		// Overwrite the group in-place
+		currentGroup = std::move(integratedGroup);
 	}
 	printer << "\n\n";
 
 
 	printer.printHeadline("Spin-integrated terms");
-	printer << integratedTerms << "\n\n";
+	printer << factorizedTermGroups << "\n\n";
 
 	if (args.restrictedOrbitals) {
 		// Spin summation
@@ -411,58 +437,63 @@ int main(int argc, const char **argv) {
 
 		printer.printHeadline("Terms after spin-summation");
 
-		std::vector< ct::BinaryTerm > summedTerms = cpr::SpinSummation::sum(integratedTerms, nonIntermediateNames);
+		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+			std::vector< ct::BinaryTerm > summedTerms =
+				cpr::SpinSummation::sum(currentGroup.getTerms(), nonIntermediateNames);
 
-		printer << summedTerms << "\n\n";
+			currentGroup.setTerms(std::move(summedTerms));
+		}
 
-		integratedTerms = std::move(summedTerms);
+		printer << factorizedTermGroups << "\n\n";
 	}
 
 	// Check and potentially restore particle-1,2-symmetry
 	printer.printHeadline("Particle-1,2-symmetrization");
-
 	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
-	std::vector< ct::BinaryTerm > symmetrizedTerms;
-	symmetrizedTerms.reserve(integratedTerms.size());
-	for (ct::BinaryTerm &currentTerm : integratedTerms) {
-		if (resultTensorNames.find(currentTerm.getResult().getName()) != resultTensorNames.end()) {
-			// This is a result-Tensor -> symmetrize
-			// Because we used the proper prefactor further up, we symmetrize blindly at this point (without checking
-			// whether the given Tensor has the desired symmetry already)
-			const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
 
-			printer << currentTerm << " is symmetrized by:\n";
-			for (const ct::BinaryTerm &currentSymTerm : current) {
-				printer << "  - " << currentSymTerm << "\n";
+	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		for (ct::BinaryTerm &currentTerm : currentGroup) {
+			if (resultTensorNames.find(currentTerm.getResult().getName()) != resultTensorNames.end()) {
+				// This is a result-Tensor -> symmetrize
+				// Because we used the proper prefactor further up, we symmetrize blindly at this point (without
+				// checking whether the given Tensor has the desired symmetry already)
+				const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
 
-				symmetrizedTerms.push_back(currentSymTerm);
+				ct::BinaryTermGroup symmetrizedGroup(currentGroup.getOriginalTerm());
+
+				printer << currentTerm << " is symmetrized by:\n";
+				for (const ct::BinaryTerm &currentSymTerm : current) {
+					printer << "  - " << currentSymTerm << "\n";
+
+					symmetrizedGroup.addTerm(std::move(currentSymTerm));
+				}
 			}
-		} else {
-			// Non-result Tensor -> leave unchanged
-			symmetrizedTerms.push_back(std::move(currentTerm));
 		}
 	}
-	integratedTerms.clear();
 	printer << "\n\n";
 
 
 	printer.printHeadline("Tensor symmetries");
-	for (const ct::BinaryTerm &currentTerm : symmetrizedTerms) {
-		printer << "In " << currentTerm << "\n";
-		printer << "- ";
-		printer.printSymmetries(currentTerm.getResult());
-		printer << "\n";
+	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		printer << "### In group belonging to " << currentGroup.getOriginalTerm() << "\n";
 
-		for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+		for (const ct::BinaryTerm &currentTerm : currentGroup) {
+			printer << "In " << currentTerm << "\n";
 			printer << "- ";
-			printer.printSymmetries(currentTensor);
+			printer.printSymmetries(currentTerm.getResult());
 			printer << "\n";
+
+			for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+				printer << "- ";
+				printer.printSymmetries(currentTensor);
+				printer << "\n";
+			}
 		}
 	}
 	printer << "\n\n";
 
 	printer.printHeadline("Terms after symmetrization");
-	printer << symmetrizedTerms << "\n\n";
+	printer << factorizedTermGroups << "\n\n";
 
 	// Identify redundant terms and simplify equations
 

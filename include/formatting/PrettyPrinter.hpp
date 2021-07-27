@@ -5,6 +5,7 @@
 #include "terms/IndexSpace.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/Term.hpp"
+#include "terms/TermGroup.hpp"
 
 #include <ostream>
 #include <string>
@@ -102,6 +103,32 @@ template< typename T > PrettyPrinter &operator<<(PrettyPrinter &printer, const s
 	printer << "# of elements: " << vector.size() << "\n";
 	for (std::size_t i = 0; i < vector.size(); ++i) {
 		printer << "- " << (i + 1) << ": " << vector[i] << "\n";
+	}
+
+	return printer;
+}
+
+template< typename term_t > PrettyPrinter &operator<<(PrettyPrinter &printer, const Terms::TermGroup< term_t > &group) {
+	static_assert(std::is_base_of_v< Terms::Term, term_t >, "Can't print TermGroup whose elements are no Terms");
+	static_assert(boost::is_detected_v< has_suitable_print_function, term_t >,
+				  "PrettyPrinter::print does not exist for the given Term (required for the << operator)");
+
+	printer << ">>>> " << group.getOriginalTerm() << " <<<<\n";
+	printer << "# of Terms: " << group.size() << "\n";
+
+	for (std::size_t i = 0; i < group.size(); ++i) {
+		printer << "- " << (i + 1) << ": " << group[i] << "\n";
+	}
+
+	return printer;
+}
+
+template< typename term_t >
+PrettyPrinter &operator<<(PrettyPrinter &printer, const std::vector< Terms::TermGroup< term_t > > &groups) {
+	printer << "# of groups: " << groups.size() << "\n";
+
+	for (const Terms::TermGroup< term_t > &currentGroup : groups) {
+		printer << currentGroup;
 	}
 
 	return printer;
