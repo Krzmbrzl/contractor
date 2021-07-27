@@ -9,6 +9,8 @@
 
 namespace Contractor::Terms {
 
+class BinaryTerm;
+
 /**
  * This special kind of Term simply describes the contained Terms as a list of Tensors. No information about
  * the optimal order of factorizing the different Tensors is contained (hence the name).
@@ -20,8 +22,10 @@ public:
 	 */
 	using tensor_list_t = std::vector< Tensor >;
 
-	explicit GeneralTerm(const Tensor &result = Tensor(), Term::factor_t prefactor = {}, const tensor_list_t &tensorList = {});
+	explicit GeneralTerm(const Tensor &result = Tensor(), Term::factor_t prefactor = {},
+						 const tensor_list_t &tensorList = {});
 	explicit GeneralTerm(const Tensor &result, Term::factor_t prefactor, tensor_list_t &&tensorList);
+	explicit GeneralTerm(const BinaryTerm &binary);
 
 	GeneralTerm(const GeneralTerm &) = default;
 	GeneralTerm(GeneralTerm &&other) = default;

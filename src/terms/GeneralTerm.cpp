@@ -1,4 +1,5 @@
 #include "terms/GeneralTerm.hpp"
+#include "terms/BinaryTerm.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -12,6 +13,12 @@ GeneralTerm::GeneralTerm(const Tensor &result, Term::factor_t prefactor, const t
 
 GeneralTerm::GeneralTerm(const Tensor &result, Term::factor_t prefactor, tensor_list_t &&tensorList)
 	: Term(result, prefactor), m_tensors(tensorList) {
+}
+
+GeneralTerm::GeneralTerm(const BinaryTerm &binary) : Term(binary.getResult(), binary.getPrefactor()) {
+	for (const Tensor &currentTensor : binary.getTensors()) {
+		m_tensors.push_back(currentTensor);
+	}
 }
 
 std::size_t GeneralTerm::size() const {
