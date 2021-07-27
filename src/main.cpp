@@ -8,6 +8,9 @@
 #include "processor/SpinIntegrator.hpp"
 #include "processor/SpinSummation.hpp"
 #include "processor/Symmetrizer.hpp"
+#include "terms/BinaryTerm.cpp"
+#include "terms/GeneralTerm.hpp"
+#include "terms/IndexSubstitution.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
 #include <boost/program_options/errors.hpp>
