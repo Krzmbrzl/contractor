@@ -1,15 +1,14 @@
 #include "ExitCodes.hpp"
-#include "formatting/PrettyPrinter.cpp"
-#include "parser/DecompositionParser.cpp"
+#include "formatting/PrettyPrinter.hpp"
 #include "parser/DecompositionParser.hpp"
-#include "parser/GeCCoExportParser.cpp"
-#include "parser/IndexSpaceParser.cpp"
-#include "parser/SymmetryListParser.cpp"
+#include "parser/GeCCoExportParser.hpp"
+#include "parser/IndexSpaceParser.hpp"
+#include "parser/SymmetryListParser.hpp"
 #include "processor/Factorizer.hpp"
 #include "processor/SpinIntegrator.hpp"
 #include "processor/SpinSummation.hpp"
 #include "processor/Symmetrizer.hpp"
-#include "utils/IndexSpaceResolver.cpp"
+#include "utils/IndexSpaceResolver.hpp"
 
 #include <boost/program_options/errors.hpp>
 #include <boost/program_options/options_description.hpp>
