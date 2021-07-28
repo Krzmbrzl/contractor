@@ -161,7 +161,7 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 		}
 
 		if (currentSubstitutionApplied) {
-			result.push_back(GeneralTerm(term.getResult(), term.getPrefactor() * currentSubstitution.getPrefactor(),
+			result.addTerm(GeneralTerm(term.getResult(), term.getPrefactor() * currentSubstitution.getPrefactor(),
 										 std::move(tensorList)));
 
 			substitionApplied = true;
@@ -176,7 +176,7 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 		auto tensorIterable = term.getTensors();
 		tensors.insert(tensors.end(), tensorIterable.begin(), tensorIterable.end());
 
-		result.push_back(GeneralTerm(term.getResult(), term.getPrefactor(), std::move(tensors)));
+		result.addTerm(GeneralTerm(term.getResult(), term.getPrefactor(), std::move(tensors)));
 	}
 
 	if (wasSuccessful) {

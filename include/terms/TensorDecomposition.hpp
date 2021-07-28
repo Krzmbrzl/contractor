@@ -4,6 +4,7 @@
 #include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/Term.hpp"
+#include "terms/CompositeTerm.hpp"
 
 #include <ostream>
 #include <vector>
@@ -32,7 +33,7 @@ public:
 	/**
 	 * The type used for the result of applying a decomposition to a Term
 	 */
-	using decomposed_terms_t = std::vector< GeneralTerm >;
+	using decomposed_terms_t = GeneralCompositeTerm;
 
 	TensorDecomposition(const substitution_list_t &substitutions);
 	TensorDecomposition(substitution_list_t &&substitutions = {});

@@ -54,6 +54,21 @@ public:
 	void print(const Utils::IndexSpaceResolver &resolver);
 	void print(const Terms::TensorDecomposition &decomposition);
 
+	template< typename term_t > void print(const Terms::CompositeTerm< term_t > &composite) {
+		static_assert(std::is_base_of_v< Terms::Term, term_t >, "Can't print TermGroup whose elements are no Terms");
+
+		assert(m_stream != nullptr);
+
+		*m_stream << "{\n";
+		for (const term_t &current : composite) {
+			*m_stream << "  ";
+			print(current);
+			*m_stream << "\n";
+		}
+		*m_stream << "}";
+	}
+
+
 	void printTensorType(const Terms::Tensor &tensor, const Utils::IndexSpaceResolver &resolver);
 	void printSymmetries(const Terms::Tensor &tensor);
 	void printScaling(const Terms::Term::FormalScalingMap &scaling, const Utils::IndexSpaceResolver &resolver);
@@ -112,6 +127,9 @@ template< typename term_t > PrettyPrinter &operator<<(PrettyPrinter &printer, co
 	static_assert(std::is_base_of_v< Terms::Term, term_t >, "Can't print TermGroup whose elements are no Terms");
 	static_assert(boost::is_detected_v< has_suitable_print_function, term_t >,
 				  "PrettyPrinter::print does not exist for the given Term (required for the << operator)");
+	static_assert(
+		boost::is_detected_v< has_suitable_print_function, typename Terms::TermGroup< term_t >::value_type >,
+		"PrettyPrinter::print does not exist for the given TermGroup::value_type (required for the << operator)");
 
 	printer << ">>>> " << group.getOriginalTerm() << " <<<<\n";
 	printer << "# of Terms: " << group.size() << "\n";

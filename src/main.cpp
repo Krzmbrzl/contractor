@@ -9,6 +9,7 @@
 #include "processor/SpinSummation.hpp"
 #include "processor/Symmetrizer.hpp"
 #include "terms/BinaryTerm.cpp"
+#include "terms/CompositeTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/IndexSubstitution.hpp"
 #include "terms/TermGroup.hpp"
@@ -23,6 +24,7 @@
 #include <fstream>
 #include <iostream>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace ct  = Contractor::Terms;
@@ -39,6 +41,10 @@ struct CommandLineArguments {
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
 };
+
+template< typename term_t > bool is_empty(const ct::CompositeTerm< term_t > &composite) {
+	return composite.size() == 0;
+}
 
 int processCommandLine(int argc, const char **argv, CommandLineArguments &args) {
 	boost::program_options::options_description desc(
@@ -237,6 +243,7 @@ int main(int argc, const char **argv) {
 						{ { currentTerm.getResult().getIndices()[2], currentTerm.getResult().getIndices()[3] } }, -1);
 
 
+					// TODO: Do we also have to apply the prefactor to Terms that are already antisymmetric?
 					if (!currentTerm.getResult().getSymmetry().contains(perm1)
 						&& !currentTerm.getResult().getSymmetry().contains(perm2)) {
 						// None of the index pairs is antisymmetric yet -> Antisymmetrization is needed
@@ -277,16 +284,15 @@ int main(int argc, const char **argv) {
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
 
 						// Now add the Term as-is
-						ct::GeneralTermGroup currentGroup(currentTerm);
+						termGroups.push_back(ct::GeneralTermGroup::from(currentTerm));
+
 						// But also with the indices swapped
 						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
 							antisymmetrization.apply(currentTensor);
 						}
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
 
-						currentGroup.addTerm(std::move(currentTerm));
-
-						termGroups.push_back(std::move(currentGroup));
+						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
 					} else {
 						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
 					}
@@ -314,8 +320,14 @@ int main(int argc, const char **argv) {
 	// Apply decomposition
 	printer.printHeadline("Applying substitutions");
 	for (ct::GeneralTermGroup &currentGroup : termGroups) {
-		std::vector< ct::GeneralTerm > decomposedTerms;
-		for (const ct::GeneralTerm &currentTerm : currentGroup) {
+		if (currentGroup.size() != 1) {
+			throw std::runtime_error("Expected groups with exactly one Term in them at this point");
+		}
+
+		ct::GeneralCompositeTerm &currentComposite = currentGroup[0];
+
+		ct::GeneralCompositeTerm newComposite;
+		for (const ct::GeneralTerm &currentTerm : currentComposite) {
 			bool wasDecomposed = false;
 
 			for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
@@ -329,7 +341,13 @@ int main(int argc, const char **argv) {
 
 					for (ct::GeneralTerm &current : decTerms) {
 						printer << "  " << current << "\n";
-						decomposedTerms.push_back(std::move(current));
+
+						newComposite.addTerm(std::move(current));
+					}
+
+					if (wasDecomposed) {
+						throw std::runtime_error(
+							"Multiple decompositions applying to one and the same Term is not yet supported");
 					}
 
 					wasDecomposed = true;
@@ -338,11 +356,12 @@ int main(int argc, const char **argv) {
 
 			if (!wasDecomposed) {
 				// Add the term to the list nonetheless in order to not lose it for further processing
-				decomposedTerms.push_back(currentTerm);
+				newComposite.addTerm(std::move(currentTerm));
 			}
 		}
 
-		currentGroup.setTerms(std::move(decomposedTerms));
+		// Overwrite in-place
+		currentComposite = std::move(newComposite);
 	}
 
 	printer << "\n\n";
@@ -360,25 +379,42 @@ int main(int argc, const char **argv) {
 	for (ct::GeneralTermGroup &currentGroup : termGroups) {
 		ct::BinaryTermGroup currentFactorizedGroup(currentGroup.getOriginalTerm());
 
-		for (const ct::GeneralTerm &currentGeneral : currentGroup) {
-			std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
-			ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
+		for (const ct::GeneralCompositeTerm &currentComposite : currentGroup) {
+			ct::BinaryCompositeTerm resultComposite;
 
-			printer << currentGeneral << " factorizes to\n";
-			for (const ct::BinaryTerm &current : currentBinary) {
-				printer << "  " << current << "\n";
-				printer << "  -> ";
-				printer.printScaling(current.getFormalScaling(), resolver);
-				printer << "\n";
+			for (const ct::GeneralTerm &currentGeneral : currentComposite) {
+				std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
+				ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
+
+				printer << currentGeneral << " factorizes to\n";
+				for (const ct::BinaryTerm &current : currentBinary) {
+					printer << "  " << current << "\n";
+					printer << "  -> ";
+					printer.printScaling(current.getFormalScaling(), resolver);
+					printer << "\n";
+
+					if (current.getResult() != currentComposite.getResult()) {
+						// This Term is not a direct contribution of the original composite Term. Therefore it
+						// must be a Term on its own (factorization does not add any additive components that
+						// require to be packed into a composite term)
+						currentFactorizedGroup.addTerm(std::move(current));
+					} else {
+						// This Term contributes to the result of the original composite. That means that potentially
+						// there are more Terms that also contribute to the same result additively and thus have to be
+						// packed together into a single composite Term.
+						resultComposite.addTerm(std::move(current));
+					}
+				}
+
+				printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
+				printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
+
+				totalCost += cost;
 			}
-			printer << "Estimated cost of carrying out the contraction: " << cost << "\n";
-			printer << "Biggest intermediate's size: " << factorizer.getLastBiggestIntermediateSize() << "\n\n";
 
-			totalCost += cost;
-
-			currentFactorizedGroup.accessTerms().insert(currentFactorizedGroup.accessTerms().end(),
-														std::make_move_iterator(currentBinary.begin()),
-														std::make_move_iterator(currentBinary.end()));
+			// Also add the composite Term for the result
+			assert(resultComposite.size() > 0);
+			currentFactorizedGroup.addTerm(std::move(resultComposite));
 		}
 
 		factorizedTermGroups.push_back(std::move(currentFactorizedGroup));
@@ -397,24 +433,33 @@ int main(int argc, const char **argv) {
 	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
 		ct::BinaryTermGroup integratedGroup(currentGroup.getOriginalTerm());
 
-		for (const ct::BinaryTerm &currentTerm : currentGroup) {
-			printer << currentTerm << " integrates to\n";
+		for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			std::unordered_map< ct::Tensor, ct::BinaryCompositeTerm > integratedCompositeMap;
 
-			const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
+			for (const ct::BinaryTerm &currentTerm : currentComposite) {
+				printer << currentTerm << " integrates to\n";
 
-			for (const ct::IndexSubstitution &currentSub : substitutions) {
-				ct::BinaryTerm copy = currentTerm;
+				const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
 
-				ct::IndexSubstitution::factor_t factor = currentSub.apply(copy.accessResult());
-				assert(factor == 1);
+				for (const ct::IndexSubstitution &currentSub : substitutions) {
+					ct::BinaryTerm copy = currentTerm;
 
-				for (ct::Tensor &currentTensor : copy.accessTensors()) {
-					currentSub.apply(currentTensor);
+					ct::IndexSubstitution::factor_t factor = currentSub.apply(copy.accessResult());
+					assert(factor == 1);
+
+					for (ct::Tensor &currentTensor : copy.accessTensors()) {
+						currentSub.apply(currentTensor);
+					}
+
+					printer << " - " << copy << "\n";
+
+					integratedCompositeMap[copy.getResult()].addTerm(std::move(copy));
 				}
+			}
 
-				printer << " - " << copy << "\n";
-
-				integratedGroup.addTerm(std::move(copy));
+			// Overwrite in-place
+			for (auto &currentPair : integratedCompositeMap) {
+				integratedGroup.addTerm(std::move(currentPair.second));
 			}
 		}
 
@@ -438,10 +483,18 @@ int main(int argc, const char **argv) {
 		printer.printHeadline("Terms after spin-summation");
 
 		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
-			std::vector< ct::BinaryTerm > summedTerms =
-				cpr::SpinSummation::sum(currentGroup.getTerms(), nonIntermediateNames);
+			for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+				std::vector< ct::BinaryTerm > summedTerms =
+					cpr::SpinSummation::sum(currentComposite.getTerms(), nonIntermediateNames);
 
-			currentGroup.setTerms(std::move(summedTerms));
+				// Change in-place
+				currentComposite.setTerms(std::move(summedTerms));
+			}
+
+			// Filter out composite Terms that are empty after the spin-summation
+			currentGroup.accessTerms().erase(
+				std::remove_if(currentGroup.begin(), currentGroup.end(), is_empty< ct::BinaryTerm >),
+				currentGroup.end());
 		}
 
 		printer << factorizedTermGroups << "\n\n";
@@ -452,21 +505,26 @@ int main(int argc, const char **argv) {
 	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
 
 	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
-		for (ct::BinaryTerm &currentTerm : currentGroup) {
-			if (resultTensorNames.find(currentTerm.getResult().getName()) != resultTensorNames.end()) {
+		for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			if (resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
 				// This is a result-Tensor -> symmetrize
 				// Because we used the proper prefactor further up, we symmetrize blindly at this point (without
 				// checking whether the given Tensor has the desired symmetry already)
-				const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
+				std::vector< ct::BinaryTerm > symmetrizedTerms;
 
-				ct::BinaryTermGroup symmetrizedGroup(currentGroup.getOriginalTerm());
+				for (const ct::BinaryTerm &currentTerm : currentComposite) {
+					const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
 
-				printer << currentTerm << " is symmetrized by:\n";
-				for (const ct::BinaryTerm &currentSymTerm : current) {
-					printer << "  - " << currentSymTerm << "\n";
+					printer << currentTerm << " is symmetrized by:\n";
+					for (const ct::BinaryTerm &currentSymTerm : current) {
+						printer << "  - " << currentSymTerm << "\n";
 
-					symmetrizedGroup.addTerm(std::move(currentSymTerm));
+						symmetrizedTerms.push_back(currentSymTerm);
+					}
 				}
+
+				// Change in-place
+				currentComposite.setTerms(symmetrizedTerms);
 			}
 		}
 	}
@@ -477,16 +535,20 @@ int main(int argc, const char **argv) {
 	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
 		printer << "### In group belonging to " << currentGroup.getOriginalTerm() << "\n";
 
-		for (const ct::BinaryTerm &currentTerm : currentGroup) {
-			printer << "In " << currentTerm << "\n";
-			printer << "- ";
-			printer.printSymmetries(currentTerm.getResult());
-			printer << "\n";
+		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			printer << "-------------------------\n";
 
-			for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+			for (const ct::BinaryTerm &currentTerm : currentComposite) {
+				printer << "In " << currentTerm << "\n";
 				printer << "- ";
-				printer.printSymmetries(currentTensor);
+				printer.printSymmetries(currentTerm.getResult());
 				printer << "\n";
+
+				for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+					printer << "- ";
+					printer.printSymmetries(currentTensor);
+					printer << "\n";
+				}
 			}
 		}
 	}

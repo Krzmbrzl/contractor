@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <type_traits>
 #include <unordered_set>
 #include <vector>
 
@@ -384,6 +385,8 @@ namespace details {
 template< typename term_t >
 std::vector< term_t > sum(const std::vector< term_t > &terms,
 						  const std::unordered_set< std::string_view > &nonIntermediateNames) {
+	static_assert(std::is_base_of_v< Terms::Term, term_t >, "Tried to spin-sum non-Term object!");
+
 	std::vector< term_t > summedTerms;
 
 	for (term_t currentTerm : terms) {
@@ -412,8 +415,8 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 				// to get it to work on the result Tensor.
 				Terms::GeneralTerm dummyTerm(Terms::Tensor(), 1, { currentTerm.getResult() });
 
-				bool successful                         = false;
-				std::vector< Terms::GeneralTerm > terms = decomposition.apply(dummyTerm, &successful);
+				bool successful                                      = false;
+				Terms::TensorDecomposition::decomposed_terms_t terms = decomposition.apply(dummyTerm, &successful);
 
 				assert(successful);
 				assert(terms.size() == 1);
@@ -466,8 +469,9 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 
 					assert(successful);
 
-					newResults.insert(newResults.end(), std::make_move_iterator(currentResults.begin()),
-									  std::make_move_iterator(currentResults.end()));
+					for (auto &current : currentResults) {
+						newResults.addTerm(std::move(current));
+					}
 				}
 
 				results = std::move(newResults);
