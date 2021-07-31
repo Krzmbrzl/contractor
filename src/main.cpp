@@ -381,9 +381,10 @@ int main(int argc, const char **argv) {
 
 		for (const ct::GeneralCompositeTerm &currentComposite : currentGroup) {
 			ct::BinaryCompositeTerm resultComposite;
+			std::vector< ct::BinaryTerm > producedTerms;
 
 			for (const ct::GeneralTerm &currentGeneral : currentComposite) {
-				std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral);
+				std::vector< ct::BinaryTerm > currentBinary = factorizer.factorize(currentGeneral, producedTerms);
 				ct::ContractionResult::cost_t cost          = factorizer.getLastFactorizationCost();
 
 				printer << currentGeneral << " factorizes to\n";
@@ -392,6 +393,8 @@ int main(int argc, const char **argv) {
 					printer << "  -> ";
 					printer.printScaling(current.getFormalScaling(), resolver);
 					printer << "\n";
+
+					producedTerms.push_back(current);
 
 					if (current.getResult() != currentComposite.getResult()) {
 						// This Term is not a direct contribution of the original composite Term. Therefore it

@@ -23,7 +23,8 @@ ct::ContractionResult::cost_t Factorizer::getLastBiggestIntermediateSize() const
 	return m_biggestIntermediateSize;
 }
 
-const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm &term) {
+const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm &term,
+														   const std::vector< ct::BinaryTerm > &previousTerms) {
 	// Initialize the best cost for this factorization with the maximum possible
 	// value so that all possible factorizations will result in a better cost than that
 	m_bestCost                = std::numeric_limits< decltype(m_bestCost) >::max();
@@ -33,16 +34,46 @@ const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm
 	std::vector< ct::Tensor > tensors = term.accessTensorList();
 	std::vector< ct::BinaryTerm > factorizedTerms;
 
-	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term);
+	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term, previousTerms);
 	assert(foundFactorization);
 
 	return m_bestFactorization;
 }
 
+struct locate_result_tensor {
+	const ct::Tensor &tensor;
+
+	bool operator()(const ct::BinaryTerm &current) const { return current.getResult() == tensor; }
+};
+
+void ensureUniqueResultTensor(ct::BinaryTerm &term, const std::vector< ct::BinaryTerm > previousTerms) {
+	auto it = std::find_if(previousTerms.begin(), previousTerms.end(), locate_result_tensor{ term.getResult() });
+
+	if (it == previousTerms.end()) {
+		// There are no collisions of the result Tensor with previous terms -> nothing to do
+		return;
+	}
+
+	if (*it == term) {
+		// The terms are completely identical. In that case it is also fine (and important) that
+		// they have the same result tensor -> nothing to do
+		return;
+	}
+
+	// The current Term uses a result Tensor that a previous term is already using but the Terms
+	// themselves aren't actually equal -> modify the result tensor name a bit to make the distinction
+	// between these terms more clear.
+	std::string modifiedName = std::string(term.getResult().getName()) + "'";
+	term.accessResult().setName(modifiedName);
+
+	// Go into another iteration of this funcion to ensure that the new name is not taken already as well
+	ensureUniqueResultTensor(term, previousTerms);
+}
+
 bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 							 const ct::ContractionResult::cost_t &biggestIntermediate,
 							 std::vector< ct::Tensor > &tensors, std::vector< ct::BinaryTerm > &factorizedTerms,
-							 const ct::GeneralTerm &term) {
+							 const ct::GeneralTerm &term, const std::vector< ct::BinaryTerm > &previousTerms) {
 	if (tensors.size() == 0) {
 		// Nothing to factorize anymore
 		if (costSoFar < m_bestCost || (costSoFar == m_bestCost && biggestIntermediate < m_biggestIntermediateSize)) {
@@ -91,7 +122,7 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 		tensors.pop_back();
 
 		// Call the final iteration of this function
-		bool result = doFactorize(cost, biggestIntermediate, tensors, factorizedTerms, term);
+		bool result = doFactorize(cost, biggestIntermediate, tensors, factorizedTerms, term, previousTerms);
 
 		// Back-insert the Tensor again
 		tensors.push_back(std::move(copy));
@@ -152,16 +183,26 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 					intermediateSize *= m_resolver.getMeta(current.getSpace()).getSize();
 				}
 
+				ct::BinaryTerm producedTerm = ct::BinaryTerm(std::move(result.resultTensor), 1.0, left, right);
+
+				// We have to take special precaution that the result Tensor we have produced in this contraction
+				// is not taken already. In that case it could be that although the result Tensors of both terms
+				// are equal, the Terms themselves are not. This can happen if the difference for these terms only
+				// lies somewhere in the contracted indices.
+				// This function makes sure that in this case the name of the current result Tensor is altered until
+				// there is no such collision anymore.
+				ensureUniqueResultTensor(producedTerm, previousTerms);
+
 				// Copy the result Tensor of this Tensor to the list of Tensors available for further
 				// contractions
-				tensors.push_back(result.resultTensor);
+				tensors.push_back(producedTerm.getResult());
 
 				// Store the current contraction
-				factorizedTerms.push_back(ct::BinaryTerm(std::move(result.resultTensor), 1.0, left, right));
+				factorizedTerms.push_back(std::move(producedTerm));
 
 				// Factorize the remaining Tensors recursively
-				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms,
-								term)) {
+				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms, term,
+								previousTerms)) {
 					foundBetterFactorization = true;
 				}
 			}

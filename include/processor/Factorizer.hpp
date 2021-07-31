@@ -18,7 +18,8 @@ class Factorizer {
 public:
 	Factorizer(const Utils::IndexSpaceResolver &resolver);
 
-	const std::vector< Terms::BinaryTerm > &factorize(const Terms::GeneralTerm &term);
+	const std::vector< Terms::BinaryTerm > &factorize(const Terms::GeneralTerm &term,
+													  const std::vector< Terms::BinaryTerm > &previousTerms = {});
 
 	Terms::ContractionResult::cost_t getLastFactorizationCost() const;
 
@@ -32,7 +33,8 @@ protected:
 
 	bool doFactorize(const Terms::ContractionResult::cost_t &costSoFar,
 					 const Terms::ContractionResult::cost_t &biggestIntermediate, std::vector< Terms::Tensor > &tensors,
-					 std::vector< Terms::BinaryTerm > &factorizedTerms, const Terms::GeneralTerm &term);
+					 std::vector< Terms::BinaryTerm > &factorizedTerms, const Terms::GeneralTerm &term,
+					 const std::vector< Terms::BinaryTerm > &previousTerms);
 };
 
 }; // namespace Contractor::Processor

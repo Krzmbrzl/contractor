@@ -184,3 +184,64 @@ TEST(FactorizerTest, factorize) {
 		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediate1, intermediate2, resultTerm));
 	}
 }
+
+TEST(FactorizerTest, resultTensorCollisions) {
+	cp::Factorizer factorizer(resolver);
+
+	{
+		// "Colliding" with identical term -> No change expected
+		// O[abij] = G[klcd] T[abkl] T[cdij]
+		// This is expected to be factorized as (G * T[cdij]) * T[abkl]
+		ct::Tensor O("O", { idx("c"), idx("d"), idx("k"), idx("l") });
+		ct::Tensor G("G", { idx("k"), idx("l"), idx("c"), idx("d") });
+		ct::Tensor T1("T", { idx("a"), idx("b"), idx("k"), idx("l") });
+		ct::Tensor T2("T", { idx("c"), idx("d"), idx("i"), idx("j") });
+		ct::GeneralTerm inTerm(ct::Tensor(O), 1.0,
+							   {
+								   ct::Tensor(G),
+								   ct::Tensor(T1),
+								   ct::Tensor(T2),
+							   });
+
+		ct::Tensor intermediate("G_T", { idx("k"), idx("l"), idx("i"), idx("j") });
+		ct::BinaryTerm intermediateTerm(ct::Tensor(intermediate), 1.0, ct::Tensor(G), ct::Tensor(T2));
+		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
+
+		std::vector< ct::BinaryTerm > alreadyExistingTerms = { intermediateTerm };
+
+		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm, alreadyExistingTerms);
+		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
+
+		ASSERT_EQ(factorizedTerms.size(), 2);
+		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediateTerm, result));
+	}
+	{
+		// Colliding with already existing term -> expect a prime to be added to the intermediate name
+		// O[abij] = G[klcd] T[abkl] T[cdij]
+		// This is expected to be factorized as (G * T[cdij]) * T[abkl]
+		ct::Tensor O("O", { idx("c"), idx("d"), idx("k"), idx("l") });
+		ct::Tensor G("G", { idx("k"), idx("l"), idx("c"), idx("d") });
+		ct::Tensor T1("T", { idx("a"), idx("b"), idx("k"), idx("l") });
+		ct::Tensor T2("T", { idx("c"), idx("d"), idx("i"), idx("j") });
+		ct::GeneralTerm inTerm(ct::Tensor(O), 1.0,
+							   {
+								   ct::Tensor(G),
+								   ct::Tensor(T1),
+								   ct::Tensor(T2),
+							   });
+
+		ct::Tensor originalIntermediate("G_T", { idx("k"), idx("l"), idx("i"), idx("j") });
+		ct::Tensor intermediate("G_T'", { idx("k"), idx("l"), idx("i"), idx("j") });
+		ct::BinaryTerm intermediateTerm(ct::Tensor(intermediate), 1.0, ct::Tensor(G), ct::Tensor(T2));
+		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
+
+		ct::BinaryTerm collidingTerm(originalIntermediate, 1, originalIntermediate);
+		std::vector< ct::BinaryTerm > alreadyExistingTerms = { collidingTerm };
+
+		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm, alreadyExistingTerms);
+		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
+
+		ASSERT_EQ(factorizedTerms.size(), 2);
+		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediateTerm, result));
+	}
+}
