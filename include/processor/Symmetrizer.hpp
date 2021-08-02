@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <numeric>
+#include <optional>
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
@@ -20,6 +21,43 @@ namespace details {
 	template< Terms::Index::Type Type > struct is_index_type {
 		bool operator()(const Terms::Index &index) const { return index.getType() == Type; }
 	};
+
+	std::optional< Terms::Tensor::index_list_t::const_iterator > find_index_by_name(const Terms::Index &index,
+																					const Terms::Term &term) {
+		for (const Terms::Tensor &tensor : term.getTensors()) {
+			auto it =
+				std::find_if(tensor.getIndices().begin(), tensor.getIndices().end(), [index](const Terms::Index &idx) {
+					return idx.getSpace() == index.getSpace() && idx.getID() == index.getID();
+				});
+
+			if (it != tensor.getIndices().end()) {
+				return std::optional(it);
+			}
+		}
+
+		return std::nullopt;
+	}
+
+	void adaptSubstitutionToTerm(Terms::IndexSubstitution &sub, const Terms::Term &term) {
+		for (Terms::IndexSubstitution::index_pair_t &currentPair : sub.accessSubstitutions()) {
+			std::optional< Terms::Tensor::index_list_t::const_iterator > it =
+				find_index_by_name(currentPair.first, term);
+
+			assert(it.has_value());
+
+			currentPair.first = *it.value();
+
+			it = find_index_by_name(currentPair.second, term);
+
+			assert(it.has_value());
+
+			currentPair.second = *it.value();
+
+			// Make sure that we are only exchanging the index name, not the spin (retaining the proper type is taken
+			// care of by the IndexSubstitution class itself).
+			currentPair.second.setSpin(currentPair.first.getSpin());
+		}
+	}
 }; // namespace details
 
 template< typename term_t > class Symmetrizer {
@@ -156,12 +194,21 @@ public:
 			termCopy.accessResult().accessSymmetry().addGenerator(currentSymmetry);
 		}
 
-		for (const Terms::IndexSubstitution &currentSymmetrization : symmetrizations) {
+		for (Terms::IndexSubstitution &currentSymmetrization : symmetrizations) {
 			assert(currentSymmetrization.appliesTo(termCopy.getResult()));
 
 			term_t currentCopy = termCopy;
 
 			Terms::IndexSubstitution::factor_t factor = 1;
+
+			// We have to "adapt" the current symmetrization to the given  Term in order to make
+			// sure that we can also properly symmetrize spin-summed terms such as
+			// O2[aⁿ⁺bⁿ⁺iⁿ⁻jⁿ⁻] += 0.125 * B_T2[a🠑⁺i🠑⁻qⁿ] * B_T2[b🠑⁺j🠑⁻qⁿ]
+			// where we e.g. want to exchange a and b but these indices have different spins in the result
+			// Tensor (which the original symmetrization is based on) and on the rhs of the term.
+			// The "adaption" essentially ensures that we are exchanging indices "by name" which means
+			// ignoring index type and spin.
+			details::adaptSubstitutionToTerm(currentSymmetrization, termCopy);
 
 			// Also apply to all contained Tensors
 			for (Terms::Tensor &currenTensor : currentCopy.accessTensors()) {

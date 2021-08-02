@@ -333,3 +333,31 @@ TEST(SymmetrizerTest, symmetrization) {
 	symmetrization_test_02< ct::GeneralTerm >();
 	symmetrization_test_02< ct::BinaryTerm >();
 }
+
+TEST(SymmetrizerTest, symmetrization_special_cases) {
+	cp::Symmetrizer< ct::GeneralTerm > symmetrizer;
+	{
+		// The indices in the result Tensor have a different spin than they do in the actual Term. This can happen for
+		// spin-summed terms such as
+		//
+		// O2[aⁿ⁺bⁿ⁺iⁿ⁻jⁿ⁻] += T2[bⁿ⁺dⁿ⁺jⁿ⁻lⁿ⁻] BB_T2[a🠑⁺l🠑⁺i🠑⁻d🠑⁻]
+
+		ct::Tensor result("O2", { idx("a+|"), idx("b+|"), idx("i-|"), idx("j-|") });
+
+		ct::GeneralTerm originalTerm(result, 1,
+									 { ct::Tensor("T2", { idx("b+|"), idx("d+|"), idx("j-|"), idx("l-|") }),
+									   ct::Tensor("BB_T2", { idx("a+/"), idx("l+/"), idx("i-/"), idx("d-/") }) });
+
+		std::vector< ct::GeneralTerm > resultTerms = symmetrizer.symmetrize(originalTerm, true);
+
+		ct::GeneralTerm expectedTerm01 = originalTerm;
+		expectedTerm01.accessResult().accessSymmetry().addGenerator(
+			ct::IndexSubstitution::createPermutation({ { idx("a+|"), idx("b+|") }, { idx("i-|"), idx("j-|") } }));
+
+		ct::GeneralTerm expectedTerm02(expectedTerm01.getResult(), 1,
+									   { ct::Tensor("T2", { idx("a+|"), idx("d+|"), idx("i-|"), idx("l-|") }),
+										 ct::Tensor("BB_T2", { idx("b+/"), idx("l+/"), idx("j-/"), idx("d-/") }) });
+
+		ASSERT_THAT(resultTerms, ::testing::UnorderedElementsAre(expectedTerm01, expectedTerm02));
+	}
+}
