@@ -458,6 +458,11 @@ int main(int argc, const char **argv) {
 
 					integratedCompositeMap[copy.getResult()].addTerm(std::move(copy));
 				}
+
+				if (substitutions.empty()) {
+					// This term is not affected by spin-integration -> keep as-is
+					integratedCompositeMap[currentTerm.getResult()].addTerm(currentTerm);
+				}
 			}
 
 			// Overwrite in-place
