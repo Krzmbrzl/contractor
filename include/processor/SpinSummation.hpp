@@ -143,34 +143,39 @@ namespace details {
 	/**
 	 * Creates a mapping from the given Tensor to its corresponding skeleton Tensor.
 	 *
-	 * @param tensor The tensor to map from
+	 * @param originalTensor The original Tensor that is to be replaced when applying this mapping
+	 * @param referenceTensor The Tensor to create the replacement from. It may have a different index order than the
+	 * originalTensor
 	 * @param sign The sign of the desired mapping
 	 * @param antisymmetrize Whether the mapped Tensor is to be antisymmetrized
 	 * @returns A TensorDecomposition that describes the decomposition of the given tensor into the desired mapping
 	 */
-	Terms::TensorDecomposition mapToSkeletonTensor(const Terms::Tensor &tensor, int sign, bool antisymmetrize) {
-		assert(tensor.getIndices().size() >= 4);
+	Terms::TensorDecomposition mapToSkeletonTensor(const Terms::Tensor &originalTensor,
+												   const Terms::Tensor &referenceTensor, int sign,
+												   bool antisymmetrize) {
+		assert(originalTensor.getIndices().size() >= 4);
+		assert(referenceTensor.getIndices().size() >= 4);
 
-		Terms::IndexSubstitution spinFreeMapping = mapToSpinFreeIndices(tensor.getIndices(), sign);
+		Terms::IndexSubstitution spinFreeMapping = mapToSpinFreeIndices(referenceTensor.getIndices(), sign);
 
 		Terms::TensorDecomposition::substitution_list_t substitutions;
 
-		Terms::Tensor replacement                 = tensor;
+		Terms::Tensor replacement                 = referenceTensor;
 		Terms::IndexSubstitution::factor_t factor = spinFreeMapping.apply(replacement);
 
-		substitutions.push_back(Terms::GeneralTerm(tensor, factor, { std::move(replacement) }));
+		substitutions.push_back(Terms::GeneralTerm(originalTensor, factor, { std::move(replacement) }));
 
 		if (antisymmetrize) {
-			Terms::IndexSubstitution antisymmetrization = findAntisymmetry(tensor);
+			Terms::IndexSubstitution antisymmetrization = findAntisymmetry(originalTensor);
 
-			replacement = tensor;
+			replacement = referenceTensor;
 			// First apply the antisymmetrization and then map to spin-free indices
 			factor = (spinFreeMapping * antisymmetrization).apply(replacement);
 
-			substitutions.push_back(Terms::GeneralTerm(tensor, factor, { std::move(replacement) }));
+			substitutions.push_back(Terms::GeneralTerm(originalTensor, factor, { std::move(replacement) }));
 		}
 
-		bool originalTensorIsFullyAntisymmetric = tensor.isAntisymmetrized();
+		bool originalTensorIsFullyAntisymmetric = originalTensor.isAntisymmetrized();
 
 		// Ensure proper symmetry of the skeleton Tensor(s)
 		for (Terms::GeneralTerm &current : substitutions) {
@@ -230,95 +235,6 @@ namespace details {
 	}
 
 	/**
-	 * @returns A TensorDecomposition describing the result of processing the given Tensor
-	 */
-	Terms::TensorDecomposition processTensor(const Terms::Tensor &tensor) {
-		std::size_t relevantIndexCount = getRelevantIndexCount(tensor);
-
-		if (relevantIndexCount % 2 != 0) {
-			// Only allow even number of (relevant) indices
-			throw std::runtime_error("Can't spin-sum a Tensor with an uneven amount of (relevant) indices");
-		}
-
-		spin_bitset spinCase = determineSpinCase(tensor);
-
-		const spin_bitset allBeta = (1 << relevantIndexCount) - 1;
-		const spin_bitset allAlpha;
-
-		if (relevantIndexCount == 0) {
-			// Nothing to do for this Tensor
-			return {};
-		}
-		if (relevantIndexCount == 2) {
-			if (spinCase != allAlpha && spinCase != allBeta) {
-				// Mixed-spin cases should not occur for 2-index Tensors
-				throw std::runtime_error("Invalid spin-case for 2-index Tensor encountered during spin-summation");
-			}
-
-			// In the 2-index case it doesn't matter whether the result is all-alpha or all-beta as both are the same.
-			// Thus we might as well forget about the explicit spin of the indices and instead convert the indices to
-			// spin-free ones in both cases (turning both cases into equal expressions).
-			return replaceTensorWith(tensor, { mapToSpinFreeIndices(tensor.getIndices()) });
-		}
-		if (relevantIndexCount == 4) {
-			if (!tensor.isPartiallyAntisymmetrized()) {
-				// Without this property we can't map the Tensor to a skeleton Tensor (without further consideration)
-				std::cerr << tensor << std::endl;
-				throw std::runtime_error(
-					"Unable to spin-sum a 4-index Tensor that is not at least partially antisymmetric");
-			}
-			if (!indexGroupsAreSameSpace(tensor)) {
-				throw std::runtime_error("Unsupported case encountered in spin-summation (creator and/or annihilator "
-										 "contain indices of different index spaces)");
-			}
-			if (countIndexType(tensor.getIndices(), Terms::Index::Type::Creator) != 2) {
-				throw std::runtime_error("Expected 4-index Tensor to have 2 creator and 2 annihilator indices");
-			}
-
-			// Until here we have verified that we have a Tensor that has 4 relevant indices of which 2 are creator
-			// indices (and thus the other 2 are annihilator indices). Furthermore we have ensured that both creators
-			// and both annihilators refer to the same index space. And finally we know that the Tensor is at least
-			// antisymmetric with regards to exchange of the two creator or the two annihilator indices. Under these
-			// preconditions we can map all mixed-spin cases to a single "skeleton Tensor" that is the same (except for
-			// the sign) for all mixed-spin cases. Thus in order to arrive at the skeleton Tensor we only map the
-			// indices to spin-free ones and account for the sign. The all-alpha and all-beta cases are the same
-			// (spin-reversal symmetry) and can be mapped to these skeleton Tensors by antisymmetrization: t[ab,ij] =
-			// T[ab,ij] - T[ba,ij] It is essential for only partial antisymmetric Tensors to perform this
-			// antisymmetrization over the index pair that is also antisymmetric in the original Tensor. For fully
-			// antisymmetric Tensors the choice over which index pair is antisymmetrized doesn't matter.
-			//
-			// Note that if the original Tensor is fully antisymmetric, the skeleton Tensors produced in this way have
-			// only particle-1,2-symmetry (column-symmetry). If the original Tensor is only partially antisymmetric,
-			// the skeleton Tensor does not show any symmetry.
-			int sign            = 1;
-			bool antisymmetrize = false;
-			switch (spinCase.to_ullong()) {
-				case 0b0000:
-				case 0b1111:
-					// all-alpha or all-beta
-					antisymmetrize = true;
-					break;
-				case 0b1001:
-				case 0b0110:
-					sign = -1;
-					// mixed-spin case that will be mapped to the negative skeleton Tensor
-					// Fallthrough
-				case 0b0101:
-				case 0b1010:
-					// mixed-spin case that will be mapped to the skeleton Tensor as-is
-					break;
-				default:
-					throw std::runtime_error("Encountered unexpected spin-case during spin summation");
-			}
-
-			return mapToSkeletonTensor(tensor, sign, antisymmetrize);
-		}
-
-		// We currently don't support Tensors with more that 4 indices
-		throw std::runtime_error("Ran into unimplemented code part during spin summation");
-	}
-
-	/**
 	 * @returns Whether the given spinCase is consider to be a "canonical spin case"
 	 */
 	bool isCanonicalSpinCase(spin_bitset spinCase, std::size_t relevantIndexCount) {
@@ -370,6 +286,121 @@ namespace details {
 
 		// Apply the spin-flip
 		Terms::IndexSubstitution(std::move(spinFlipMapping)).apply(tensor);
+	}
+
+	/**
+	 * @returns A TensorDecomposition describing the result of processing the given Tensor
+	 */
+	Terms::TensorDecomposition processTensor(const Terms::Tensor &tensor) {
+		std::size_t relevantIndexCount = getRelevantIndexCount(tensor);
+
+		if (relevantIndexCount % 2 != 0) {
+			// Only allow even number of (relevant) indices
+			throw std::runtime_error("Can't spin-sum a Tensor with an uneven amount of (relevant) indices");
+		}
+
+		spin_bitset spinCase = determineSpinCase(tensor);
+
+		const spin_bitset allBeta = (1 << relevantIndexCount) - 1;
+		const spin_bitset allAlpha;
+
+		if (relevantIndexCount == 0) {
+			// Nothing to do for this Tensor
+			return {};
+		}
+		if (relevantIndexCount == 2) {
+			if (spinCase != allAlpha && spinCase != allBeta) {
+				// Mixed-spin cases should not occur for 2-index Tensors
+				throw std::runtime_error("Invalid spin-case for 2-index Tensor encountered during spin-summation");
+			}
+
+			// In the 2-index case it doesn't matter whether the result is all-alpha or all-beta as both are the same.
+			// Thus we might as well forget about the explicit spin of the indices and instead convert the indices to
+			// spin-free ones in both cases (turning both cases into equal expressions).
+			return replaceTensorWith(tensor, { mapToSpinFreeIndices(tensor.getIndices()) });
+		}
+		if (relevantIndexCount == 4) {
+			if (!tensor.isPartiallyAntisymmetrized()) {
+				// Without this property we can't map the Tensor to a skeleton Tensor (without further consideration)
+				std::cerr << tensor << std::endl;
+				throw std::runtime_error(
+					"Unable to spin-sum a 4-index Tensor that is not at least partially antisymmetric");
+			}
+			if (!indexGroupsAreSameSpace(tensor)) {
+				throw std::runtime_error("Unsupported case encountered in spin-summation (creator and/or annihilator "
+										 "contain indices of different index spaces)");
+			}
+			if (countIndexType(tensor.getIndices(), Terms::Index::Type::Creator) != 2) {
+				throw std::runtime_error("Expected 4-index Tensor to have 2 creator and 2 annihilator indices");
+			}
+
+			// Until here we have verified that we have a Tensor that has 4 relevant indices of which 2 are creator
+			// indices (and thus the other 2 are annihilator indices). Furthermore we have ensured that both creators
+			// and both annihilators refer to the same index space. And finally we know that the Tensor is at least
+			// antisymmetric with regards to exchange of the two creator or the two annihilator indices. Under these
+			// preconditions we can map all mixed-spin cases to a sin-free "skeleton Tensor".
+			// In order to arrive at the skeleton tensor, the tensor must first be transformed such that its spin#
+			// structure is alpha, beta, alpha, beta. To do so, we have to use the antisymmetry of our tensor which
+			// allows us to exchange either the two creators or the two annihilators. Depending on the original spin
+			// case, this either leads to the desired spin pattern directly or to its inverse beta, alpha, beta, alpha.
+			// In the latter case we can use the spin-inversion symmetry to arrive at the desired spin pattern.
+			//
+			// The all-alpha and all-beta cases are the same (spin-reversal symmetry) and can be mapped to these
+			// skeleton Tensors by antisymmetrization: t[ab,ij] = T[ab,ij] - T[ba,ij] It is essential for only partial
+			// antisymmetric Tensors to perform this antisymmetrization over the index pair that is also antisymmetric
+			// in the original Tensor. For fully antisymmetric Tensors the choice over which index pair is
+			// antisymmetrized doesn't matter.
+			//
+			// Note that if the original Tensor is fully antisymmetric, the skeleton Tensors produced in this way have
+			// only particle-1,2-symmetry (column-symmetry). If the original Tensor is only partially antisymmetric,
+			// the skeleton Tensor does not show any symmetry.
+
+			// Find the Tensor's antisymmetry
+			Terms::IndexSubstitution antisymmetry = findAntisymmetry(tensor);
+
+			bool antisymmetrize    = false;
+			bool applyAntisymmetry = false;
+			switch (spinCase.to_ullong()) {
+				case 0b0000:
+				case 0b1111:
+					// all-alpha or all-beta
+					antisymmetrize = true;
+					break;
+				case 0b1001:
+				case 0b0110:
+					// Before mapping to the skeleton Tensor we first have to bring the Tensor into the
+					// "canonical" spin case (alpha beta alpha beta). We do this by using the antisymmetry
+					// of one of the index pairs. Note that it doesn't matter which pair we exchange in this
+					// case as either we'll arrive at the canonical spin case directly or we can do so by
+					// additionally applying an implicit spin inversion which is always permittable since we
+					// are assuming restricted orbitals anyway.
+					applyAntisymmetry = true;
+					// Fallthrough
+				case 0b0101:
+					// This case can be converted to the canonical spin case by a simple spin-inversion
+					// (without the need of first exchanging one of the index pairs)
+				case 0b1010:
+					// mixed-spin case that will be mapped to the skeleton Tensor as-is
+					break;
+				default:
+					throw std::runtime_error("Encountered unexpected spin-case during spin summation");
+			}
+
+			if (applyAntisymmetry) {
+				Terms::Tensor copy = tensor;
+				int sign           = antisymmetry.apply(copy);
+
+				assert(copy != tensor);
+				assert(sign == -1);
+
+				return mapToSkeletonTensor(tensor, copy, sign, antisymmetrize);
+			} else {
+				return mapToSkeletonTensor(tensor, tensor, 1, antisymmetrize);
+			}
+		}
+
+		// We currently don't support Tensors with more that 4 indices
+		throw std::runtime_error("Ran into unimplemented code part during spin summation");
 	}
 
 }; // namespace details

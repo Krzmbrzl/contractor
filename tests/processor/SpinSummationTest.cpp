@@ -229,7 +229,15 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 
 				std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
 
-				ct::Tensor expectedResultTensor("O", { idx("a+|"), idx("b+|"), idx("i-|"), idx("j-|") });
+				ct::Tensor expectedResultTensor;
+				if (spinSpec == "abba") {
+					// In this case we first have to transform to the needed spin case abab before converting
+					// to the skeleton Tensor. This is done by using the antisymmetry of the Tensor (followed
+					// by spin inversion which is allowed due to usage of restricted orbitals)
+					expectedResultTensor = ct::Tensor("O", { idx("b+|"), idx("a+|"), idx("i-|"), idx("j-|") });
+				} else {
+					expectedResultTensor = ct::Tensor("O", { idx("a+|"), idx("b+|"), idx("i-|"), idx("j-|") });
+				}
 				if (fullAntisymmetrization) {
 					// The column symmetry of the skeleton Tensor only applies, if the original Tensor was fully
 					// antisymmetric
@@ -300,7 +308,14 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 
 				std::vector< ct::GeneralTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
 
-				ct::Tensor expectedH("H", { idx("a+|"), idx("b+|"), idx("k-|"), idx("l-|") });
+				ct::Tensor expectedH;
+				if (spinSpec == "abba" || spinSpec == "baab") {
+					// In order to transform to the required spin case, antisymmetrization (and spin inversion) is
+					// necessary first
+					expectedH = ct::Tensor("H", { idx("b+|"), idx("a+|"), idx("k-|"), idx("l-|") });
+				} else {
+					expectedH = ct::Tensor("H", { idx("a+|"), idx("b+|"), idx("k-|"), idx("l-|") });
+				}
 				if (fullAntisymmetrization) {
 					// The column symmetry of the skeleton Tensor only applies, if the original Tensor was fully
 					// antisymmetric
