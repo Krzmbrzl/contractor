@@ -192,6 +192,9 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 				// This function makes sure that in this case the name of the current result Tensor is altered until
 				// there is no such collision anymore.
 				ensureUniqueResultTensor(producedTerm, previousTerms);
+				// We have to do the same with the current factorized terms to also avoid name clashes within the
+				// currently factorized term
+				ensureUniqueResultTensor(producedTerm, factorizedTerms);
 
 				// Copy the result Tensor of this Tensor to the list of Tensors available for further
 				// contractions
