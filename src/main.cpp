@@ -257,6 +257,8 @@ int main(int argc, const char **argv) {
 							antisymmetrization = perm1;
 						}
 
+						ct::GeneralTermGroup group(currentTerm);
+
 						// Store the about-to-be-created symmetry on the result Tensor
 						currentTerm.accessResult().accessSymmetry().addGenerator(antisymmetrization);
 
@@ -283,8 +285,10 @@ int main(int argc, const char **argv) {
 
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
 
+						ct::GeneralCompositeTerm composite;
+
 						// Now add the Term as-is
-						termGroups.push_back(ct::GeneralTermGroup::from(currentTerm));
+						composite.addTerm(currentTerm);
 
 						// But also with the indices swapped
 						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
@@ -292,7 +296,11 @@ int main(int argc, const char **argv) {
 						}
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
 
-						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
+						composite.addTerm(std::move(currentTerm));
+
+						group.addTerm(std::move(composite));
+
+						termGroups.push_back(std::move(group));
 					} else {
 						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
 					}
