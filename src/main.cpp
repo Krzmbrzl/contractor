@@ -262,10 +262,13 @@ int main(int argc, const char **argv) {
 						// Store the about-to-be-created symmetry on the result Tensor
 						currentTerm.accessResult().accessSymmetry().addGenerator(antisymmetrization);
 
-						double prefactor = 1.0 / 4.0;
-						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+						double prefactor = 1;
+						for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
 							// For every index-pair in the result Tensor that sit on the same Tensor on the rhs of the
-							// equation, the prefactor is increased by a factor of two
+							// equation, the prefactor is multiplied by a factor of 1/2.
+							// This is the same as if we were to start with a prefactor of 1/4 and multiplied it by 2
+							// for every index pair of our result Tensor that sits on different Tensors on the rhs of
+							// the equation
 							auto it1 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
 												 currentTerm.getResult().getIndices()[0]);
 							auto it2 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
@@ -276,10 +279,10 @@ int main(int argc, const char **argv) {
 												 currentTerm.getResult().getIndices()[3]);
 
 							if (it1 != currentTensor.getIndices().end() && it2 != currentTensor.getIndices().end()) {
-								prefactor *= 2;
+								prefactor *= 0.5;
 							}
 							if (it3 != currentTensor.getIndices().end() && it4 != currentTensor.getIndices().end()) {
-								prefactor *= 2;
+								prefactor *= 0.5;
 							}
 						}
 
