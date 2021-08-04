@@ -235,81 +235,61 @@ int main(int argc, const char **argv) {
 					std::cerr << "Found 4-index result Tensor that is not of type [virt. virt., occ. occ.]"
 							  << std::endl;
 					return Contractor::ExitCodes::UNEXPECTED_RESULT_TENSOR;
-				} else {
-					// Check if antisymmetrization is needed
-					ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation(
-						{ { currentTerm.getResult().getIndices()[0], currentTerm.getResult().getIndices()[1] } }, -1);
-					ct::IndexSubstitution perm2 = ct::IndexSubstitution::createPermutation(
-						{ { currentTerm.getResult().getIndices()[2], currentTerm.getResult().getIndices()[3] } }, -1);
-
-
-					if (!currentTerm.getResult().getSymmetry().contains(perm1)
-						&& !currentTerm.getResult().getSymmetry().contains(perm2)) {
-						// None of the index pairs is antisymmetric yet -> Antisymmetrization is needed
-						ct::IndexSubstitution antisymmetrization;
-						// TODO: This is assuming that the index structure is ab/ij
-						if (resolver.getMeta(resolver.resolve("occupied")).getSize()
-							> resolver.getMeta(resolver.resolve("virtual")).getSize()) {
-							// The occupied space is larger than the virtual one -> exchange occupied indices
-							antisymmetrization = perm2;
-						} else {
-							// The virtual space is larger than the occupied one -> exchange virtual indices
-							antisymmetrization = perm1;
-						}
-
-						ct::GeneralTermGroup group(currentTerm);
-
-						// Store the about-to-be-created symmetry on the result Tensor
-						currentTerm.accessResult().accessSymmetry().addGenerator(antisymmetrization);
-
-						double prefactor = 1;
-						for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
-							// For every index-pair in the result Tensor that sit on the same Tensor on the rhs of the
-							// equation, the prefactor is multiplied by a factor of 1/2.
-							// This is the same as if we were to start with a prefactor of 1/4 and multiplied it by 2
-							// for every index pair of our result Tensor that sits on different Tensors on the rhs of
-							// the equation
-							auto it1 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
-												 currentTerm.getResult().getIndices()[0]);
-							auto it2 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
-												 currentTerm.getResult().getIndices()[1]);
-							auto it3 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
-												 currentTerm.getResult().getIndices()[2]);
-							auto it4 = std::find(currentTensor.getIndices().begin(), currentTensor.getIndices().end(),
-												 currentTerm.getResult().getIndices()[3]);
-
-							if (it1 != currentTensor.getIndices().end() && it2 != currentTensor.getIndices().end()) {
-								prefactor *= 0.5;
-							}
-							if (it3 != currentTensor.getIndices().end() && it4 != currentTensor.getIndices().end()) {
-								prefactor *= 0.5;
-							}
-						}
-
-						std::cout << "Prefactor: " << prefactor << std::endl;
-
-						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
-
-						ct::GeneralCompositeTerm composite;
-
-						// Now add the Term as-is
-						composite.addTerm(currentTerm);
-
-						// But also with the indices swapped
-						for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
-							antisymmetrization.apply(currentTensor);
-						}
-						currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
-
-						composite.addTerm(std::move(currentTerm));
-
-						group.addTerm(std::move(composite));
-
-						termGroups.push_back(std::move(group));
-					} else {
-						termGroups.push_back(ct::GeneralTermGroup::from(std::move(currentTerm)));
-					}
 				}
+
+				ct::GeneralTermGroup group(currentTerm);
+
+				// This term is to be symmetrized (particle-1,2-symmetry) in the end. If this term does show this
+				// symmetry already, we have to add a prefactor of 1/2 here in order to cancel the symmetrization.
+				if (currentTerm.getResult().isAntisymmetrized()) {
+					// Full antisymmetrization implies particle-1,2-symmetry
+					currentTerm.setPrefactor(currentTerm.getPrefactor() * 0.5);
+				}
+
+				// Check if antisymmetrization is needed
+				ct::IndexSubstitution perm1 = ct::IndexSubstitution::createPermutation(
+					{ { currentTerm.getResult().getIndices()[0], currentTerm.getResult().getIndices()[1] } }, -1);
+				ct::IndexSubstitution perm2 = ct::IndexSubstitution::createPermutation(
+					{ { currentTerm.getResult().getIndices()[2], currentTerm.getResult().getIndices()[3] } }, -1);
+
+
+				if (!currentTerm.getResult().getSymmetry().contains(perm1)
+					&& !currentTerm.getResult().getSymmetry().contains(perm2)) {
+					// None of the index pairs is antisymmetric yet -> Antisymmetrization is needed
+					ct::IndexSubstitution antisymmetrization;
+					// TODO: This is assuming that the index structure is ab/ij
+					if (resolver.getMeta(resolver.resolve("occupied")).getSize()
+						> resolver.getMeta(resolver.resolve("virtual")).getSize()) {
+						// The occupied space is larger than the virtual one -> exchange occupied indices
+						antisymmetrization = perm2;
+					} else {
+						// The virtual space is larger than the occupied one -> exchange virtual indices
+						antisymmetrization = perm1;
+					}
+
+					// Store the about-to-be-created symmetry on the result Tensor
+					currentTerm.accessResult().accessSymmetry().addGenerator(antisymmetrization);
+
+					ct::GeneralCompositeTerm composite;
+
+					// Now add the Term as-is
+					composite.addTerm(currentTerm);
+
+					// But also with the indices swapped
+					for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+						antisymmetrization.apply(currentTensor);
+					}
+					currentTerm.setPrefactor(currentTerm.getPrefactor() * -1);
+
+					composite.addTerm(std::move(currentTerm));
+
+					group.addTerm(std::move(composite));
+				} else {
+					group.addTerm(std::move(currentTerm));
+				}
+
+				termGroups.push_back(std::move(group));
+
 				break;
 			}
 			default:
