@@ -243,15 +243,15 @@ int main(int argc, const char **argv) {
 						{ { currentTerm.getResult().getIndices()[2], currentTerm.getResult().getIndices()[3] } }, -1);
 
 
-					// TODO: Do we also have to apply the prefactor to Terms that are already antisymmetric?
 					if (!currentTerm.getResult().getSymmetry().contains(perm1)
 						&& !currentTerm.getResult().getSymmetry().contains(perm2)) {
 						// None of the index pairs is antisymmetric yet -> Antisymmetrization is needed
 						ct::IndexSubstitution antisymmetrization;
+						// TODO: This is assuming that the index structure is ab/ij
 						if (resolver.getMeta(resolver.resolve("occupied")).getSize()
 							> resolver.getMeta(resolver.resolve("virtual")).getSize()) {
 							// The occupied space is larger than the virtual one -> exchange occupied indices
-							antisymmetrization = perm1;
+							antisymmetrization = perm2;
 						} else {
 							// The virtual space is larger than the occupied one -> exchange virtual indices
 							antisymmetrization = perm1;
@@ -285,6 +285,8 @@ int main(int argc, const char **argv) {
 								prefactor *= 0.5;
 							}
 						}
+
+						std::cout << "Prefactor: " << prefactor << std::endl;
 
 						currentTerm.setPrefactor(currentTerm.getPrefactor() * prefactor);
 
@@ -523,6 +525,7 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Particle-1,2-symmetrization");
 	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
 
+	// TODO: Only symmetrize O2 itself, not the contractions contributing to it
 	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
 		for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
 			if (resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
