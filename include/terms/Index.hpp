@@ -67,7 +67,15 @@ public:
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
 
 	friend constexpr bool operator<(const Index &lhs, const Index &rhs) {
-		return lhs.getSpace() < rhs.getSpace() && lhs.getID() < rhs.getID() && lhs.getSpin() < rhs.getSpin();
+		if (lhs.getSpace() != rhs.getSpace()) {
+			return lhs.getSpace() < rhs.getSpace();
+		}
+
+		if (lhs.getID() != rhs.getID()) {
+			return lhs.getID() < rhs.getID();
+		}
+
+		return lhs.getSpin() < rhs.getSpin();
 	}
 
 	friend std::ostream &operator<<(std::ostream &out, Spin spin) {
