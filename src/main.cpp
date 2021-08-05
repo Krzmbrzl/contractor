@@ -15,6 +15,7 @@
 #include "terms/TermGroup.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/program_options/errors.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -209,8 +210,6 @@ int main(int argc, const char **argv) {
 
 	// Verify that all Terms are what we expect them to be
 	for (ct::GeneralTerm &currentTerm : initialTerms) {
-		resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
-
 		for (const ct::Tensor &currenTensor : currentTerm.getTensors()) {
 			baseTensorNameStrings.insert(std::string(currenTensor.getName()));
 		}
@@ -219,6 +218,8 @@ int main(int argc, const char **argv) {
 		switch (currentTerm.getResult().getIndices().size()) {
 			case 0:
 			case 2:
+				resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
+
 				// These are expected quantities that don't need any antisymmtrization
 				termGroups.push_back(ct::GeneralTermGroup::from(currentTerm));
 				break;
@@ -236,6 +237,14 @@ int main(int argc, const char **argv) {
 							  << std::endl;
 					return Contractor::ExitCodes::UNEXPECTED_RESULT_TENSOR;
 				}
+
+				// Append "-u" for "unsymmetric" so that we can use the original Tensor name for the symmetrized
+				// result in the end.
+				ct::Tensor &renamedResultTensor = currentTerm.accessResult();
+				renamedResultTensor.setName(std::string(renamedResultTensor.getName()) + "-u");
+
+				resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
+
 
 				ct::GeneralTermGroup group(currentTerm);
 
@@ -501,37 +510,6 @@ int main(int argc, const char **argv) {
 		printer << factorizedTermGroups << "\n\n";
 	}
 
-	// Check and potentially restore particle-1,2-symmetry
-	printer.printHeadline("Particle-1,2-symmetrization");
-	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
-
-	// TODO: Only symmetrize O2 itself, not the contractions contributing to it
-	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
-		for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
-			if (resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
-				// This is a result-Tensor -> symmetrize
-				// Because we used the proper prefactor further up, we symmetrize blindly at this point (without
-				// checking whether the given Tensor has the desired symmetry already)
-				std::vector< ct::BinaryTerm > symmetrizedTerms;
-
-				for (const ct::BinaryTerm &currentTerm : currentComposite) {
-					const std::vector< ct::BinaryTerm > &current = symmetrizer.symmetrize(currentTerm, true);
-
-					printer << currentTerm << " is symmetrized by:\n";
-					for (const ct::BinaryTerm &currentSymTerm : current) {
-						printer << "  - " << currentSymTerm << "\n";
-
-						symmetrizedTerms.push_back(currentSymTerm);
-					}
-				}
-
-				// Change in-place
-				currentComposite.setTerms(symmetrizedTerms);
-			}
-		}
-	}
-	printer << "\n\n";
-
 
 	printer.printHeadline("Tensor symmetries");
 	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
@@ -556,8 +534,41 @@ int main(int argc, const char **argv) {
 	}
 	printer << "\n\n";
 
-	printer.printHeadline("Terms after symmetrization");
-	printer << factorizedTermGroups << "\n\n";
+
+	printer.printHeadline("Symmetrization of results");
+
+	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
+
+	std::unordered_set< ct::Tensor > toBeSymmetrizedResultTensors;
+	for (const ct::BinaryTermGroup currentGroup : factorizedTermGroups) {
+		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			if (currentComposite.getResult().getIndices().size() == 4
+				&& resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
+				toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
+			}
+		}
+	}
+
+	for (const ct::Tensor &currentResult : toBeSymmetrizedResultTensors) {
+		assert(boost::algorithm::ends_with(currentResult.getName(), "-u"));
+
+		ct::Tensor symmetricResult = currentResult;
+		symmetricResult.setName(currentResult.getName().substr(0, currentResult.getName().size() - 2));
+
+		ct::BinaryTerm term(symmetricResult, 1, currentResult);
+
+		std::vector< ct::BinaryTerm > symmetrizedTerms = symmetrizer.symmetrize(term, true);
+
+		ct::BinaryCompositeTerm composite(std::move(symmetrizedTerms));
+
+		ct::BinaryTermGroup group(ct::GeneralTerm(std::move(term)));
+		group.addTerm(std::move(composite));
+
+		printer << group << "\n";
+
+		factorizedTermGroups.push_back(std::move(group));
+	}
+
 
 	// Identify redundant terms and simplify equations
 
