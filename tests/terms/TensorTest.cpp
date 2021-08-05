@@ -688,3 +688,16 @@ TEST(TensorTest, antisymmetric) {
 		ASSERT_FALSE(T.isPartiallyAntisymmetrized());
 	}
 }
+
+TEST(TensorTest, canonicalizeIndices) {
+	{
+		ct::Tensor tensor("T", { idx("b+"), idx("a+") });
+		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
+
+		ASSERT_FALSE(tensor.hasCanonicalIndexSequence());
+		ASSERT_EQ(tensor.canonicalizeIndices(), -1);
+		ASSERT_TRUE(tensor.hasCanonicalIndexSequence());
+
+		ASSERT_THAT(tensor.getIndices(), ::testing::ElementsAre(idx("a+"), idx("b+")));
+	}
+}

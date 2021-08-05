@@ -169,6 +169,20 @@ public:
 	 */
 	void sortIndices();
 
+	/**
+	 * @returns Whether this Tensor is using its "canonical" index represenation (considering
+	 * its symmetry)
+	 */
+	bool hasCanonicalIndexSequence() const;
+
+	/**
+	 * Brings the indices in this Tensor into their "canonical" sequence (based on this
+	 * Tensor's index symmetry)
+	 *
+	 * @returns The factor that is associated with this transformation
+	 */
+	int canonicalizeIndices();
+
 protected:
 	index_list_t m_indices;
 	std::string m_name;

@@ -337,5 +337,23 @@ void Tensor::sortIndices() {
 	m_symmetry.setRootSequence(m_indices);
 }
 
+bool Tensor::hasCanonicalIndexSequence() const {
+	return m_indices == m_symmetry.getCanonicalRepresentation();
+}
+
+int Tensor::canonicalizeIndices() {
+	if (hasCanonicalIndexSequence()) {
+		return 1;
+	}
+
+	m_indices = m_symmetry.getCanonicalRepresentation();
+
+	int factor = m_symmetry.getCanonicalRepresentationFactor();
+
+	m_symmetry.setRootSequence(m_indices);
+
+	return factor;
+}
+
 
 }; // namespace Contractor::Terms
