@@ -32,9 +32,9 @@ public:
 	 */
 	struct Element {
 		std::vector< Index > indexSequence;
-		float factor = 1.0f;
+		int factor = 1.0f;
 
-		Element(const std::vector< Index > &seq = {}, float factor = 1.0f) : indexSequence(seq), factor(factor) {}
+		Element(const std::vector< Index > &seq = {}, int factor = 1.0f) : indexSequence(seq), factor(factor) {}
 		Element(const Element &other) = default;
 		Element(Element &&other)      = default;
 
@@ -126,7 +126,7 @@ public:
 	/**
 	 * The factor that is associated with turning the set root sequence into the "canonical" one
 	 */
-	float getCanonicalRepresentationFactor() const;
+	int getCanonicalRepresentationFactor() const;
 
 	/**
 	 * Given the generators of this group, this function will generate all permutation operations.

@@ -160,8 +160,8 @@ const std::vector< Index > &PermutationGroup::getCanonicalRepresentation() const
 	return m_permutations.empty() ? empty : m_permutations[0].indexSequence;
 }
 
-float PermutationGroup::getCanonicalRepresentationFactor() const {
-	return m_permutations.empty() ? 1.0f : m_permutations[0].factor;
+int PermutationGroup::getCanonicalRepresentationFactor() const {
+	return m_permutations.empty() ? 1 : m_permutations[0].factor;
 }
 
 
