@@ -53,6 +53,7 @@ public:
 
 	friend bool operator==(const Term &lhs, const Term &rhs);
 	friend bool operator!=(const Term &lhs, const Term &rhs);
+	friend bool operator<(const Term &lhs, const Term &rhs);
 
 	friend std::ostream &operator<<(std::ostream &stream, const Term &term);
 

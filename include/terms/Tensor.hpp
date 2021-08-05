@@ -65,6 +65,7 @@ public:
 
 	friend bool operator==(const Tensor &lhs, const Tensor &rhs);
 	friend bool operator!=(const Tensor &lhs, const Tensor &rhs);
+	friend bool operator<(const Tensor &lhs, const Tensor &rhs);
 
 	friend std::ostream &operator<<(std::ostream &out, const Tensor &element);
 

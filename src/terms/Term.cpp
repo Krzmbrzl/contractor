@@ -15,6 +15,29 @@ bool operator!=(const Term &lhs, const Term &rhs) {
 	return !(lhs == rhs);
 }
 
+bool operator<(const Term &lhs, const Term &rhs) {
+	if (lhs.getResult() != rhs.getResult()) {
+		return lhs.getResult() < rhs.getResult();
+	}
+
+	if (lhs.size() != rhs.size()) {
+		return lhs.size() < rhs.size();
+	}
+
+	auto lhsIt = lhs.getTensors().begin();
+	auto rhsIt = rhs.getTensors().begin();
+	while (lhsIt != lhs.getTensors().end()) {
+		if (*lhsIt != *rhsIt) {
+			return *lhsIt < *rhsIt;
+		}
+
+		lhsIt++;
+		rhsIt++;
+	}
+
+	return lhs.getPrefactor() < rhs.getPrefactor();
+}
+
 std::ostream &operator<<(std::ostream &stream, const Term &term) {
 	stream << term.getResult() << " = " << term.getPrefactor() << " * ";
 	for (const Tensor &currentTensor : term.getTensors()) {

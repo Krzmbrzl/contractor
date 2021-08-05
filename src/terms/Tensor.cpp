@@ -53,6 +53,22 @@ bool operator!=(const Tensor &lhs, const Tensor &rhs) {
 	return !(lhs == rhs);
 }
 
+bool operator<(const Tensor &lhs, const Tensor &rhs) {
+	if (lhs.getName() != rhs.getName()) {
+		return lhs.getName() < rhs.getName();
+	}
+
+	if (lhs.getIndices().size() != rhs.getIndices().size()) {
+		return lhs.getIndices().size() < rhs.getIndices().size();
+	}
+
+	if (lhs.getIndices() != rhs.getIndices()) {
+		return lhs.getIndices() < rhs.getIndices();
+	}
+
+	return lhs.getSymmetry().size() < rhs.getSymmetry().size();
+}
+
 std::ostream &operator<<(std::ostream &out, const Tensor &element) {
 	out << element.m_name << "[";
 	for (std::size_t i = 0; i < element.m_indices.size(); i++) {
