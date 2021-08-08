@@ -32,6 +32,8 @@ public:
 
 	virtual std::size_t size() const override;
 
+	virtual void sort() override;
+
 protected:
 	Tensor m_left;
 	Tensor m_right;

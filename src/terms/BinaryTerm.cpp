@@ -20,7 +20,7 @@ BinaryTerm BinaryTerm::toBinaryTerm(const Term &term) {
 	if (size == 1) {
 		return BinaryTerm(term.getResult(), term.getPrefactor(), *it, DummyRHS);
 	} else {
-		Tensor left = *it;
+		Tensor left  = *it;
 		Tensor right = *(++it);
 		return BinaryTerm(term.getResult(), term.getPrefactor(), std::move(left), std::move(right));
 	}
@@ -44,6 +44,17 @@ const Tensor &BinaryTerm::get(std::size_t index) const {
 	assert(index == 0 || index == 1);
 
 	return (index == 0 ? m_left : m_right);
+}
+
+void BinaryTerm::sort() {
+	if (m_right == DummyRHS) {
+		// This term only contains a single Tensor -> There is nothing to sort
+		return;
+	}
+
+	if (m_right < m_left) {
+		std::swap(m_left, m_right);
+	}
 }
 
 }; // namespace Contractor::Terms

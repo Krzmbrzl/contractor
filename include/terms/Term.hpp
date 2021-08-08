@@ -124,6 +124,11 @@ public:
 	 */
 	FormalScalingMap getFormalScaling() const;
 
+	/**
+	 * Sorts the Tensors in this Term into a unique order
+	 */
+	virtual void sort() = 0;
+
 protected:
 	Tensor m_result;
 	factor_t m_prefactor;

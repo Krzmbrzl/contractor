@@ -53,6 +53,10 @@ const GeneralTerm::tensor_list_t &GeneralTerm::accessTensorList() const {
 	return m_tensors;
 }
 
+void GeneralTerm::sort() {
+	std::sort(m_tensors.begin(), m_tensors.end());
+}
+
 Tensor &GeneralTerm::get(std::size_t index) {
 	assert(index < m_tensors.size());
 

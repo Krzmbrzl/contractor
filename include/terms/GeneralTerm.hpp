@@ -59,6 +59,8 @@ public:
 	 */
 	const tensor_list_t &accessTensorList() const;
 
+	virtual void sort() override;
+
 protected:
 	tensor_list_t m_tensors;
 
