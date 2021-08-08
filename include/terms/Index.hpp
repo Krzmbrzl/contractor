@@ -18,6 +18,14 @@ public:
 		bool operator()(const Index &lhs, const Index &rhs) const { return Index::isSame(lhs, rhs); }
 	};
 
+	struct type_insensitive_hasher {
+		std::size_t operator()(const Index &index) const {
+			return std::hash< Contractor::Terms::IndexSpace >{}(index.getSpace())
+				   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1)
+				   ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 3);
+		}
+	};
+
 	/**
 	 * The type used for storing the ID of an Index
 	 */
@@ -173,9 +181,7 @@ protected:
 namespace std {
 template<> struct hash< Contractor::Terms::Index > {
 	std::size_t operator()(const Contractor::Terms::Index &index) const {
-		return std::hash< Contractor::Terms::IndexSpace >{}(index.getSpace())
-			   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1)
-			   ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 3);
+		return Contractor::Terms::Index::type_insensitive_hasher{}(index);
 	}
 };
 }; // namespace std
