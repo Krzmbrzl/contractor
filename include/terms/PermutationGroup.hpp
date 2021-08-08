@@ -47,9 +47,7 @@ public:
 
 		friend bool operator!=(const Element &lhs, const Element &rhs) { return lhs != rhs; }
 
-		friend bool operator<(const Element &lhs, const Element &rhs) {
-			return lhs.indexSequence < rhs.indexSequence && lhs.factor < rhs.factor;
-		}
+		friend bool operator<(const Element &lhs, const Element &rhs) { return lhs.indexSequence < rhs.indexSequence; }
 	};
 
 	PermutationGroup() = default;
