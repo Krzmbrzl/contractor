@@ -32,6 +32,29 @@ public:
 
 	using IndexSet = std::unordered_set< Index, std::hash< Index >, Index::index_is_same >;
 
+	struct term_body_is_same_ignore_factor {
+		bool operator()(const Term &lhs, const Term &rhs) const {
+			return lhs.size() == rhs.size()
+				   && std::is_permutation(lhs.getTensors().begin(), lhs.getTensors().end(), rhs.getTensors().begin());
+		}
+	};
+
+	struct term_body_is_same {
+		bool operator()(const Term &lhs, const Term &rhs) const {
+			term_body_is_same_ignore_factor comp;
+
+			return lhs.getPrefactor() == rhs.getPrefactor() && comp(lhs, rhs);
+		}
+	};
+
+	struct term_is_same {
+		bool operator()(const Term &lhs, const Term &rhs) const {
+			term_body_is_same comp;
+
+			return lhs.getResult() == rhs.getResult() && comp(lhs, rhs);
+		}
+	};
+
 	/**
 	 * Different available options that can be used when using Term::equals
 	 */

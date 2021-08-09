@@ -4,11 +4,14 @@
 #include "terms/BinaryTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
+#include "terms/TensorSubstitution.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace Contractor::Terms {
@@ -83,6 +86,12 @@ public:
 		return m_terms[0].getResult();
 	}
 
+	void setResult(const Tensor &result) {
+		for (term_t &currentTerm : m_terms) {
+			currentTerm.setResult(result);
+		}
+	}
+
 	void addTerm(const term_t &term) {
 		checkTerm(term);
 
@@ -103,19 +112,79 @@ public:
 		checkTerms();
 	}
 
+	void checkTerms() {
+		for (const term_t &current : m_terms) {
+			checkTerm(current);
+		}
+	}
+
+	/**
+	 * @param other The composite term to check against
+	 * @returns Whether this term and the given one are related (differ at most by a factor)
+	 */
+	bool isRelatedTo(const CompositeTerm< term_t > &other) const { return getRelationFactor(other) != 0; }
+
+	/**
+	 * Gets the relation of this term to the given one. The relation is expressed as a TensorSubstitution such
+	 * that the result Tensor of this composite can be replaced by the result Tensor of the given composite.
+	 * Note: This function assumes that the terms are actually related
+	 *
+	 * @param other The composite term to check against
+	 * @returns The substitution representing the relation
+	 */
+	TensorSubstitution getRelation(const CompositeTerm< term_t > &other) const {
+		Term::factor_t relationFactor = getRelationFactor(other);
+		assert(relationFactor != 0);
+
+		return TensorSubstitution(getResult(), other.getResult(), relationFactor);
+	}
+
 protected:
 	std::vector< term_t > m_terms;
 
 	void checkTerm(term_t term) {
 		if (size() != 0 && getResult() != term.getResult()) {
-			throw std::runtime_error("Trying to add a Term with different result Tensor to composite Term");
+			throw std::runtime_error(
+				"Composite Term contains a Term with a result Tensor that doesn't match the other terms");
 		}
 	}
 
-	void checkTerms() {
-		for (const term_t &current : m_terms) {
-			checkTerm(current);
+	Term::factor_t getRelationFactor(const CompositeTerm< term_t > &other) const {
+		if (size() != other.size()) {
+			return false;
 		}
+
+		const Term::term_body_is_same_ignore_factor isRelatedTermBody;
+
+		std::vector< std::reference_wrapper< const term_t > > ownTerms(begin(), end());
+		std::vector< std::reference_wrapper< const term_t > > otherTerms(other.begin(), other.end());
+
+		// Make sure the Terms are always in a defined order
+		std::sort(ownTerms.begin(), ownTerms.end());
+		std::sort(otherTerms.begin(), otherTerms.end());
+		// return std::is_permutation(begin(), end(), other.begin(), isRelatedTermBody);
+
+		Term::factor_t relationFactor = 0;
+		for (std::size_t i = 0; i < size(); ++i) {
+			if (!isRelatedTermBody(ownTerms[i], otherTerms[i])) {
+				return 0;
+			}
+
+			static_assert(std::is_floating_point_v< Term::factor_t >,
+						  "Storing result of division in non-floating point type will cause data loss");
+			Term::factor_t currentFactor = ownTerms[i].get().getPrefactor() / otherTerms[i].get().getPrefactor();
+
+			if (relationFactor != 0
+				&& std::abs(currentFactor - relationFactor)
+					   > std::pow(10, -std::numeric_limits< Term::factor_t >::digits10 + 3)) {
+				// The terms themselves might be related but the factors don't yield a consistent relation for all terms
+				return 0;
+			}
+
+			relationFactor = currentFactor;
+		}
+
+		return relationFactor;
 	}
 };
 

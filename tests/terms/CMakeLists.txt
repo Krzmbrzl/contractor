@@ -14,6 +14,7 @@ add_executable(${COMPONENT_NAME}_test
 	TensorDecompositionTest.cpp
 	PermutationGroupTest.cpp
 	TensorSubstitutionTest.cpp
+	CompositeTermTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test
