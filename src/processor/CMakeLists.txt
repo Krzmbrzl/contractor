@@ -15,4 +15,5 @@ target_include_directories(${LIB_NAME}
 target_link_libraries(${LIB_NAME}
 	PRIVATE ${MAIN_EXECUTABLE_NAME}::terms
 	PRIVATE ${MAIN_EXECUTABLE_NAME}::utils
+	PRIVATE ${MAIN_EXECUTABLE_NAME}::formatting
 )

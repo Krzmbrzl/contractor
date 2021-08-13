@@ -1,6 +1,7 @@
 #ifndef CONTRACTOR_PROCESSOR_SPINSUMMATION_HPP_
 #define CONTRACTOR_PROCESSOR_SPINSUMMATION_HPP_
 
+#include "processor/PrinterWrapper.hpp"
 #include "terms/BinaryTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Index.hpp"
@@ -260,7 +261,7 @@ namespace details {
 	 *
 	 * @param tensor The Tensor to bring into "canonical spin case"
 	 */
-	void mapToCanonicalSpinCase(Terms::Tensor &tensor) {
+	void mapToCanonicalSpinCase(Terms::Tensor &tensor, PrinterWrapper printer) {
 		spin_bitset spinCase = determineSpinCase(tensor);
 
 		std::size_t relevantIndexCount = getRelevantIndexCount(tensor);
@@ -268,6 +269,8 @@ namespace details {
 		if (isCanonicalSpinCase(spinCase, relevantIndexCount)) {
 			return;
 		}
+
+		printer << "Mapping " << tensor << " to ";
 
 		// Invert spins
 		spinCase.flip();
@@ -286,6 +289,8 @@ namespace details {
 
 		// Apply the spin-flip
 		Terms::IndexSubstitution(std::move(spinFlipMapping)).apply(tensor);
+
+		printer << tensor << " in order to arrive at canonical spin case\n";
 	}
 
 	/**
@@ -415,7 +420,8 @@ namespace details {
  */
 template< typename term_t >
 std::vector< term_t > sum(const std::vector< term_t > &terms,
-						  const std::unordered_set< std::string_view > &nonIntermediateNames) {
+						  const std::unordered_set< std::string_view > &nonIntermediateNames,
+						  PrinterWrapper printer = {}) {
 	static_assert(std::is_base_of_v< Terms::Term, term_t >, "Tried to spin-sum non-Term object!");
 
 	std::vector< term_t > summedTerms;
@@ -426,6 +432,8 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 			// We can sort out non-canonical spin cases of the result as we make the assumption that the list of
 			// Terms given to us contains all spin cases of any given Term and thus this list must also hold a
 			// Term for the canonical spin case of this result, which is all that we need for further processing.
+			printer << "Discarding " << currentTerm
+					<< " because it calculates a non-canonical spin case of the result Tensor (which is redundant)\n";
 			continue;
 		}
 
@@ -439,6 +447,10 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 			if (decomposition.getSubstitutions().size() > 1) {
 				// This result will be expressed as a linear combination of other Tensors. Therefore we don't have
 				// calculate it explicitly, meaning that the current term is superfluous.
+
+				printer << "Discarding intermediate " << currentTerm
+						<< " because it can be represented as a linear combination of other spin-cases of this result "
+						   "Tensor\n";
 				continue;
 			}
 			if (decomposition.isValid()) {
@@ -453,8 +465,12 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 				assert(terms.size() == 1);
 				assert(terms[0].accessTensorList().size() == 1);
 
+				printer << "In " << currentTerm << " we replace " << currentTerm.getResult() << " with ";
+
 				// Overwrite the result Tensor of the current result with the result of the decomposition
 				currentTerm.accessResult() = std::move(terms[0].accessTensorList()[0]);
+
+				printer << currentTerm.getResult() << " and apply a factor of " << terms[0].getPrefactor() << "\n";
 
 				// The factor of the dummy term represents the sign of the mapping
 				currentTerm.setPrefactor(currentTerm.getPrefactor() * terms[0].getPrefactor());
@@ -468,7 +484,7 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 
 			if (isIntermediate) {
 				// Map to canonical spin case
-				details::mapToCanonicalSpinCase(currentTensor);
+				details::mapToCanonicalSpinCase(currentTensor, printer);
 
 				// For now we don't want to map intermediate Tensors to skeleton Tensors, so we can end
 				// the current iteration here.
@@ -485,6 +501,7 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 		if (decompositions.empty()) {
 			summedTerms.push_back(std::move(currentTerm));
 		} else {
+			printer << "Replacing " << currentTerm << " with\n";
 			// Apply the given decompositions to the current Term
 			bool successful                                        = false;
 			Terms::TensorDecomposition::decomposed_terms_t results = decompositions[0].apply(currentTerm, &successful);
@@ -507,6 +524,8 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 
 				results = std::move(newResults);
 			}
+
+			printer << results << "\n";
 
 			// Add the resulting Terms to summedTerms
 			for (Terms::GeneralTerm &current : results) {

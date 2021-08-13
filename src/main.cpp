@@ -490,15 +490,19 @@ int main(int argc, const char **argv) {
 		nonIntermediateNames.insert(resultTensorNames.begin(), resultTensorNames.end());
 		nonIntermediateNames.insert(baseTensorNames.begin(), baseTensorNames.end());
 
-		printer.printHeadline("Terms after spin-summation");
+		printer.printHeadline("Spin summation");
 
 		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
 			for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+				printer << "Processing " << currentComposite << "\n";
+
 				std::vector< ct::BinaryTerm > summedTerms =
-					cpr::SpinSummation::sum(currentComposite.getTerms(), nonIntermediateNames);
+					cpr::SpinSummation::sum(currentComposite.getTerms(), nonIntermediateNames, printer);
 
 				// Change in-place
 				currentComposite.setTerms(std::move(summedTerms));
+
+				printer << "----------------\n\n";
 			}
 
 			// Filter out composite Terms that are empty after the spin-summation
@@ -507,6 +511,9 @@ int main(int argc, const char **argv) {
 				currentGroup.end());
 		}
 
+		printer << "\n\n";
+
+		printer.printHeadline("Terms after spin-summation");
 		printer << factorizedTermGroups << "\n\n";
 	}
 
