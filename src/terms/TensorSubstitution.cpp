@@ -80,6 +80,16 @@ void TensorSubstitution::setFactor(Term::factor_t factor) {
 }
 
 bool TensorSubstitution::apply(Term &term, bool replaceResult) const {
+#ifndef _NDEBUG
+	if (m_originalTensor.refersToSameElement(m_substitution)) {
+		// This class is not intended for simply permuting indices around. If you should happen to need that,
+		// use an IndexSubstitution instead.
+		// For a TensorSubstitution however such a constellation would cause trouble
+		assert(!std::is_permutation(m_originalTensor.getIndices().begin(), m_originalTensor.getIndices().end(),
+									m_substitution.getIndices().begin()));
+	}
+#endif
+
 	bool applied = false;
 
 	Term::factor_t factor = 1;
