@@ -63,4 +63,22 @@ TEST(TensorSubstitutionTest, apply) {
 		ASSERT_FALSE(applied);
 		ASSERT_EQ(term, originalTerm);
 	}
+	{
+		// Substitute a Tensor that uses different index names
+		ct::GeneralTerm term = originalTerm;
+
+		const ct::Tensor A_alt("A", { idx("b+"), idx("k-") });
+		const ct::Tensor A_new("A_new", { idx("b+"), idx("k-") });
+		const ct::Tensor A_new_remapped("A_new", { idx("a+"), idx("j-") });
+
+		ct::TensorSubstitution substitution(A_alt, A_new, -1);
+
+		// We expect an index remapping to happen before the actual substitution is performed
+		ct::GeneralTerm expectedTerm(result, -2, { A_new_remapped, B });
+
+		bool applied = substitution.apply(term);
+
+		ASSERT_TRUE(applied);
+		ASSERT_EQ(term, expectedTerm);
+	}
 }

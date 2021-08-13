@@ -84,8 +84,15 @@ bool TensorSubstitution::apply(Term &term, bool replaceResult) const {
 
 	Term::factor_t factor = 1;
 
-	if (replaceResult && term.getResult() == m_originalTensor) {
+	if (replaceResult && term.getResult().refersToSameElement(m_originalTensor)) {
+		IndexSubstitution mapping = m_originalTensor.getIndexMapping(term.getResult());
+
 		term.setResult(m_substitution);
+
+		if (mapping.appliesTo(term.getResult())) {
+			// Only apply if the substitution applies completely (avoid partial substitutions)
+			mapping.apply(term.accessResult());
+		}
 
 		applied = true;
 		factor *= m_factor;
@@ -94,8 +101,15 @@ bool TensorSubstitution::apply(Term &term, bool replaceResult) const {
 	auto tensors = term.accessTensors();
 
 	for (auto it = tensors.begin(); it != tensors.end(); ++it) {
-		if (*it == m_originalTensor) {
+		if (it->refersToSameElement(m_originalTensor)) {
+			IndexSubstitution mapping = m_originalTensor.getIndexMapping(*it);
+
 			*it = m_substitution;
+
+			if (mapping.appliesTo(*it)) {
+				// Only apply if the substitution applies completely (avoid partial substitutions)
+				mapping.apply(*it);
+			}
 
 			applied = true;
 			factor *= m_factor;
