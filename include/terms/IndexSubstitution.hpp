@@ -56,10 +56,10 @@ public:
 	 */
 	static IndexSubstitution identity();
 
-	explicit IndexSubstitution(const index_pair_t &substitute, factor_t factor = 1);
-	explicit IndexSubstitution(index_pair_t &&substitute, factor_t factor = 1);
-	explicit IndexSubstitution(const substitution_list &substitutions, factor_t factor = 1);
-	explicit IndexSubstitution(substitution_list &&substitutions = {}, factor_t factor = 1);
+	explicit IndexSubstitution(const index_pair_t &substitute, factor_t factor = 1, bool respectSpin = true);
+	explicit IndexSubstitution(index_pair_t &&substitute, factor_t factor = 1, bool respectSpin = true);
+	explicit IndexSubstitution(const substitution_list &substitutions, factor_t factor = 1, bool respectSpin = true);
+	explicit IndexSubstitution(substitution_list &&substitutions = {}, factor_t factor = 1, bool respectSpin = true);
 
 	~IndexSubstitution() = default;
 
@@ -92,6 +92,17 @@ public:
 	 * Sets the prefactor associated with this substitution
 	 */
 	void setFactor(factor_t factor);
+
+	/**
+	 * @returns Whether this substitution explicitly respects index spins such that two
+	 * indices are only considered equal if they also have the same spin (instead of only the same "name")
+	 */
+	bool isRespectingSpin() const;
+
+	/**
+	 * @param respectSpin Whether this susbtitution should explicitly respect index spins
+	 */
+	void setRespectSpin(bool respectSpin);
 
 	/**
 	 * Applies the substitutions to the given Tensor (in-place).
@@ -151,8 +162,11 @@ public:
 protected:
 	substitution_list m_substitutions;
 	factor_t m_factor;
+	bool m_respectSpin;
 
 	void removeNoOps();
+
+	bool indicesEqual(const Index &lhs, const Index &rhs) const;
 };
 
 }; // namespace Contractor::Terms

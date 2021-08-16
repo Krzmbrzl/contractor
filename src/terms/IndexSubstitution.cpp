@@ -2,6 +2,7 @@
 #include "terms/Tensor.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <stdexcept>
 
 namespace Contractor::Terms {
@@ -39,31 +40,39 @@ IndexSubstitution IndexSubstitution::identity() {
 }
 
 IndexSubstitution::IndexSubstitution(const IndexSubstitution::index_pair_t &substitution,
-									 IndexSubstitution::factor_t factor)
-	: m_substitutions({ substitution }), m_factor(factor) {
+									 IndexSubstitution::factor_t factor, bool respectSpin)
+	: m_substitutions({ substitution }), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
-IndexSubstitution::IndexSubstitution(IndexSubstitution::index_pair_t &&substitution, IndexSubstitution::factor_t factor)
-	: m_substitutions({ substitution }), m_factor(factor) {
+IndexSubstitution::IndexSubstitution(IndexSubstitution::index_pair_t &&substitution, IndexSubstitution::factor_t factor,
+									 bool respectSpin)
+	: m_substitutions({ substitution }), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
 IndexSubstitution::IndexSubstitution(const IndexSubstitution::substitution_list &substitutions,
-									 IndexSubstitution::factor_t factor)
-	: m_substitutions(substitutions), m_factor(factor) {
+									 IndexSubstitution::factor_t factor, bool respectSpin)
+	: m_substitutions(substitutions), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
 IndexSubstitution::IndexSubstitution(IndexSubstitution::substitution_list &&substitutions,
-									 IndexSubstitution::factor_t factor)
-	: m_substitutions(substitutions), m_factor(factor) {
+									 IndexSubstitution::factor_t factor, bool respectSpin)
+	: m_substitutions(substitutions), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
 bool operator==(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
+	auto pairs_are_equal = [lhs](const IndexSubstitution::index_pair_t &left,
+								 const IndexSubstitution::index_pair_t &right) {
+		return lhs.indicesEqual(left.first, right.first) && lhs.indicesEqual(left.second, right.second);
+	};
+
 	return lhs.m_factor == rhs.m_factor && lhs.m_substitutions.size() == rhs.m_substitutions.size()
-		   && std::is_permutation(lhs.m_substitutions.begin(), lhs.m_substitutions.end(), rhs.m_substitutions.begin());
+		   && lhs.isRespectingSpin() == rhs.isRespectingSpin()
+		   && std::is_permutation(lhs.m_substitutions.begin(), lhs.m_substitutions.end(), rhs.m_substitutions.begin(),
+								  pairs_are_equal);
 }
 
 bool operator!=(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
@@ -82,13 +91,15 @@ std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
 }
 
 IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
+	assert(lhs.isRespectingSpin() == rhs.isRespectingSpin());
+
 	// The produce of two substiutions is given by first letting rhs act on an imaginary target
 	// index sequence and then letting lhs act on the result of that
 	IndexSubstitution result = rhs;
 
 	for (IndexSubstitution::index_pair_t &currentSub : result.m_substitutions) {
 		for (const IndexSubstitution::index_pair_t &currentLHS : lhs.getSubstitutions()) {
-			if (Index::isSame(currentSub.second, currentLHS.first)) {
+			if (lhs.indicesEqual(currentSub.second, currentLHS.first)) {
 				currentSub.second = currentLHS.second;
 				break;
 			}
@@ -98,7 +109,7 @@ IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitutio
 	for (const IndexSubstitution::index_pair_t &currentLHS : lhs.getSubstitutions()) {
 		bool foundFirst = false;
 		for (const IndexSubstitution::index_pair_t &currentSub : result.m_substitutions) {
-			if (Index::isSame(currentSub.first, currentLHS.first)) {
+			if (lhs.indicesEqual(currentSub.first, currentLHS.first)) {
 				foundFirst = true;
 				break;
 			}
@@ -110,6 +121,8 @@ IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitutio
 			result.m_substitutions.push_back(currentLHS);
 		}
 	}
+
+	result.setRespectSpin(lhs.isRespectingSpin());
 
 	result.removeNoOps();
 
@@ -132,6 +145,14 @@ IndexSubstitution::factor_t IndexSubstitution::getFactor() const {
 
 void IndexSubstitution::setFactor(IndexSubstitution::factor_t factor) {
 	m_factor = factor;
+}
+
+bool IndexSubstitution::isRespectingSpin() const {
+	return m_respectSpin;
+}
+
+void IndexSubstitution::setRespectSpin(bool respectSpin) {
+	m_respectSpin = respectSpin;
 }
 
 IndexSubstitution::factor_t IndexSubstitution::apply(Tensor &tensor) const {
@@ -157,12 +178,18 @@ IndexSubstitution::factor_t IndexSubstitution::apply(std::vector< Index > &indic
 		for (const IndexSubstitution::index_pair_t &currentPermutation : m_substitutions) {
 			// Replace all occurrences of the two indices
 			Index::Type originalType = indices[i].getType();
+			Index::Spin originalSpin = indices[i].getSpin();
 
-			if (Index::isSame(indices[i], currentPermutation.first)) {
+			if (indicesEqual(indices[i], currentPermutation.first)) {
 				indices[i] = currentPermutation.second;
 
 				// Make sure the substitution does not change the Index's type
 				indices[i].setType(originalType);
+
+				if (!m_respectSpin) {
+					// Also restore original spin
+					indices[i].setSpin(originalSpin);
+				}
 
 				break;
 			}
@@ -177,13 +204,29 @@ IndexSubstitution::factor_t IndexSubstitution::apply(IndexSubstitution &substitu
 		bool foundFirst  = false;
 		bool foundSecond = false;
 		for (const IndexSubstitution::index_pair_t &currentExchange : m_substitutions) {
-			if (!foundFirst && Index::isSame(currentSub.first, currentExchange.first)) {
+			if (!foundFirst && indicesEqual(currentSub.first, currentExchange.first)) {
+				Index::Type originalType = currentSub.first.getType();
+				Index::Spin originalSpin = currentSub.first.getSpin();
+
 				currentSub.first = currentExchange.second;
-				foundFirst       = true;
+				currentSub.first.setType(originalType);
+				if (!substitution.isRespectingSpin()) {
+					currentSub.first.setSpin(originalSpin);
+				}
+
+				foundFirst = true;
 			}
-			if (!foundSecond && Index::isSame(currentSub.second, currentExchange.first)) {
+			if (!foundSecond && indicesEqual(currentSub.second, currentExchange.first)) {
+				Index::Type originalType = currentSub.first.getType();
+				Index::Spin originalSpin = currentSub.first.getSpin();
+
 				currentSub.second = currentExchange.second;
-				foundSecond       = true;
+				currentSub.second.setType(originalType);
+				if (!substitution.isRespectingSpin()) {
+					currentSub.second.setSpin(originalSpin);
+				}
+
+				foundSecond = true;
 			}
 
 			if (foundFirst && foundSecond) {
@@ -205,14 +248,6 @@ void IndexSubstitution::replaceIndex(const Index &source, const Index &replaceme
 	}
 }
 
-struct is_same {
-	const Index &m_idx;
-
-	is_same(const Index &idx) : m_idx(idx) {}
-
-	bool operator()(const Index &index) const { return Index::isSame(index, m_idx); }
-};
-
 bool IndexSubstitution::appliesTo(const Tensor &tensor) const {
 	return appliesTo(tensor.getIndices());
 }
@@ -221,7 +256,9 @@ bool IndexSubstitution::appliesTo(const std::vector< Index > &indices) const {
 	// A substitution applies, if all subsitutions can be carried out on the given index list (that is all
 	// indices referenced in the substitutions are contained in the given Tensor)
 	for (const index_pair_t &currentPair : m_substitutions) {
-		auto it = std::find_if(indices.begin(), indices.end(), is_same(currentPair.first));
+		auto is_same = std::bind(&IndexSubstitution::indicesEqual, this, currentPair.first, std::placeholders::_1);
+
+		auto it = std::find_if(indices.begin(), indices.end(), is_same);
 
 		if (it == indices.end()) {
 			return false;
@@ -237,7 +274,7 @@ bool IndexSubstitution::isIdentity() const {
 	}
 
 	for (const IndexSubstitution::index_pair_t &currentPair : m_substitutions) {
-		if (currentPair.first != currentPair.second) {
+		if (!indicesEqual(currentPair.first, currentPair.second)) {
 			return false;
 		}
 	}
@@ -255,14 +292,21 @@ IndexSubstitution IndexSubstitution::inverse(bool invertFactor) const {
 	return IndexSubstitution(std::move(subsitutions), invertFactor ? 1.0 / m_factor : m_factor);
 }
 
-bool is_noop_exchange(const IndexPair &pair) {
-	return pair.first == pair.second;
-}
-
 void IndexSubstitution::removeNoOps() {
 	// Get rid of no-op exchanges (index with itself)
+	auto is_noop_exchange = [this](const index_pair_t &pair) { return this->indicesEqual(pair.first, pair.second); };
+
 	m_substitutions.erase(std::remove_if(m_substitutions.begin(), m_substitutions.end(), is_noop_exchange),
 						  m_substitutions.end());
+}
+
+bool IndexSubstitution::indicesEqual(const Index &lhs, const Index &rhs) const {
+	if (m_respectSpin) {
+		return Index::isSame(lhs, rhs);
+	} else {
+		Index::index_has_same_name matcher;
+		return matcher(lhs, rhs);
+	}
 }
 
 }; // namespace Contractor::Terms

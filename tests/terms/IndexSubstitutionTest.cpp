@@ -94,7 +94,7 @@ TEST(IndexSubstitutionTest, applyWithDuplicateIndices) {
 
 TEST(IndexSubstitutionTest, replaceIndex) {
 	{
-		ct::Index firstIndex  = idx("i+");
+		ct::Index firstIndex  = idx("i+/");
 		ct::Index secondIndex = idx("i");
 		ct::Index thirdIndex  = idx("j");
 
@@ -106,7 +106,7 @@ TEST(IndexSubstitutionTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 	{
-		ct::Index firstIndex  = idx("i+");
+		ct::Index firstIndex  = idx("i+/");
 		ct::Index secondIndex = idx("i");
 		ct::Index thirdIndex  = idx("j");
 
@@ -118,7 +118,7 @@ TEST(IndexSubstitutionTest, replaceIndex) {
 		ASSERT_EQ(actual, expected);
 	}
 	{
-		ct::Index firstIndex  = idx("i+");
+		ct::Index firstIndex  = idx("i+/");
 		ct::Index secondIndex = idx("i");
 		ct::Index thirdIndex  = idx("j");
 		ct::Index dummyIndex  = idx("j");
