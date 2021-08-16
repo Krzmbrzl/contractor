@@ -41,6 +41,7 @@ struct CommandLineArguments {
 	std::filesystem::path decompositionFile;
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
+	unsigned int selectedTerm;
 };
 
 template< typename term_t > bool is_empty(const ct::CompositeTerm< term_t > &composite) {
@@ -67,6 +68,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
 		("restricted-orbitals", boost::program_options::value<bool>(&args.restrictedOrbitals)->default_value(false)->zero_tokens(),
 		 "Using this flag tells the program that restricted orbitals are used where the spatial parts of alpha/beta pairs is equal")
+		("select-term", boost::program_options::value<unsigned int>(&args.selectedTerm)->default_value(0),
+		 "Out of the read terms, only the term at this posititon (1-based) will be processed. 0 will cause all terms to be processed")
 	;
 	// clang-format on
 
@@ -161,6 +164,23 @@ int main(int argc, const char **argv) {
 
 	printer.printHeadline("Read terms");
 	printer << initialTerms << "\n\n";
+
+	if (args.selectedTerm != 0) {
+		if (args.selectedTerm > initialTerms.size()) {
+			printer << "[ERROR]: Can't select term at positition " << args.selectedTerm << " if there are only "
+					<< initialTerms.size() << " terms\n";
+			return Contractor::ExitCodes::INVALID_TERM_SELECTED;
+		}
+
+		printer << "Selecting only term " << args.selectedTerm << ":\n";
+
+		// Bring the selected term to the front
+		std::swap(initialTerms[0], initialTerms[args.selectedTerm - 1]);
+		// Remove all but the selected Term
+		initialTerms.erase(initialTerms.begin() + 1, initialTerms.end());
+
+		printer << initialTerms[0] << "\n\n\n";
+	}
 
 	// Print decomposition
 	printer.printHeadline("Specified substitutions");
