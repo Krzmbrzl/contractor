@@ -62,7 +62,7 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Path to the GeCCo .EXPORT file that is to be used as input")
 		("symmetry,s", boost::program_options::value<std::filesystem::path>(&args.symmetryFile)->required(),
 		 "Path to the Tensor symmetry specification file (.symmetry)")
-		("decomposition,d", boost::program_options::value<std::filesystem::path>(&args.decompositionFile)->required(),
+		("decomposition,d", boost::program_options::value<std::filesystem::path>(&args.decompositionFile)->default_value(""),
 		 "Path to the decomposition file (.decomposition)")
 		("ascii-only", boost::program_options::value<bool>(&args.asciiOnlyOutput)->default_value(false)->zero_tokens(),
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
@@ -91,10 +91,10 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		return Contractor::ExitCodes::MISSING_COMMANDLINE_OPTION;
 	}
 
-	// Verify that the file paths actually exist
+	// Verify that the file paths actually exist (empty path means optional)
 	for (const std::filesystem::path &currentPath :
 		 { args.symmetryFile, args.decompositionFile, args.geccoExportFile, args.indexSpaceFile }) {
-		if (!std::filesystem::is_regular_file(currentPath)) {
+		if (!currentPath.empty() && !std::filesystem::is_regular_file(currentPath)) {
 			std::cerr << "The file " << currentPath << " does not exist or is not a file" << std::endl;
 			return Contractor::ExitCodes::FILE_NOT_FOUND;
 		}
@@ -134,8 +134,10 @@ int main(int argc, const char **argv) {
 	cu::IndexSpaceResolver resolver                 = parse< cp::IndexSpaceParser >(args.indexSpaceFile);
 	cp::GeCCoExportParser::term_list_t initialTerms = parse< cp::GeCCoExportParser >(args.geccoExportFile, resolver);
 	std::vector< ct::Tensor > symmetries            = parse< cp::SymmetryListParser >(args.symmetryFile, resolver);
-	cp::DecompositionParser::decomposition_list_t decompositions =
-		parse< cp::DecompositionParser >(args.decompositionFile, resolver);
+	cp::DecompositionParser::decomposition_list_t decompositions;
+	if (!args.decompositionFile.empty()) {
+		decompositions = parse< cp::DecompositionParser >(args.decompositionFile, resolver);
+	}
 
 	// TODO: Validate that all indices that are neither creator nor annihilator don't have spin
 	// and creators and annihilators always have spin "Both"
