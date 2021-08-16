@@ -21,6 +21,7 @@ class Term;
 class IndexSubstitution;
 class IndexSpaceMeta;
 class TensorDecomposition;
+class TensorSubstitution;
 class PermutationGroup;
 }; // namespace Contractor::Terms
 
@@ -40,6 +41,7 @@ public:
 	void setStream(std::ostream &stream);
 
 	void print(int val);
+	void print(unsigned int val);
 	void print(std::size_t val);
 	void print(double val);
 	void print(std::string_view string);
@@ -53,6 +55,7 @@ public:
 	void print(const Terms::IndexSpaceMeta &meta);
 	void print(const Utils::IndexSpaceResolver &resolver);
 	void print(const Terms::TensorDecomposition &decomposition);
+	void print(const Terms::TensorSubstitution &substitution);
 
 	template< typename term_t > void print(const Terms::CompositeTerm< term_t > &composite) {
 		static_assert(std::is_base_of_v< Terms::Term, term_t >, "Can't print TermGroup whose elements are no Terms");

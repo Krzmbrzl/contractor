@@ -48,6 +48,12 @@ void PrettyPrinter::print(int val) {
 	*m_stream << m_integerFormat % val;
 }
 
+void PrettyPrinter::print(unsigned int val) {
+	assert(m_stream != nullptr);
+
+	*m_stream << m_integerFormat % val;
+}
+
 void PrettyPrinter::print(std::size_t val) {
 	assert(m_stream != nullptr);
 
