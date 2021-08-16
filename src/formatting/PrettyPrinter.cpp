@@ -257,7 +257,7 @@ void PrettyPrinter::print(const Terms::TensorDecomposition &decomposition) {
 		}
 	} else {
 		*m_stream << "Substitute ";
-		print(decomposition.getSubstitutions()[0]);
+		print(decomposition.getSubstitutions()[0], false);
 	}
 }
 
