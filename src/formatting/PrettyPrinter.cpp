@@ -4,6 +4,7 @@
 #include "terms/PermutationGroup.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
+#include "terms/TensorSubstitution.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
 #include <cassert>
@@ -20,11 +21,11 @@ PrettyPrinter::PrettyPrinter(std::ostream &stream, bool asciiOnly) {
 		m_creatorSymbol     = "+";
 		m_annihilatorSymbol = "-";
 	} else {
-		m_alphaSpinSymbol   = "🠑";
-		m_betaSpinSymbol    = "🠓";
-		m_noneSpinSymbol    = "ⁿ";
-		m_creatorSymbol     = "⁺";
-		m_annihilatorSymbol = "⁻";
+		m_alphaSpinSymbol   = u8"🠑";
+		m_betaSpinSymbol    = u8"🠓";
+		m_noneSpinSymbol    = u8"ⁿ";
+		m_creatorSymbol     = u8"⁺";
+		m_annihilatorSymbol = u8"⁻";
 	}
 
 	m_underlineChar = "=";
@@ -252,6 +253,20 @@ void PrettyPrinter::print(const Terms::TensorDecomposition &decomposition) {
 		*m_stream << "Substitute ";
 		print(decomposition.getSubstitutions()[0]);
 	}
+}
+
+void PrettyPrinter::print(const Terms::TensorSubstitution &substitution) {
+	assert(m_stream != nullptr);
+
+	print(substitution.getTensor());
+
+	*m_stream << " = ";
+	if (substitution.getFactor() == -1) {
+		*m_stream << "- ";
+	} else if (substitution.getFactor() != 1) {
+		*m_stream << substitution.getFactor() << " ";
+	}
+	print(substitution.getSubstitution());
 }
 
 #undef DEFINE_STANDARD_TYPE_PRINT_FUNCTION
