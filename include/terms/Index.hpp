@@ -18,11 +18,25 @@ public:
 		bool operator()(const Index &lhs, const Index &rhs) const { return Index::isSame(lhs, rhs); }
 	};
 
-	struct type_insensitive_hasher {
+	struct index_has_same_name {
+		bool operator()(const Index &lhs, const Index &rhs) const {
+			// An index' "name" is determined only by its index space and its ID
+			return lhs.getID() == rhs.getID() && lhs.getSpace() == rhs.getSpace();
+		}
+	};
+
+	struct type_and_spin_insensitive_hasher {
 		std::size_t operator()(const Index &index) const {
 			return std::hash< Contractor::Terms::IndexSpace >{}(index.getSpace())
-				   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1)
-				   ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 3);
+				   ^ (std::hash< Contractor::Terms::Index::id_t >{}(index.getID()) << 1);
+		}
+	};
+
+	struct type_insensitive_hasher {
+		std::size_t operator()(const Index &index) const {
+			type_and_spin_insensitive_hasher hasher;
+
+			return hasher(index) ^ (std::hash< Contractor::Terms::Index::Spin >{}(index.getSpin()) << 1);
 		}
 	};
 
