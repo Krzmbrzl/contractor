@@ -17,5 +17,6 @@
 # together. Thus 1-2&3-4 means "Exchange of 1-2 and at the same time exchange of 3-4".
 
 H[(H|P)(H|P),(H|P)(H|P)]: 1-2 -> -1, 3-4 -> -1
-T2[(H|P)(H|P),(H|P)(H|P)]: 1-2 -> -1, 3-4 -> -1
+T2[PP,HH]: 1-2 -> -1, 3-4 -> -1
+T2[HH,PP]: 1-2 -> -1, 3-4 -> -1
 L2[(H|P)(H|P),(H|P)(H|P)]: 1-2 -> -1, 3-4 -> -1
