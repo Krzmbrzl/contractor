@@ -19,11 +19,14 @@ std::vector< std::size_t > find_sort_permutation(const std::vector< T > &data) {
 	std::vector< std::size_t > indices(data.size());
 	std::iota(indices.begin(), indices.end(), 0);
 
+	Compare cmp;
+
 	if constexpr (stableSort) {
 		std::stable_sort(indices.begin(), indices.end(),
-						 [data](std::size_t i, std::size_t j) { return data[i] < data[j]; });
+						 [data, cmp](std::size_t i, std::size_t j) { return cmp(data[i], data[j]); });
 	} else {
-		std::sort(indices.begin(), indices.end(), [data](std::size_t i, std::size_t j) { return data[i] < data[j]; });
+		std::sort(indices.begin(), indices.end(),
+				  [data, cmp](std::size_t i, std::size_t j) { return cmp(data[i], data[j]); });
 	}
 
 	return indices;
