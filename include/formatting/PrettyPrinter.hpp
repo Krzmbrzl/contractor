@@ -80,6 +80,8 @@ public:
 
 	std::string getLegend(int maxSpaceID = -1) const;
 
+	std::string getSpinRepresentation(Terms::Index::Spin spin);
+
 protected:
 	static constexpr int maxIndexSpaceID = 5;
 	static constexpr int maxIndexID      = 7;
@@ -87,6 +89,7 @@ protected:
 	std::string m_alphaSpinSymbol;
 	std::string m_betaSpinSymbol;
 	std::string m_noneSpinSymbol;
+	std::string m_bothSpinSymbol;
 	std::string m_creatorSymbol;
 	std::string m_annihilatorSymbol;
 	std::string m_underlineChar;

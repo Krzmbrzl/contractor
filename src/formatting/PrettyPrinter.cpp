@@ -8,6 +8,7 @@
 #include "utils/IndexSpaceResolver.hpp"
 
 #include <cassert>
+#include <sstream>
 
 namespace Contractor::Formatting {
 
@@ -15,20 +16,18 @@ PrettyPrinter::PrettyPrinter(std::ostream &stream, bool asciiOnly) {
 	setStream(stream);
 
 	if (asciiOnly) {
-		m_alphaSpinSymbol   = "/";
-		m_betaSpinSymbol    = "\\";
-		m_noneSpinSymbol    = "#";
 		m_creatorSymbol     = "+";
 		m_annihilatorSymbol = "-";
 	} else {
-		m_alphaSpinSymbol   = u8"🠑";
-		m_betaSpinSymbol    = u8"🠓";
-		m_noneSpinSymbol    = u8"ⁿ";
 		m_creatorSymbol     = u8"⁺";
 		m_annihilatorSymbol = u8"⁻";
 	}
 
-	m_underlineChar = "=";
+	m_underlineChar   = "=";
+	m_alphaSpinSymbol = "/";
+	m_betaSpinSymbol  = "\\";
+	m_bothSpinSymbol  = "|";
+	m_noneSpinSymbol  = ".";
 }
 
 void PrettyPrinter::setStream(std::ostream &stream) {
@@ -89,21 +88,6 @@ void PrettyPrinter::print(const Terms::Index &index, bool printType) {
 
 	*m_stream << static_cast< char >(getIndexBaseChar(index.getSpace().getID()) + index.getID());
 
-	switch (index.getSpin()) {
-		case Terms::Index::Spin::Alpha:
-			*m_stream << m_alphaSpinSymbol;
-			break;
-		case Terms::Index::Spin::Beta:
-			*m_stream << m_betaSpinSymbol;
-			break;
-		case Terms::Index::Spin::Both:
-			// This is the default that we'll assume and thus this does not get a special label
-			break;
-		case Terms::Index::Spin::None:
-			// "n" for "No spin"
-			*m_stream << m_noneSpinSymbol;
-			break;
-	}
 	if (printType) {
 		switch (index.getType()) {
 			case Terms::Index::Type::Creator:
@@ -125,11 +109,18 @@ void PrettyPrinter::print(const Terms::Tensor &tensor) {
 	*m_stream << tensor.getName();
 
 	if (tensor.getIndices().size() > 0) {
+		std::stringstream spinString;
+		spinString << "(";
+
 		*m_stream << "[";
 		for (const Terms::Index &currentIndex : tensor.getIndices()) {
 			print(currentIndex);
+
+			spinString << getSpinRepresentation(currentIndex.getSpin());
 		}
-		*m_stream << "]";
+		spinString << ")";
+
+		*m_stream << "]" << spinString.str();
 	}
 }
 
@@ -175,8 +166,16 @@ void PrettyPrinter::print(const Terms::IndexSubstitution &substitution) {
 		const Terms::IndexSubstitution::index_pair_t &current = substitution.getSubstitutions()[i];
 
 		print(current.first, false);
+		if (substitution.isRespectingSpin()) {
+			*m_stream << getSpinRepresentation(current.first.getSpin());
+		}
+
 		*m_stream << " -> ";
+
 		print(current.second, false);
+		if (substitution.isRespectingSpin()) {
+			*m_stream << getSpinRepresentation(current.second.getSpin());
+		}
 
 		if (i + 1 < substitution.getSubstitutions().size()) {
 			*m_stream << " and ";
@@ -394,8 +393,8 @@ std::string PrettyPrinter::getLegend(int maxSpaceID) const {
 	legend += "\nUsed spin symbols:\n";
 	legend += "  Alpha: " + m_alphaSpinSymbol + "\n";
 	legend += "  Beta:  " + m_betaSpinSymbol + "\n";
+	legend += "  Both:  " + m_bothSpinSymbol + "\n";
 	legend += "  None:  " + m_noneSpinSymbol + "\n";
-	legend += "  Alpha&Beta: This case is implicitly assumed if none of the above symbols is used\n";
 
 	legend += "\nUsed type symbols:\n";
 	legend += "  Creator:     " + m_creatorSymbol + "\n";
@@ -404,10 +403,11 @@ std::string PrettyPrinter::getLegend(int maxSpaceID) const {
 
 	legend += "\nExample:\n";
 	legend += "  Creator Index with ID 3 in space 1 with Alpha spin: ";
-	legend += static_cast< char >(getIndexBaseChar(0) + 2) + m_alphaSpinSymbol + m_creatorSymbol + "\n";
+	legend += static_cast< char >(getIndexBaseChar(0) + 2) + m_creatorSymbol + m_alphaSpinSymbol + "\n";
 
 	legend += "\nTensors:\n";
-	legend += "  A Tensor is represented by its name potentially followed by its indices wrapped in […]\n";
+	legend += "  A Tensor is represented by its name potentially followed by its indices wrapped in […]\n"
+			  "  where the corresponding index spins follow in (…)\n";
 
 	legend += "\nTerms:\n";
 	legend += "  Terms are represented in the form <result> += <expression> where an initial value of\n";
@@ -415,6 +415,21 @@ std::string PrettyPrinter::getLegend(int maxSpaceID) const {
 	legend += "  Furthermore summation of repeated indices is implicit.\n";
 
 	return legend;
+}
+
+std::string PrettyPrinter::getSpinRepresentation(Terms::Index::Spin spin) {
+	switch (spin) {
+		case Terms::Index::Spin::Alpha:
+			return m_alphaSpinSymbol;
+		case Terms::Index::Spin::Beta:
+			return m_betaSpinSymbol;
+		case Terms::Index::Spin::Both:
+			return m_bothSpinSymbol;
+		case Terms::Index::Spin::None:
+			return m_noneSpinSymbol;
+	}
+
+	throw std::runtime_error("PrettyPrinter: Encountered unhandled spin-case");
 }
 
 char PrettyPrinter::getIndexBaseChar(Terms::IndexSpace::id_t spaceID) const {
