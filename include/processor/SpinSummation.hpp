@@ -475,6 +475,18 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 				assert(terms.size() == 1);
 				assert(terms[0].accessTensorList().size() == 1);
 
+				if (terms[0].getPrefactor() != 1) {
+					// If the prefactor is not 1, it means that we had to rearrange indices in order to be able to map
+					// to the skeleton Tensor. Since we assume all spin combinations to be present in the list, we can
+					// skip this term and instead take the one that already has the required spin case.
+					// Note that because we were able to find a permutation of indices such that the spin matches what
+					// we want, we know that the wanted spin case is definitely possible. Therefore we can be sure that
+					// the necessary case will show up eventually.
+					printer << "Discarding " << currentTerm
+							<< " because we'd have to reorder indices in order to map to skeleton tensor\n";
+					continue;
+				}
+
 				printer << "In " << currentTerm << " we replace " << currentTerm.getResult() << " with ";
 
 				// Overwrite the result Tensor of the current result with the result of the decomposition

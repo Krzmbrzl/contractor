@@ -210,7 +210,7 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 				std::cout << "Spin case: " << spinSpec << " fully antisymmetric: " << fullAntisymmetrization
 						  << std::endl;
 
-				bool canonicalSpinCase = spinSpec[0] == 'a';
+				bool canonicalSpinCase = spinSpec == "abab";
 
 				ct::Tensor result("O", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 				applySpin(result, spinSpec);
