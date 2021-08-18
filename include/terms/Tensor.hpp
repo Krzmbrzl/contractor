@@ -41,6 +41,31 @@ public:
 	 */
 	using index_list_t = std::vector< Index >;
 
+	struct is_same_tensor_element {
+		bool operator()(const Tensor &left, const Tensor &right) const {
+			return left.refersToSameElement(right);
+		}
+	};
+
+	struct tensor_element_hash {
+		std::size_t operator()(const Tensor &tensor) const {
+			std::size_t hash = 0;
+			for (std::size_t i = 0; i < tensor.getIndices().size(); ++i) {
+				// Include the position of the index in order to ensure that a different index sequence will result
+				// in a different hash value. In order for symmetry-equivalent tensors to arrive at the same hash,
+				// we use the "canonical" index sequence for this Tensor
+				const Index &currentIndex = tensor.getSymmetry().getCanonicalRepresentation()[i];
+				// We only care about an Index's space and spin as the explicit name is not important for the tensor element
+				hash += (std::hash< IndexSpace >{}(currentIndex.getSpace()) << 0)
+						^ (std::hash< Index::Spin >{}(currentIndex.getSpin()) << 1) ^ std::hash< std::size_t >{}(i);
+			}
+
+			hash ^= std::hash< std::string_view >{}(tensor.getName()) << 1;
+
+			return hash;
+		}
+	};
+
 
 	/**
 	 * Transfers the symmetry of the given source Tensor to the given destination. Note that in order for
