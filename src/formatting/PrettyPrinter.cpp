@@ -151,7 +151,7 @@ void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 		print(currentTensor);
 
 		if (counter + 1 < term.size()) {
-			*m_stream << " * ";
+			*m_stream << " ";
 		}
 
 		counter++;
