@@ -15,11 +15,11 @@ namespace Contractor::Terms {
 class Index {
 public:
 	struct index_is_same {
-		bool operator()(const Index &lhs, const Index &rhs) const { return Index::isSame(lhs, rhs); }
+		constexpr bool operator()(const Index &lhs, const Index &rhs) const { return Index::isSame(lhs, rhs); }
 	};
 
 	struct index_has_same_name {
-		bool operator()(const Index &lhs, const Index &rhs) const {
+		constexpr bool operator()(const Index &lhs, const Index &rhs) const {
 			// An index' "name" is determined only by its index space and its ID
 			return lhs.getID() == rhs.getID() && lhs.getSpace() == rhs.getSpace();
 		}
