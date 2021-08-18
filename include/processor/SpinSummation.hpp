@@ -235,6 +235,16 @@ namespace details {
 		return std::distance(tensor.getIndices().begin(), indexEnd);
 	}
 
+	spin_bitset getAllAlphaRepresentation(std::size_t relevantIndexCount) {
+		// A one in the bitset means beta spin and thus a spin set with a numeric value of 0 represents all-alpha
+		return 0;
+	}
+
+	spin_bitset getAllBetaRepresentation(std::size_t relevantIndexCount) {
+		// A one in the bitset means beta spin
+		return (1 << relevantIndexCount) - 1;
+	}
+
 	/**
 	 * @returns Whether the given spinCase is consider to be a "canonical spin case"
 	 */
@@ -306,8 +316,8 @@ namespace details {
 
 		spin_bitset spinCase = determineSpinCase(tensor);
 
-		const spin_bitset allBeta = (1 << relevantIndexCount) - 1;
-		const spin_bitset allAlpha;
+		const spin_bitset allBeta  = getAllBetaRepresentation(relevantIndexCount);
+		const spin_bitset allAlpha = getAllAlphaRepresentation(relevantIndexCount);
 
 		if (relevantIndexCount == 0) {
 			// Nothing to do for this Tensor
