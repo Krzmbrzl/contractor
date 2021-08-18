@@ -228,7 +228,7 @@ void SpinIntegrator::process(const IndexGroup &group) {
 
 		// Step 3: We start out in a situation where all indices that are not fixed to a specific spin case
 		// yet are assigned to have Alpha spin. As we assume full permutation symmetry within each group of
-		// idices (creators & annihialtors) we will also consider all permutations of spin cases within the
+		// idices (creators & annihilators) we will also consider all permutations of spin cases within the
 		// different groups and the overall substitution list is given as the direct product of the possible
 		// permutations of both groups.
 		// After that is done, we check whether we have any free index pairs that have been arbitrarily fixed
