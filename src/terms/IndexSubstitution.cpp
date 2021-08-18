@@ -47,7 +47,7 @@ IndexSubstitution::IndexSubstitution(const IndexSubstitution::index_pair_t &subs
 
 IndexSubstitution::IndexSubstitution(IndexSubstitution::index_pair_t &&substitution, IndexSubstitution::factor_t factor,
 									 bool respectSpin)
-	: m_substitutions({ substitution }), m_factor(factor), m_respectSpin(respectSpin) {
+	: m_substitutions({ std::move(substitution) }), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
@@ -59,7 +59,7 @@ IndexSubstitution::IndexSubstitution(const IndexSubstitution::substitution_list 
 
 IndexSubstitution::IndexSubstitution(IndexSubstitution::substitution_list &&substitutions,
 									 IndexSubstitution::factor_t factor, bool respectSpin)
-	: m_substitutions(substitutions), m_factor(factor), m_respectSpin(respectSpin) {
+	: m_substitutions(std::move(substitutions)), m_factor(factor), m_respectSpin(respectSpin) {
 	removeNoOps();
 }
 
