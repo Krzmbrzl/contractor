@@ -458,7 +458,7 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 				// This result will be expressed as a linear combination of other Tensors. Therefore we don't have
 				// calculate it explicitly, meaning that the current term is superfluous.
 
-				printer << "Discarding intermediate " << currentTerm
+				printer << "Discarding " << currentTerm
 						<< " because it can be represented as a linear combination of other spin-cases of this result "
 						   "Tensor\n";
 				continue;
@@ -511,7 +511,9 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 		if (decompositions.empty()) {
 			summedTerms.push_back(std::move(currentTerm));
 		} else {
-			printer << "Replacing " << currentTerm << " with\n";
+			printer << "In " << currentTerm << " the following substitutions are performed:\n";
+			printer << "- " << decompositions[0] << "\n";
+
 			// Apply the given decompositions to the current Term
 			bool successful                                        = false;
 			Terms::TensorDecomposition::decomposed_terms_t results = decompositions[0].apply(currentTerm, &successful);
@@ -519,6 +521,8 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 			assert(successful);
 
 			for (std::size_t i = 1; i < decompositions.size(); ++i) {
+				printer << "- " << decompositions[i] << "\n";
+
 				Terms::TensorDecomposition::decomposed_terms_t newResults;
 
 				for (const Terms::GeneralTerm &current : results) {
@@ -535,7 +539,7 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 				results = std::move(newResults);
 			}
 
-			printer << results << "\n";
+			printer << "which yields\n" << results << "\n";
 
 			// Add the resulting Terms to summedTerms
 			for (Terms::GeneralTerm &current : results) {
