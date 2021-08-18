@@ -40,6 +40,24 @@ public:
 		}
 	};
 
+	struct less_than_type_space_spin_id {
+		constexpr bool operator()(const Index &lhs, const Index &rhs) const {
+			if (lhs.getType() != rhs.getType()) {
+				return lhs.getType() < rhs.getType();
+			}
+
+			if (lhs.getSpace() != rhs.getSpace()) {
+				return lhs.getSpace() < rhs.getSpace();
+			}
+
+			if (lhs.getSpin() != rhs.getSpin()) {
+				return lhs.getSpin() < rhs.getSpin();
+			}
+
+			return lhs.getID() < rhs.getID();
+		};
+	};
+
 	/**
 	 * The type used for storing the ID of an Index
 	 */
@@ -89,15 +107,9 @@ public:
 	friend constexpr bool operator!=(const Index &lhs, const Index &rhs) { return !(lhs == rhs); }
 
 	friend constexpr bool operator<(const Index &lhs, const Index &rhs) {
-		if (lhs.getSpace() != rhs.getSpace()) {
-			return lhs.getSpace() < rhs.getSpace();
-		}
+		less_than_type_space_spin_id cmp;
 
-		if (lhs.getID() != rhs.getID()) {
-			return lhs.getID() < rhs.getID();
-		}
-
-		return lhs.getSpin() < rhs.getSpin();
+		return cmp(lhs, rhs);
 	}
 
 	friend std::ostream &operator<<(std::ostream &out, Spin spin) {
