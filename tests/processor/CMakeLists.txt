@@ -7,6 +7,7 @@ add_executable(${COMPONENT_NAME}_test
 	SpinIntegratorTest.cpp
 	SymmetrizerTest.cpp
 	SpinSummationTest.cpp
+	SimplifierTest.cpp
 )
 
 target_link_libraries(${COMPONENT_NAME}_test

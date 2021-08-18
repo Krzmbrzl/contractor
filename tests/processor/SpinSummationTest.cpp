@@ -1,4 +1,5 @@
 #include "processor/SpinSummation.hpp"
+#include "processor/Simplifier.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
 
@@ -246,6 +247,9 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 
 				ct::GeneralTerm expectedTerm(expectedResultTensor, getSignFor(spinSpec), { dummy });
 
+				// Spin summation is expected to yield Terms that use canonical index names
+				cp::canonicalizeIndexIDs(expectedTerm);
+
 				if (canonicalSpinCase) {
 					ASSERT_EQ(summedTerms.size(), 1);
 					ASSERT_EQ(summedTerms[0], expectedTerm);
@@ -379,6 +383,11 @@ TEST(SpinSummationTest, sum_fourIndexTensors) {
 					ct::GeneralTerm expectedTerm_I(result, 1, { expectedH_I, A });
 					ct::GeneralTerm expectedTerm_II(result, -1, { expectedH_II, A });
 					ct::GeneralTerm expectedTerm_II_alt(result, -1, { expectedH_II_alt, A });
+
+					// Spin summation is expected to yield terms with canonical index names
+					cp::canonicalizeIndexIDs(expectedTerm_I);
+					cp::canonicalizeIndexIDs(expectedTerm_II);
+					cp::canonicalizeIndexIDs(expectedTerm_II_alt);
 
 					ASSERT_EQ(summedTerms.size(), 2);
 					if (!fullAntisymmetrization) {

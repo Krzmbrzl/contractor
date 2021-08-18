@@ -5,6 +5,7 @@
 #include "parser/IndexSpaceParser.hpp"
 #include "parser/SymmetryListParser.hpp"
 #include "processor/Factorizer.hpp"
+#include "processor/Simplifier.hpp"
 #include "processor/SpinIntegrator.hpp"
 #include "processor/SpinSummation.hpp"
 #include "processor/Symmetrizer.hpp"
@@ -113,6 +114,17 @@ template< typename parser_t > auto parse(const std::filesystem::path &path, cons
 	parser_t parser(resolver);
 	std::fstream inputStream(path);
 	return parser.parse(inputStream);
+}
+
+template< typename term_t > void simplify(std::vector< ct::TermGroup< term_t > > &groups, cf::PrettyPrinter &printer) {
+	printer.printHeadline("Simplification");
+	if (cpr::simplify(groups, printer)) {
+		printer << "\nSimplified terms:\n" << groups << "\n";
+	} else {
+		printer << "  Nothing to do\n";
+	}
+
+	printer << "\n\n";
 }
 
 int main(int argc, const char **argv) {
@@ -393,6 +405,10 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Terms after substitutions have been applied");
 	printer << termGroups << "\n\n";
 
+
+	simplify(termGroups, printer);
+
+
 	// Factorize terms
 	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
@@ -453,6 +469,9 @@ int main(int argc, const char **argv) {
 	printer << factorizedTermGroups << "\n\n";
 
 
+	simplify(factorizedTermGroups, printer);
+
+
 	// Spin-integration
 	printer.printHeadline("Spin integration");
 	cpr::SpinIntegrator integrator;
@@ -505,6 +524,10 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Spin-integrated terms");
 	printer << factorizedTermGroups << "\n\n";
 
+
+	simplify(factorizedTermGroups, printer);
+
+
 	if (args.restrictedOrbitals) {
 		// Spin summation
 		std::unordered_set< std::string_view > nonIntermediateNames;
@@ -538,6 +561,9 @@ int main(int argc, const char **argv) {
 
 		printer.printHeadline("Terms after spin-summation");
 		printer << factorizedTermGroups << "\n\n";
+
+
+		simplify(factorizedTermGroups, printer);
 	}
 
 
@@ -599,8 +625,70 @@ int main(int argc, const char **argv) {
 		factorizedTermGroups.push_back(std::move(group));
 	}
 
+	if (toBeSymmetrizedResultTensors.empty()) {
+		printer << "  Nothing to do\n";
+	}
 
-	// Identify redundant terms and simplify equations
+	printer << "\n\n";
+
+
+	simplify(factorizedTermGroups, printer);
+
+
+	// Check for unneeded terms
+	printer.printHeadline("Checking for redundant terms");
+	bool changed;
+	bool didChange = false;
+	do {
+		changed = false;
+
+		// First gather a list of all Tensors that are referenced somewhere in the existing Terms
+		std::unordered_set< ct::Tensor, ct::Tensor::tensor_element_hash, ct::Tensor::is_same_tensor_element >
+			referencedTensors;
+
+		for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+			for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+				for (const ct::BinaryTerm &currentTerm : currentComposite) {
+					for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+						referencedTensors.insert(currentTensor);
+					}
+				}
+			}
+		}
+
+		// Then iterate which Tensors are produced by a term and if it is not in referencedTensors, we can discard the
+		// corresponding composite as long as it's not the result Tensor for the current group
+		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+			auto it = currentGroup.begin();
+			while (it != currentGroup.end()) {
+				if (referencedTensors.find(it->getResult()) == referencedTensors.end()
+					&& it->getResult().getName() != currentGroup.getOriginalTerm().getResult().getName()) {
+					// This composite produces a Tensor that is never referenced
+					printer << "Removing unreferenced result Tensor " << it->getResult() << "\n";
+
+					changed   = true;
+					didChange = true;
+					it        = currentGroup.accessTerms().erase(it);
+				} else {
+					it++;
+				}
+			}
+		}
+
+		// Since it could be that the terms that have been removed were the only ones that referenced another Tensor, we
+		// have to repeat until we remove no more Terms
+	} while (changed);
+
+	if (!didChange) {
+		printer << "  Nothing to do\n";
+	}
+
+	printer << "\n\n";
+
+
+	printer.printHeadline("Final terms");
+	printer << factorizedTermGroups << "\n\n";
+
 
 	// Conversion to ITF
 

@@ -1,4 +1,5 @@
 #include "processor/Factorizer.hpp"
+#include "processor/Simplifier.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 #include "utils/PairingGenerator.hpp"
 
@@ -36,6 +37,12 @@ const std::vector< ct::BinaryTerm > &Factorizer::factorize(const ct::GeneralTerm
 
 	bool foundFactorization = doFactorize(0, 0, tensors, factorizedTerms, term, previousTerms);
 	assert(foundFactorization);
+
+	// Potentially change index orders if the symmetry allows it and it would lead to a more "canonical"
+	// representation of the term
+	for (ct::BinaryTerm &currentTerm : m_bestFactorization) {
+		canonicalizeIndexSequences(currentTerm);
+	}
 
 	return m_bestFactorization;
 }
@@ -98,8 +105,12 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			// There is no real factorization possible for this case. Thus we simply "factorize" this case
 			// by shoving the Tensor into a BinaryTerm and calculating the cost of computing all elements
 			// of that Tensor
-			factorizedTerms.push_back(
-				ct::BinaryTerm(term.getResult(), term.getPrefactor(), tensors[0], ct::BinaryTerm::DummyRHS));
+			ct::BinaryTerm resultTerm =
+				ct::BinaryTerm(term.getResult(), term.getPrefactor(), tensors[0], ct::BinaryTerm::DummyRHS);
+
+			canonicalizeIndexIDs(resultTerm);
+
+			factorizedTerms.push_back(std::move(resultTerm));
 
 			cost = 1;
 			for (const ct::Index &current : tensors[0].getIndices()) {
@@ -116,6 +127,9 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			ct::BinaryTerm &resultTerm = factorizedTerms[factorizedTerms.size() - 1];
 			resultTerm.setResult(term.getResult());
 			resultTerm.setPrefactor(term.getPrefactor());
+
+			// Exchaning the result Tensor might change how the index names have to be canonicalized
+			canonicalizeIndexIDs(resultTerm);
 		}
 
 		ct::Tensor copy = std::move(tensors[0]);
@@ -183,22 +197,42 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 					intermediateSize *= m_resolver.getMeta(current.getSpace()).getSize();
 				}
 
-				ct::BinaryTerm producedTerm = ct::BinaryTerm(std::move(result.resultTensor), 1.0, left, right);
+				ct::BinaryTerm producedTerm = ct::BinaryTerm(result.resultTensor, 1.0, left, right);
 
-				// We have to take special precaution that the result Tensor we have produced in this contraction
-				// is not taken already. In that case it could be that although the result Tensors of both terms
-				// are equal, the Terms themselves are not. This can happen if the difference for these terms only
-				// lies somewhere in the contracted indices.
-				// This function makes sure that in this case the name of the current result Tensor is altered until
-				// there is no such collision anymore.
-				ensureUniqueResultTensor(producedTerm, previousTerms);
-				// We have to do the same with the current factorized terms to also avoid name clashes within the
-				// currently factorized term
-				ensureUniqueResultTensor(producedTerm, factorizedTerms);
+				// Always make sure that the Tensors in this term are in a unique order
+				producedTerm.sort();
+
+				// We want these terms to have "canonical" index names so that the routine checking the result tensor
+				// names can compare terms better and doesn't have to worry about possible index renamings.
+				// We don't do this for the final contraction though as for that we'll replace the result Tensor with
+				// the original result and if we rename indices here, this can lead to errors
+				if (!tensors.empty()) {
+					canonicalizeIndexIDs(producedTerm);
+
+					// We have to take special precaution that the result Tensor we have produced in this contraction
+					// is not taken already. In that case it could be that although the result Tensors of both terms
+					// are equal, the Terms themselves are not. This can happen if the difference for these terms only
+					// lies somewhere in the contracted indices.
+					// This function makes sure that in this case the name of the current result Tensor is altered until
+					// there is no such collision anymore.
+					ensureUniqueResultTensor(producedTerm, previousTerms);
+					// We have to do the same with the current factorized terms to also avoid name clashes within the
+					// currently factorized term
+					ensureUniqueResultTensor(producedTerm, factorizedTerms);
+
+					// Make sure the result Tensor has the same name as the result Tensor in the simplified term (which
+					// might have been altered to ensure a unique result Tensor name)
+					result.resultTensor.setName(producedTerm.getResult().getName());
+				}
 
 				// Copy the result Tensor of this Tensor to the list of Tensors available for further
 				// contractions
-				tensors.push_back(producedTerm.getResult());
+				// We explicitly don't copy the result Tensor of our simplified Term as it is very likely that in
+				// that Tensor the indices have been renamed to match a "canonical" representation. However in the
+				// upcoming terms that will be produced by further contractions, it is important to not have the
+				// indices renamed as that would lead to index name collisions which is avoided if we stick to the
+				// original index names for that.
+				tensors.push_back(std::move(result.resultTensor));
 
 				// Store the current contraction
 				factorizedTerms.push_back(std::move(producedTerm));

@@ -1,4 +1,5 @@
 #include "processor/Factorizer.hpp"
+#include "processor/Simplifier.hpp"
 #include "terms/BinaryTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Index.hpp"
@@ -57,6 +58,15 @@ TEST(FactorizerTest, factorize) {
 		ct::BinaryTerm expectedResult(resultTensor, 2.0, ct::Tensor(intermediateResult1),
 									  ct::Tensor(intermediateResult2));
 		expectedContractionCost += pow(occupiedSize, 2);
+
+		// We expect the Terms to use "canonical" index names and to have their Tensors
+		// in the correct order
+		intermdediate1.sort();
+		cp::canonicalizeIndexIDs(intermdediate1);
+		intermdediate2.sort();
+		cp::canonicalizeIndexIDs(intermdediate2);
+		expectedResult.sort();
+		cp::canonicalizeIndexIDs(expectedResult);
 
 		// LCCD[] = T[ikdc] H[jlba] T[abji] T[cdlk]
 		ct::GeneralTerm inTerm(
@@ -146,6 +156,13 @@ TEST(FactorizerTest, factorize) {
 		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm);
 		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
 
+		// We expect the Terms to use "canonical" index names and to have their Tensors
+		// in the correct order
+		intermediateTerm.sort();
+		cp::canonicalizeIndexIDs(intermediateTerm);
+		result.sort();
+		cp::canonicalizeIndexIDs(result);
+
 		ASSERT_EQ(factorizedTerms.size(), 2);
 		ASSERT_EQ(actualCost, expectedCost);
 		ASSERT_THAT(factorizedTerms, ::testing::UnorderedElementsAre(intermediateTerm, result));
@@ -175,6 +192,14 @@ TEST(FactorizerTest, factorize) {
 		ct::BinaryTerm resultTerm(ct::Tensor(O), inTerm.getPrefactor(), ct::Tensor(B1_T1_B2), ct::Tensor(T2));
 		expectedCost += pow(occupiedSize, 3) * pow(virtualSize, 2);
 
+		// We expect the Terms to use "canonical" index names and to have their Tensors
+		// in the correct order
+		intermediate1.sort();
+		cp::canonicalizeIndexIDs(intermediate1);
+		intermediate2.sort();
+		cp::canonicalizeIndexIDs(intermediate2);
+		resultTerm.sort();
+		cp::canonicalizeIndexIDs(resultTerm);
 
 		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm);
 		ct::ContractionResult::cost_t actualCost      = factorizer.getLastFactorizationCost();
@@ -207,6 +232,13 @@ TEST(FactorizerTest, resultTensorCollisions) {
 		ct::BinaryTerm intermediateTerm(ct::Tensor(intermediate), 1.0, ct::Tensor(G), ct::Tensor(T2));
 		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
 
+		// We expect the Terms to use "canonical" index names and to have their Tensors
+		// in the correct order
+		intermediateTerm.sort();
+		cp::canonicalizeIndexIDs(intermediateTerm);
+		result.sort();
+		cp::canonicalizeIndexIDs(result);
+
 		std::vector< ct::BinaryTerm > alreadyExistingTerms = { intermediateTerm };
 
 		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm, alreadyExistingTerms);
@@ -236,6 +268,16 @@ TEST(FactorizerTest, resultTensorCollisions) {
 		ct::BinaryTerm result(ct::Tensor(O), 1.0, ct::Tensor(intermediate), ct::Tensor(T1));
 
 		ct::BinaryTerm collidingTerm(originalIntermediate, 1, originalIntermediate);
+
+		// We expect the Terms to use "canonical" index names and to have their Tensors
+		// in the correct order
+		collidingTerm.sort();
+		cp::canonicalizeIndexIDs(collidingTerm);
+		intermediateTerm.sort();
+		cp::canonicalizeIndexIDs(intermediateTerm);
+		result.sort();
+		cp::canonicalizeIndexIDs(result);
+
 		std::vector< ct::BinaryTerm > alreadyExistingTerms = { collidingTerm };
 
 		std::vector< ct::BinaryTerm > factorizedTerms = factorizer.factorize(inTerm, alreadyExistingTerms);

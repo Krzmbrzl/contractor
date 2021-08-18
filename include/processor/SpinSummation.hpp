@@ -2,6 +2,7 @@
 #define CONTRACTOR_PROCESSOR_SPINSUMMATION_HPP_
 
 #include "processor/PrinterWrapper.hpp"
+#include "processor/Simplifier.hpp"
 #include "terms/BinaryTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Index.hpp"
@@ -562,6 +563,16 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 					summedTerms.push_back(std::move(current));
 				}
 			}
+		}
+	}
+
+	// Make sure that spin-summed terms are using canonical index IDs
+	for (term_t &currentTerm : summedTerms) {
+		term_t originalTerm = currentTerm;
+
+		if (canonicalizeIndexIDs(currentTerm)) {
+			printer << "Renamed indices in " << originalTerm << " to\n"
+					<< "  " << currentTerm << "\n";
 		}
 	}
 
