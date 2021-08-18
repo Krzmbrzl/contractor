@@ -466,7 +466,8 @@ int main(int argc, const char **argv) {
 			for (const ct::BinaryTerm &currentTerm : currentComposite) {
 				printer << currentTerm << " integrates to\n";
 
-				const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(currentTerm);
+				const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(
+					currentTerm, resultTensorNames.find(currentTerm.getResult().getName()) != resultTensorNames.end());
 
 				for (const ct::IndexSubstitution &currentSub : substitutions) {
 					ct::BinaryTerm copy = currentTerm;

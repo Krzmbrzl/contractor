@@ -18,7 +18,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor tensor("S");
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		ASSERT_EQ(substitutions.size(), 0);
 	}
@@ -28,7 +28,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor tensor("S", { idx("q!"), idx("r!") });
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		ASSERT_EQ(substitutions.size(), 0);
 	}
@@ -37,7 +37,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor tensor("S", { idx("a+"), idx("i-") });
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// Alpha/Alpha
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") }, { idx("i-"), idx("i-/") } });
@@ -57,7 +57,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -101,7 +101,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -139,7 +139,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -185,7 +185,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 							 { ct::Tensor("T", { idx("a+"), idx("i-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("j-"), idx("q!") }) });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -224,7 +224,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 							 { ct::Tensor("T", { idx("a+"), idx("j-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("i-"), idx("q!") }) });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -274,7 +274,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(R, 1.0, { G, T });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// Note that for the substitutions the creator/annihilator property of indices doesn't actually
 		// matter. It is only needed because that's how the idx function works.
@@ -386,7 +386,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(O2, -1.0, { H, T2 });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 
 		// aa/aaa
@@ -455,7 +455,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ct::GeneralTerm term(O2, -0.5, { T2, B_B });
 
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term);
+		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
 		// aaaa/aa
 		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
@@ -507,5 +507,47 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 
 		ASSERT_EQ(substitutions.size(), 6);
 		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));
+	}
+}
+
+std::vector< ct::IndexSubstitution > createExpectedSubstitutions(const ct::Tensor &resultTensor,
+																 const std::vector< std::string > &expectedSpinCases) {
+	std::vector< ct::IndexSubstitution > expectedSubstitutions;
+
+	for (const std::string &spinCase : expectedSpinCases) {
+		if (resultTensor.getIndices().size() != spinCase.size()) {
+			throw std::runtime_error("Invalid usage of function createExpectedTerms");
+		}
+
+		ct::IndexSubstitution::substitution_list substitutions;
+		for (std::size_t i = 0; i < resultTensor.getIndices().size(); ++i) {
+			ct::Index replacement = resultTensor.getIndices()[i];
+			replacement.setSpin(spinCase[i] == 'a' ? ct::Index::Spin::Alpha : ct::Index::Spin::Beta);
+
+			substitutions.push_back({ resultTensor.getIndices()[i], std::move(replacement) });
+		}
+
+		expectedSubstitutions.push_back(ct::IndexSubstitution(std::move(substitutions)));
+	}
+
+	return expectedSubstitutions;
+}
+
+TEST(SpinIntegratorTest, hardCodedResultSpinCases) {
+	cp::SpinIntegrator integrator;
+
+	ct::Tensor dummyContent("DummyContent");
+
+	{
+		ct::Tensor result("R", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
+
+		ct::GeneralTerm term(result, 1, { dummyContent });
+
+		std::vector< ct::IndexSubstitution > expectedSubstitutions =
+			createExpectedSubstitutions(result, { "aaaa", "bbbb", "abab" });
+
+		std::vector< ct::IndexSubstitution > actualSubstitutions = integrator.spinIntegrate(term, true);
+
+		ASSERT_THAT(actualSubstitutions, ::testing::UnorderedElementsAreArray(expectedSubstitutions));
 	}
 }

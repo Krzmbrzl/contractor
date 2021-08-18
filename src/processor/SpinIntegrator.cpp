@@ -26,11 +26,21 @@ template< typename T > bool containsDuplicate(const std::vector< T > &vec) {
 	return false;
 }
 
-const std::vector< ct::IndexSubstitution > &SpinIntegrator::spinIntegrate(const ct::Term &term) {
+const std::vector< ct::IndexSubstitution > &SpinIntegrator::spinIntegrate(const ct::Term &term,
+																		  bool calculatesEndResult) {
 	m_substitutions.clear();
 
-	// Start by creating all possible spin-combinations for the result Tensor
-	process(term.getResult());
+	// Start by creating all possible spin-combinations for the result Tensor.
+	// If the given Term calculates an end-result Tensor (that is: not an intermediate result), we check
+	// whether we have hard-coded spin-cases (in case we know beforehand which spin cases will end up being
+	// relevant) and if we do, use those. If we don't process it as usual.
+	bool usedHardCodedSubstitutions = false;
+	if (!calculatesEndResult || !useHardcodedResultSpinCases(term.getResult())) {
+		process(term.getResult());
+	} else {
+		// Hard-coded substitutions have been applied
+		usedHardCodedSubstitutions = true;
+	}
 
 	// Then continue through the Term Tensor by Tensor
 	for (const ct::Tensor &currentTensor : term.getTensors()) {
@@ -42,7 +52,9 @@ const std::vector< ct::IndexSubstitution > &SpinIntegrator::spinIntegrate(const 
 
 	// We always expect an even amount of spin-cases since if any given spin-case is valid, flipping
 	// all spins will also lead to a valid result. Thus spin-cases always occur pairwise.
-	assert(m_substitutions.size() % 2 == 0);
+	// This assumptions only breaks if hard-coded substitutions are used since for these it can happen
+	// that the inverse spin case is not (always) added.
+	assert(m_substitutions.size() % 2 == 0 || usedHardCodedSubstitutions);
 
 	return m_substitutions;
 }
@@ -352,6 +364,46 @@ void SpinIntegrator::process(const IndexGroup &group) {
 	m_substitutions.erase(std::remove_if(m_substitutions.begin(), m_substitutions.end(),
 										 [](const ct::IndexSubstitution &current) { return current.getFactor() == 0; }),
 						  m_substitutions.end());
+}
+
+bool SpinIntegrator::useHardcodedResultSpinCases(const ct::Tensor &resultTensor) {
+	if (resultTensor.getIndices().size() != 4) {
+		// For now we only know what to do for 4-index Tensors
+		return false;
+	}
+	const ct::Tensor::index_list_t &indices = resultTensor.getIndices();
+	if (indices[0].getType() != ct::Index::Type::Creator || indices[1].getType() != ct::Index::Type::Creator
+		|| indices[2].getType() != ct::Index::Type::Annihilator
+		|| indices[3].getType() != ct::Index::Type::Annihilator) {
+		// If the indices are not of types Creator, Creator, Annihilator, Annihilator this is a case that we
+		// curently don't support here
+		return false;
+	}
+	if (indices[0].getSpace() != indices[1].getSpace() || indices[2].getSpace() != indices[3].getSpace()) {
+		// If the creators and annihilators don't belong to the same index spaces respectively, we don't
+		// support that
+		return false;
+	}
+
+	// If all these requirements are fulfilled, we assume here that the result Tensor will end up getting fully
+	// symmetrized. Under this assumption, we know that we will only ever require the aaaa, bbbb and abab spin-case
+	// for this Tensor.
+	assert(indices.size() == 4);
+	for (const std::string_view spinCase : { "aaaa", "abab", "bbbb" }) {
+		ct::IndexSubstitution::substitution_list substitutions;
+		for (std::size_t i = 0; i < 4; ++i) {
+			assert(indices[i].getSpin() == ct::Index::Spin::Both);
+
+			ct::Index replacement = indices[i];
+			replacement.setSpin(spinCase[i] == 'a' ? ct::Index::Spin::Alpha : ct::Index::Spin::Beta);
+
+			substitutions.push_back({ indices[i], std::move(replacement) });
+		}
+
+		m_substitutions.push_back(ct::IndexSubstitution(std::move(substitutions)));
+	}
+
+	return true;
 }
 
 }; // namespace Contractor::Processor
