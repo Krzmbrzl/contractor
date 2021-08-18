@@ -207,3 +207,24 @@ TEST(IndexSubstitutionTest, multiply) {
 		ASSERT_EQ(result, identity);
 	}
 }
+
+TEST(IndexSubstitution, apply_on_IndexSubstitution) {
+	{
+		ct::IndexSubstitution substitution =
+			ct::IndexSubstitution::createPermutation({ { idx("k-"), idx("l-") }, { idx("i+"), idx("j+") } });
+		substitution.setRespectSpin(false);
+
+		ct::IndexSubstitution sub1 = ct::IndexSubstitution::createPermutation({ { idx("i+\\"), idx("j+/") } }, -1);
+		ct::IndexSubstitution sub2 = ct::IndexSubstitution::createPermutation({ { idx("k-\\"), idx("l+/") } }, -1);
+
+		// We expect our "substitution" to effectively be a simple rename (thus: the spins remain were they were)
+		ct::IndexSubstitution expected1 = ct::IndexSubstitution::createPermutation({ { idx("j+\\"), idx("i+/") } }, -1);
+		ct::IndexSubstitution expected2 = ct::IndexSubstitution::createPermutation({ { idx("l-\\"), idx("k+/") } }, -1);
+
+		substitution.apply(sub1);
+		substitution.apply(sub2);
+
+		ASSERT_EQ(sub1, expected1);
+		ASSERT_EQ(sub2, expected2);
+	}
+}

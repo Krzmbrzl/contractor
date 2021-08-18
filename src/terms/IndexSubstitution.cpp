@@ -210,19 +210,19 @@ IndexSubstitution::factor_t IndexSubstitution::apply(IndexSubstitution &substitu
 
 				currentSub.first = currentExchange.second;
 				currentSub.first.setType(originalType);
-				if (!substitution.isRespectingSpin()) {
+				if (!isRespectingSpin()) {
 					currentSub.first.setSpin(originalSpin);
 				}
 
 				foundFirst = true;
 			}
 			if (!foundSecond && indicesEqual(currentSub.second, currentExchange.first)) {
-				Index::Type originalType = currentSub.first.getType();
-				Index::Spin originalSpin = currentSub.first.getSpin();
+				Index::Type originalType = currentSub.second.getType();
+				Index::Spin originalSpin = currentSub.second.getSpin();
 
 				currentSub.second = currentExchange.second;
 				currentSub.second.setType(originalType);
-				if (!substitution.isRespectingSpin()) {
+				if (!isRespectingSpin()) {
 					currentSub.second.setSpin(originalSpin);
 				}
 
