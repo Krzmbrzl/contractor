@@ -72,36 +72,6 @@ namespace details {
 	}
 
 	/**
-	 * @returns Whether all creator and all annihilator indices have the same index space
-	 * respectively
-	 */
-	bool indexGroupsAreSameSpace(const Terms::Tensor &tensor) {
-		if (tensor.getIndices().empty()) {
-			return true;
-		}
-
-		Terms::IndexSpace space = tensor.getIndices()[0].getSpace();
-		Terms::Index::Type type = tensor.getIndices()[0].getType();
-		for (std::size_t i = 1; i < tensor.getIndices().size(); ++i) {
-			if (tensor.getIndices()[i].getType() == type) {
-				if (tensor.getIndices()[i].getSpace() != space) {
-					return false;
-				}
-			} else {
-				space = tensor.getIndices()[i].getSpace();
-				type  = tensor.getIndices()[i].getType();
-
-				if (type == Terms::Index::Type::None) {
-					// We don't care about non-creators and -annihilators
-					break;
-				}
-			}
-		}
-
-		return true;
-	}
-
-	/**
 	 * @returns The amount of indices in the given index list that are of the given type
 	 */
 	unsigned int countIndexType(const Terms::Tensor::index_list_t &indices, Terms::Index::Type type) {
@@ -341,10 +311,6 @@ namespace details {
 				std::cerr << tensor << std::endl;
 				throw std::runtime_error(
 					"Unable to spin-sum a 4-index Tensor that is not at least partially antisymmetric");
-			}
-			if (!indexGroupsAreSameSpace(tensor)) {
-				throw std::runtime_error("Unsupported case encountered in spin-summation (creator and/or annihilator "
-										 "contain indices of different index spaces)");
 			}
 			if (countIndexType(tensor.getIndices(), Terms::Index::Type::Creator) != 2) {
 				throw std::runtime_error("Expected 4-index Tensor to have 2 creator and 2 annihilator indices");
