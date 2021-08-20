@@ -20,6 +20,6 @@ for dir in $(find . -maxdepth 1 -mindepth 1 -type d); do
 		echo "Processing '$export_file' - output goes to '$out_file' ..."
 
 		"$program" --decomposition "./density_fitting.decomposition" --symmetry "$symmetry_file" --index-spaces \
-			"./index_spaces.json" --gecco-export "$export_file" --restricted-orbitals > "$out_file"
+			"./index_spaces.json" --gecco-export "$export_file" --renaming "./itf_renaming.json" --restricted-orbitals > "$out_file"
 	done
 done
