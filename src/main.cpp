@@ -605,12 +605,37 @@ int main(int argc, const char **argv) {
 
 	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
 
-	std::unordered_set< ct::Tensor > toBeSymmetrizedResultTensors;
+	std::unordered_set< ct::Tensor, ct::Tensor::tensor_element_hash, ct::Tensor::is_same_tensor_element >
+		toBeSymmetrizedResultTensors;
 	for (const ct::BinaryTermGroup currentGroup : factorizedTermGroups) {
 		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
 			if (currentComposite.getResult().getIndices().size() == 4
 				&& resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
-				toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
+				auto it = toBeSymmetrizedResultTensors.find(currentComposite.getResult());
+				if (it == toBeSymmetrizedResultTensors.end()) {
+					std::cout << "Adding non-existent" << std::endl;
+					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
+				} else {
+					// We already have an entry for this result Tensor. However it could happen that the term from which
+					// this Tensor is calculated happens to be more symmetric than other contributions to it. Therefore
+					// we have to check for that in order to make sure to store the least symmetric version of this
+					// result Tensor as the least symmetric contribution to a Tensor determines its overall symmetry
+					if (!it->hasColumnSymmetry() && currentComposite.getResult().hasColumnSymmetry()) {
+						// Since column symmetry is what this is all about here, make sure that we always use the result
+						// Tensor wich doesn't have it yet since if there exists such a contribution, the overall result
+						// doesn't show this either.
+						continue;
+					}
+					if (it->getSymmetry().size() <= currentComposite.getResult().getSymmetry().size()) {
+						// We have already stored the less symmetric version
+						continue;
+					}
+
+					// We have to erase first, because an unordered_set doesn't overwrite the old value, if it thinks this
+					// element already exists
+					toBeSymmetrizedResultTensors.erase(it);
+					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
+				}
 			}
 		}
 	}
