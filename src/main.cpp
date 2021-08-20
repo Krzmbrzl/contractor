@@ -609,7 +609,12 @@ int main(int argc, const char **argv) {
 		assert(boost::algorithm::ends_with(currentResult.getName(), "-u"));
 
 		ct::Tensor symmetricResult = currentResult;
-		symmetricResult.setName(currentResult.getName().substr(0, currentResult.getName().size() - 2));
+		std::string symmetrizedTensorName =
+			std::string(currentResult.getName().substr(0, currentResult.getName().size() - 2));
+		symmetricResult.setName(symmetrizedTensorName);
+
+		resultTensorNameStrings.insert(symmetrizedTensorName);
+		resultTensorNames.insert(*resultTensorNameStrings.find(symmetrizedTensorName));
 
 		ct::BinaryTerm term(symmetricResult, 1, currentResult);
 
