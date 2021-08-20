@@ -1,4 +1,5 @@
 #include "ExitCodes.hpp"
+#include "formatting/ITFExporter.hpp"
 #include "formatting/PrettyPrinter.hpp"
 #include "parser/DecompositionParser.hpp"
 #include "parser/GeCCoExportParser.hpp"
@@ -805,6 +806,18 @@ int main(int argc, const char **argv) {
 
 
 	// Conversion to ITF
+	std::unordered_set< std::string_view > nonIntermediateNames;
+	nonIntermediateNames.reserve(resultTensorNames.size() + baseTensorNames.size());
+
+	nonIntermediateNames.insert(resultTensorNames.begin(), resultTensorNames.end());
+	nonIntermediateNames.insert(baseTensorNames.begin(), baseTensorNames.end());
+
+	cf::ITFExporter exporter(resolver, std::cout, "Residual", [nonIntermediateNames](const std::string_view &name) {
+		return nonIntermediateNames.find(name) == nonIntermediateNames.end();
+	});
+	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		exporter.addComposites(currentGroup.getTerms());
+	}
 
 	return Contractor::ExitCodes::OK;
 }
