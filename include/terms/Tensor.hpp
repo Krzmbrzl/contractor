@@ -42,9 +42,7 @@ public:
 	using index_list_t = std::vector< Index >;
 
 	struct is_same_tensor_element {
-		bool operator()(const Tensor &left, const Tensor &right) const {
-			return left.refersToSameElement(right);
-		}
+		bool operator()(const Tensor &left, const Tensor &right) const { return left.refersToSameElement(right); }
 	};
 
 	struct tensor_element_hash {
@@ -55,7 +53,8 @@ public:
 				// in a different hash value. In order for symmetry-equivalent tensors to arrive at the same hash,
 				// we use the "canonical" index sequence for this Tensor
 				const Index &currentIndex = tensor.getSymmetry().getCanonicalRepresentation()[i];
-				// We only care about an Index's space and spin as the explicit name is not important for the tensor element
+				// We only care about an Index's space and spin as the explicit name is not important for the tensor
+				// element
 				hash += (std::hash< IndexSpace >{}(currentIndex.getSpace()) << 0)
 						^ (std::hash< Index::Spin >{}(currentIndex.getSpin()) << 1) ^ std::hash< std::size_t >{}(i);
 			}
@@ -158,6 +157,20 @@ public:
 	 * or the annihilator indices are antisymmetrized (pairwise exchange leads only to sign-change).
 	 */
 	bool isPartiallyAntisymmetrized() const;
+
+	/**
+	 * @returns Whether this Tensor shows full column symmetry (exchanging the nth and the (n+1)th creator and
+	 * at the same time exchanging the annihilators at the same positions yields the exact same value
+	 * (without sign-change) for all n).
+	 */
+	bool hasColumnSymmetry() const;
+
+	/**
+	 * @returns Whether this Tensor shows partial column symmetry (exchanging the nth and the (n+1)th creator and
+	 * at the same time exchanging the annihilators at the same positions yields the exact same value
+	 * (without sign-change) for at least one n).
+	 */
+	bool hasPartialColumnSymmetry() const;
 
 	/**
 	 * @param other The Tensor to compare to

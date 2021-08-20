@@ -143,7 +143,7 @@ std::vector< IndexSubstitution > createAntisymmetricExchanges(const Tensor::inde
 	auto end   = std::find_if(begin, indices.end(),
                             [indexType](const Index &current) { return current.getType() != indexType; });
 
-	// Create all creator-pairings
+	// Create all pairings
 	for (auto i = begin; i != end; ++i) {
 		for (auto j = i + 1; j != end; ++j) {
 			substitutions.push_back(IndexSubstitution::createPermutation({ { *i, *j } }, -1));
@@ -194,6 +194,59 @@ bool Tensor::isPartiallyAntisymmetrized() const {
 	}
 
 	return !annihilatorExchanges.empty() || (annihilatorExchanges.empty() && creatorExchanges.empty());
+}
+
+std::vector< IndexSubstitution > createSymmetricExchanges(const Tensor::index_list_t &indices) {
+	std::vector< IndexSubstitution > substitutions;
+
+	// Assert that the indices are sorted into the groups creator, annihilator, other
+	auto creatorBegin     = std::find_if(indices.begin(), indices.end(),
+                                     [](const Index &current) { return current.getType() == Index::Type::Creator; });
+	auto creatorEnd       = std::find_if(creatorBegin, indices.end(),
+                                   [](const Index &current) { return current.getType() != Index::Type::Creator; });
+	auto annihilatorBegin = std::find_if(
+		creatorEnd, indices.end(), [](const Index &current) { return current.getType() == Index::Type::Annihilator; });
+	auto annihilatorEnd = std::find_if(annihilatorBegin, indices.end(), [](const Index &current) {
+		return current.getType() != Index::Type::Annihilator;
+	});
+
+	assert(std::distance(creatorBegin, creatorEnd) == std::distance(annihilatorBegin, annihilatorEnd));
+
+	// Create all column-wise substitutions
+	std::size_t amount = std::distance(creatorBegin, creatorEnd);
+	for (std::size_t i = 0; i < amount; ++i) {
+		for (std::size_t j = i + 1; j < amount; ++j) {
+			substitutions.push_back(
+				IndexSubstitution::createPermutation({ { *(creatorBegin + i), *(creatorBegin + j) },
+													   { *(annihilatorBegin + i), *(annihilatorBegin + j) } }));
+		}
+	}
+
+	return substitutions;
+}
+
+bool Tensor::hasColumnSymmetry() const {
+	std::vector< IndexSubstitution > columnWiseExchanges = createSymmetricExchanges(m_indices);
+
+	for (const IndexSubstitution &current : columnWiseExchanges) {
+		if (!getSymmetry().contains(current)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Tensor::hasPartialColumnSymmetry() const {
+	std::vector< IndexSubstitution > columnWiseExchanges = createSymmetricExchanges(m_indices);
+
+	for (const IndexSubstitution &current : columnWiseExchanges) {
+		if (getSymmetry().contains(current)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool Tensor::refersToSameElement(const Tensor &other) const {
