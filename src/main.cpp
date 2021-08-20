@@ -209,7 +209,7 @@ int main(int argc, const char **argv) {
 		printer << "In " << currentTerm << ":\n";
 		for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
 			for (ct::Tensor &currentSymmetry : symmetries) {
-				if (currentTensor.refersToSameElement(currentSymmetry)) {
+				if (currentTensor.refersToSameElement(currentSymmetry, false)) {
 					ct::Tensor::transferSymmetry(currentSymmetry, currentTensor);
 
 					printer << "- ";
@@ -605,7 +605,7 @@ int main(int argc, const char **argv) {
 
 	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
 
-	std::unordered_set< ct::Tensor, ct::Tensor::tensor_element_hash, ct::Tensor::is_same_tensor_element >
+	std::unordered_set< ct::Tensor, ct::Tensor::tensor_name_hash, ct::Tensor::has_same_name >
 		toBeSymmetrizedResultTensors;
 	for (const ct::BinaryTermGroup currentGroup : factorizedTermGroups) {
 		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
@@ -613,7 +613,6 @@ int main(int argc, const char **argv) {
 				&& resultTensorNames.find(currentComposite.getResult().getName()) != resultTensorNames.end()) {
 				auto it = toBeSymmetrizedResultTensors.find(currentComposite.getResult());
 				if (it == toBeSymmetrizedResultTensors.end()) {
-					std::cout << "Adding non-existent" << std::endl;
 					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
 				} else {
 					// We already have an entry for this result Tensor. However it could happen that the term from which
@@ -631,8 +630,8 @@ int main(int argc, const char **argv) {
 						continue;
 					}
 
-					// We have to erase first, because an unordered_set doesn't overwrite the old value, if it thinks this
-					// element already exists
+					// We have to erase first, because an unordered_set doesn't overwrite the old value, if it thinks
+					// this element already exists
 					toBeSymmetrizedResultTensors.erase(it);
 					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
 				}

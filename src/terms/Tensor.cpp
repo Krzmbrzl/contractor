@@ -13,7 +13,7 @@ namespace Contractor::Terms {
 void Tensor::transferSymmetry(const Tensor &source, Tensor &destination) {
 	// If these tensors don't refer to the same element, transferring the symmetry does not make
 	// a whole lot of sense
-	assert(source.refersToSameElement(destination));
+	assert(source.refersToSameElement(destination, false));
 	assert(source.getIndices().size() == destination.getIndices().size());
 
 	const IndexSubstitution mapping = source.getIndexMapping(destination);
@@ -249,44 +249,60 @@ bool Tensor::hasPartialColumnSymmetry() const {
 	return false;
 }
 
-bool Tensor::refersToSameElement(const Tensor &other) const {
+bool Tensor::refersToSameElement(const Tensor &other, bool accountForSymmetry) const {
 	if (m_indices.size() != other.m_indices.size() || getName() != other.getName()) {
 		return false;
 	}
+	if (accountForSymmetry
+		&& (m_symmetry.getCanonicalRepresentationFactor() != other.getSymmetry().getCanonicalRepresentationFactor()
+			|| m_symmetry.size() != other.getSymmetry().size())) {
+		// We don't compare the symmetry itself, since as of now the symmetry compares indices "name-sensitively" thus i
+		// and j are always considered to be different, regardless of context
+		return false;
+	}
+
+	const Tensor::index_list_t &otherIndices =
+		accountForSymmetry ? other.getSymmetry().getCanonicalRepresentation() : other.getIndices();
+
+	return refersToSameIndexSequence(otherIndices, accountForSymmetry);
+}
+
+bool Tensor::refersToSameIndexSequence(const Tensor::index_list_t &otherIndices, bool accountForSymmetry) const {
+	const Tensor::index_list_t &ownIndices = accountForSymmetry ? m_symmetry.getCanonicalRepresentation() : m_indices;
 
 	// Assume index order in both tensors to be compatible
-	for (std::size_t i = 0; i < m_indices.size(); i++) {
-		if (m_indices[i].getType() != other.m_indices[i].getType()) {
+	for (std::size_t i = 0; i < ownIndices.size(); i++) {
+		if (ownIndices[i].getType() != otherIndices[i].getType()) {
 			return false;
 		}
-		if (m_indices[i].getSpace() != other.m_indices[i].getSpace()) {
+		if (ownIndices[i].getSpace() != otherIndices[i].getSpace()) {
 			return false;
 		}
-		if (m_indices[i].getSpin() != other.m_indices[i].getSpin()) {
+		if (ownIndices[i].getSpin() != otherIndices[i].getSpin()) {
 			return false;
 		}
 		// The exact ID does not matter here as that is only a matter of naming convention
 		// However if we end up having equal indices in a single tensor, then there must
 		// also be equal indices in the other tensor
-		auto it             = std::find(m_indices.begin() + i + 1, m_indices.end(), m_indices[i]);
-		bool foundDuplicate = it != m_indices.end();
-		while (it != m_indices.end()) {
-			std::size_t duplicateIndex = std::distance(m_indices.begin(), it);
+		auto it             = std::find(ownIndices.begin() + i + 1, ownIndices.end(), ownIndices[i]);
+		bool foundDuplicate = it != ownIndices.end();
+		while (it != ownIndices.end()) {
+			std::size_t duplicateIndex = std::distance(ownIndices.begin(), it);
 
-			if (other.m_indices[i] != other.m_indices[duplicateIndex]) {
+			if (otherIndices[i] != otherIndices[duplicateIndex]) {
 				return false;
 			}
 
-			it = std::find(m_indices.begin() + duplicateIndex + 1, m_indices.end(), m_indices[i]);
+			it = std::find(ownIndices.begin() + duplicateIndex + 1, ownIndices.end(), ownIndices[i]);
 		}
 
 		if (!foundDuplicate) {
-			// Check if the other.m_indices has a duplicate of the current index. If it does, the
+			// Check if the otherIndices has a duplicate of the current index. If it does, the
 			// index structure of the two tensors is incompatible since this tensor does not have
 			// a duplicate at this position
-			auto otherIt = std::find(other.m_indices.begin() + i + 1, other.m_indices.end(), other.m_indices[i]);
+			auto otherIt = std::find(otherIndices.begin() + i + 1, otherIndices.end(), otherIndices[i]);
 
-			if (otherIt != other.m_indices.end()) {
+			if (otherIt != otherIndices.end()) {
 				return false;
 			}
 		}
@@ -296,8 +312,6 @@ bool Tensor::refersToSameElement(const Tensor &other) const {
 }
 
 IndexSubstitution Tensor::getIndexMapping(const Tensor &other) const {
-	assert(this->refersToSameElement(other));
-
 	IndexSubstitution::substitution_list mapping;
 
 	// If both Tensors refer to the same element, then the index mapping is a simple positional one.

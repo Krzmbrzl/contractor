@@ -232,6 +232,19 @@ TEST(TensorTest, refersToSameElement) {
 		ASSERT_TRUE(first.refersToSameElement(second));
 		ASSERT_TRUE(second.refersToSameElement(first));
 	}
+	{
+		// This function is also supposed to take symmetry into account
+		ct::Tensor first("T", { idx("a+"), idx("i-") });
+		first.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("i") } }));
+
+		ct::Tensor second("T", { idx("i+"), idx("a-") });
+		second.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("i"), idx("a") } }));
+
+		ASSERT_TRUE(first.refersToSameElement(first));
+		ASSERT_TRUE(second.refersToSameElement(second));
+		ASSERT_TRUE(first.refersToSameElement(second));
+		ASSERT_TRUE(second.refersToSameElement(first));
+	}
 }
 
 TEST(TensorTest, transferSymmetry) {
@@ -415,7 +428,7 @@ TEST(TensorTest, getIndexMapping) {
 		  ct::IndexSubstitution::index_pair_t(a, c), ct::IndexSubstitution::index_pair_t(b, d) },
 		1);
 
-	ASSERT_TRUE(one.refersToSameElement(two));
+	ASSERT_TRUE(one.refersToSameElement(two, false));
 
 	ASSERT_EQ(one.getIndexMapping(two), expectedMapping);
 }

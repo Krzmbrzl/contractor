@@ -182,12 +182,21 @@ public:
 
 	/**
 	 * @param other The Tensor to compare to
+	 * @param accountForSymmetry Whether symmetry of the involved Tensors shall be taken
+	 * into account.
 	 * @returns Whether both Tensors are actually referring to the same element. This differs
 	 * from equality as the actual index IDs are not important for this, only the relative
 	 * order and the index space and type. Note however that duplicate indices in either Tensor
 	 * have to have a corresponding counterpart in the other one.
 	 */
-	bool refersToSameElement(const Tensor &other) const;
+	bool refersToSameElement(const Tensor &other, bool accountForSymmetry = true) const;
+
+	/**
+	 * @param indices The index list to check
+	 * @param Whether to take this Tensor's symmetry into account
+	 * @returns Whether the given index sequence is equivalent to the one of this Tensor
+	 */
+	bool refersToSameIndexSequence(const Tensor::index_list_t &indices, bool accountForSymmetry = true) const;
 
 	/**
 	 * This gets the index mapping from this Tensor to another one. Note that both Tensors
