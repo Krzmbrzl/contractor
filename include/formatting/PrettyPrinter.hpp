@@ -23,6 +23,7 @@ class IndexSpaceMeta;
 class TensorDecomposition;
 class TensorSubstitution;
 class PermutationGroup;
+class TensorRename;
 }; // namespace Contractor::Terms
 
 namespace Contractor::Utils {
@@ -56,6 +57,7 @@ public:
 	void print(const Utils::IndexSpaceResolver &resolver);
 	void print(const Terms::TensorDecomposition &decomposition);
 	void print(const Terms::TensorSubstitution &substitution);
+	void print(const Terms::TensorRename &rename);
 
 	template< typename term_t > void print(const Terms::CompositeTerm< term_t > &composite) {
 		static_assert(std::is_base_of_v< Terms::Term, term_t >, "Can't print TermGroup whose elements are no Terms");

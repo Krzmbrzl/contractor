@@ -1,6 +1,7 @@
 #include "formatting/PrettyPrinter.hpp"
 #include "terms/Index.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/TensorRename.hpp"
 #include "terms/PermutationGroup.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
@@ -272,6 +273,14 @@ void PrettyPrinter::print(const Terms::TensorSubstitution &substitution) {
 		*m_stream << substitution.getFactor() << " ";
 	}
 	print(substitution.getSubstitution());
+}
+
+void PrettyPrinter::print(const Terms::TensorRename &rename) {
+	assert(m_stream != nullptr);
+
+	*m_stream << "Rename Tensor of form ";
+	print(rename.getTensor());
+	*m_stream << " to " << rename.getNewName();
 }
 
 #undef DEFINE_STANDARD_TYPE_PRINT_FUNCTION
