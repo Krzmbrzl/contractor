@@ -1,0 +1,12 @@
+{
+	"H[H,H]":    "f",
+	"H[P,P]":    "f",
+	"H[PP,PP]":  "K",
+	"H[HH,HH]":  "K",
+	"H[PP,HH]":  "K",
+	"H[HH,PP]":  "K",
+	"H[PH,HP]":  "J",
+	"O2[PP,HH]": "R2",
+	"O1[P,H]":   "R1",
+	"ECCD[,]":   "ECC"
+}

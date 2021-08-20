@@ -7,6 +7,7 @@ add_library(${LIB_NAME} STATIC
 	SymmetryListParser.cpp
 	IndexSpaceParser.cpp
 	DecompositionParser.cpp
+	TensorRenameParser.cpp
 )
 
 add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})
