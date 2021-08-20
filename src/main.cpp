@@ -387,6 +387,16 @@ int main(int argc, const char **argv) {
 					}
 
 					wasDecomposed = true;
+
+					// Add the tensors from the decomposition to the list of known "base Tensors"
+					for (const ct::GeneralTerm &current : currentDecomposition.getSubstitutions()) {
+						for (const ct::Tensor currentTensor : current.getTensors()) {
+							std::string name(currentTensor.getName());
+
+							baseTensorNameStrings.insert(name);
+							baseTensorNames.insert(*baseTensorNameStrings.find(name));
+						}
+					}
 				}
 			}
 
