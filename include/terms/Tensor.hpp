@@ -41,6 +41,14 @@ public:
 	 */
 	using index_list_t = std::vector< Index >;
 
+	struct has_same_name {
+		bool operator()(const Tensor &left, const Tensor &right) const { return left.getName() == right.getName(); }
+	};
+
+	struct tensor_name_hash {
+		std::size_t operator()(const Tensor &tensor) const { return std::hash< std::string_view >{}(tensor.getName()); }
+	};
+
 	struct is_same_tensor_element {
 		bool operator()(const Tensor &left, const Tensor &right) const { return left.refersToSameElement(right); }
 	};
