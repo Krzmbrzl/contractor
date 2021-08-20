@@ -71,6 +71,18 @@ public:
 	 */
 	const meta_list_t &getMetaList() const;
 
+	/**
+	 * @param label The label for the index space to search for
+	 * @returns Whether this resolver contains an index space identified by the given label
+	 */
+	bool contains(const Terms::IndexSpaceMeta::label_t &label) const;
+
+	/**
+	 * @param name The name for the index space to search for
+	 * @returns Whether this resolver contains an index space identified by the given name
+	 */
+	bool contains(const Terms::IndexSpaceMeta::name_t &name) const;
+
 protected:
 	meta_list_t m_list;
 };

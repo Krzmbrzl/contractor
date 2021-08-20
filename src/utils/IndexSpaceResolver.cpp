@@ -51,4 +51,24 @@ const IndexSpaceResolver::meta_list_t &IndexSpaceResolver::getMetaList() const {
 	return m_list;
 }
 
+bool IndexSpaceResolver::contains(const Terms::IndexSpaceMeta::label_t &label) const {
+	for (const Terms::IndexSpaceMeta &currentMeta : m_list) {
+		if (label == currentMeta.getLabel()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool IndexSpaceResolver::contains(const Terms::IndexSpaceMeta::name_t &name) const {
+	for (const Terms::IndexSpaceMeta &currentMeta : m_list) {
+		if (name == currentMeta.getName()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 }; // namespace Contractor::Utils
