@@ -19,8 +19,8 @@ TensorSubstitution::TensorSubstitution(Tensor &&tensor, Tensor &&substitution, T
 }
 
 bool operator==(const TensorSubstitution &lhs, const TensorSubstitution &rhs) {
-	return lhs.m_originalTensor == rhs.m_originalTensor && lhs.m_substitution == rhs.m_substitution
-		   && lhs.m_factor == rhs.m_factor;
+	return lhs.m_originalTensor.refersToSameElement(rhs.m_originalTensor)
+		   && lhs.m_substitution.refersToSameElement(rhs.m_substitution) && lhs.m_factor == rhs.m_factor;
 }
 
 bool operator!=(const TensorSubstitution &lhs, const TensorSubstitution &rhs) {
