@@ -127,6 +127,25 @@ template< typename term_t > void simplify(std::vector< ct::TermGroup< term_t > >
 	printer << "\n\n";
 }
 
+void applySymmetry(std::vector< ct::TensorDecomposition > &decompositions,
+				   const std::vector< ct::Tensor > &symmetries) {
+	for (ct::TensorDecomposition &currentDecomposition : decompositions) {
+		for (ct::GeneralTerm &currentTerm : currentDecomposition.accessSubstitutions()) {
+			for (const ct::Tensor &currentSymmetryTensor : symmetries) {
+				if (currentSymmetryTensor.refersToSameElement(currentTerm.getResult(), false)) {
+					ct::Tensor::transferSymmetry(currentSymmetryTensor, currentTerm.accessResult());
+				}
+
+				for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
+					if (currentSymmetryTensor.refersToSameElement(currentTensor, false)) {
+						ct::Tensor::transferSymmetry(currentSymmetryTensor, currentTensor);
+					}
+				}
+			}
+		}
+	}
+}
+
 int main(int argc, const char **argv) {
 	// First parse the command line arguments
 	CommandLineArguments args;
@@ -233,6 +252,10 @@ int main(int argc, const char **argv) {
 	}
 
 	printer << "\n\n";
+
+
+	// Also apply the symmetry to all substitutions that we might end up performing
+	applySymmetry(decompositions, symmetries);
 
 
 	// Store the names of the original result Tensors as well as the "base Tensors"
