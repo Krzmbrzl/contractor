@@ -508,10 +508,12 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 					Terms::TensorDecomposition::decomposed_terms_t currentResults =
 						decompositions[i].apply(current, &successful);
 
-					assert(successful);
-
-					for (auto &current : currentResults) {
-						newResults.addTerm(std::move(current));
+					// A decomposition can fail to apply if e.g. a previous decomposition already
+					// replaced the Tensor, the current decomposition would apply to
+					if (successful) {
+						for (auto &current : currentResults) {
+							newResults.addTerm(std::move(current));
+						}
 					}
 				}
 
