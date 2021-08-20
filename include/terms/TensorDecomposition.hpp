@@ -1,10 +1,10 @@
 #ifndef CONTRACTOR_TERMS_TENSORDECOMPOSITION_HPP_
 #define CONTRACTOR_TERMS_TENSORDECOMPOSITION_HPP_
 
+#include "terms/CompositeTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/Term.hpp"
-#include "terms/CompositeTerm.hpp"
 
 #include <ostream>
 #include <vector>
@@ -62,6 +62,11 @@ public:
 	 * actual contents of the Term.
 	 */
 	const substitution_list_t &getSubstitutions() const;
+
+	/**
+	 * @returns A mutable list of substitutions that make up this decomposition.
+	 */
+	substitution_list_t &accessSubstitutions();
 
 	bool isValid() const;
 

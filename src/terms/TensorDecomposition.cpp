@@ -162,7 +162,7 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 
 		if (currentSubstitutionApplied) {
 			result.addTerm(GeneralTerm(term.getResult(), term.getPrefactor() * currentSubstitution.getPrefactor(),
-										 std::move(tensorList)));
+									   std::move(tensorList)));
 
 			substitionApplied = true;
 		}
@@ -187,6 +187,10 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 }
 
 const TensorDecomposition::substitution_list_t &TensorDecomposition::getSubstitutions() const {
+	return m_substutions;
+}
+
+TensorDecomposition::substitution_list_t &TensorDecomposition::accessSubstitutions() {
 	return m_substutions;
 }
 
