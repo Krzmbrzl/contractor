@@ -4,6 +4,7 @@
 #include "parser/GeCCoExportParser.hpp"
 #include "parser/IndexSpaceParser.hpp"
 #include "parser/SymmetryListParser.hpp"
+#include "parser/TensorRenameParser.hpp"
 #include "processor/Factorizer.hpp"
 #include "processor/Simplifier.hpp"
 #include "processor/SpinIntegrator.hpp"
@@ -13,6 +14,7 @@
 #include "terms/CompositeTerm.hpp"
 #include "terms/GeneralTerm.hpp"
 #include "terms/IndexSubstitution.hpp"
+#include "terms/TensorRename.hpp"
 #include "terms/TermGroup.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 
@@ -40,6 +42,7 @@ struct CommandLineArguments {
 	std::filesystem::path geccoExportFile;
 	std::filesystem::path symmetryFile;
 	std::filesystem::path decompositionFile;
+	std::filesystem::path tensorRenameFile;
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
 	unsigned int selectedTerm;
@@ -65,6 +68,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Path to the Tensor symmetry specification file (.symmetry)")
 		("decomposition,d", boost::program_options::value<std::filesystem::path>(&args.decompositionFile)->default_value(""),
 		 "Path to the decomposition file (.decomposition)")
+		("renaming,r", boost::program_options::value<std::filesystem::path>(&args.tensorRenameFile)->default_value(""),
+		 "Path to the file specifying tensor renames to be carried out")
 		("ascii-only", boost::program_options::value<bool>(&args.asciiOnlyOutput)->default_value(false)->zero_tokens(),
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
 		("restricted-orbitals", boost::program_options::value<bool>(&args.restrictedOrbitals)->default_value(false)->zero_tokens(),
@@ -146,6 +151,16 @@ void applySymmetry(std::vector< ct::TensorDecomposition > &decompositions,
 	}
 }
 
+void renameDecompositionTensors(std::vector<ct::TensorDecomposition> &decompositions, const std::vector<ct::TensorRename> &renames) {
+	for (ct::TensorDecomposition &currentDecomposition : decompositions) {
+		for (ct::GeneralTerm &currentTerm : currentDecomposition.accessSubstitutions()) {
+			for (const ct::TensorRename &currentRename : renames) {
+				currentRename.apply(currentTerm);
+			}
+		}
+	}
+}
+
 int main(int argc, const char **argv) {
 	// First parse the command line arguments
 	CommandLineArguments args;
@@ -168,6 +183,10 @@ int main(int argc, const char **argv) {
 	cp::DecompositionParser::decomposition_list_t decompositions;
 	if (!args.decompositionFile.empty()) {
 		decompositions = parse< cp::DecompositionParser >(args.decompositionFile, resolver);
+	}
+	std::vector< ct::TensorRename > renames;
+	if (!args.tensorRenameFile.empty()) {
+		renames = parse< cp::TensorRenamingParser >(args.tensorRenameFile, resolver);
 	}
 
 	// TODO: Validate that all indices that are neither creator nor annihilator don't have spin
@@ -222,8 +241,18 @@ int main(int argc, const char **argv) {
 	}
 	printer << "\n\n";
 
-	// Transfer symmetry to the Tensor objects in terms
-	printer.printHeadline("Applying specified symmetry");
+	// Print renames
+	if (!renames.empty()) {
+		printer.printHeadline("Specified Tensor renaming");
+		for (const ct::TensorRename &current : renames) {
+			printer << "- " << current << "\n";
+		}
+
+		printer << "\n\n";
+	}
+
+	// Transfer symmetry to the Tensor objects in term
+	printer.printHeadline("Deducing initial symmetry");
 	for (ct::GeneralTerm &currentTerm : initialTerms) {
 		printer << "In " << currentTerm << ":\n";
 		for (ct::Tensor &currentTensor : currentTerm.accessTensors()) {
@@ -256,6 +285,29 @@ int main(int argc, const char **argv) {
 
 	// Also apply the symmetry to all substitutions that we might end up performing
 	applySymmetry(decompositions, symmetries);
+
+
+	if (!renames.empty()) {
+		printer.printHeadline("Renaming Tensors");
+
+		for (ct::GeneralTerm &currentTerm : initialTerms) {
+			bool changed                 = false;
+			ct::GeneralTerm originalTerm = currentTerm;
+
+			for (const ct::TensorRename &currentSubstitution : renames) {
+				changed = currentSubstitution.apply(currentTerm) || changed;
+			}
+
+			if (changed) {
+				printer << "With renamed Tensors, " << originalTerm << " now reads:\n  " << currentTerm << "\n";
+			}
+		}
+
+		printer << "\n\n";
+
+		// Also rename the Tensors in the decompositon
+		renameDecompositionTensors(decompositions, renames);
+	}
 
 
 	// Store the names of the original result Tensors as well as the "base Tensors"
