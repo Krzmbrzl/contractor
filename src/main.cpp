@@ -44,6 +44,8 @@ struct CommandLineArguments {
 	std::filesystem::path symmetryFile;
 	std::filesystem::path decompositionFile;
 	std::filesystem::path tensorRenameFile;
+	std::filesystem::path itfOutputFile;
+	std::string itfCodeBlock;
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
 	unsigned int selectedTerm;
@@ -71,12 +73,16 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Path to the decomposition file (.decomposition)")
 		("renaming,r", boost::program_options::value<std::filesystem::path>(&args.tensorRenameFile)->default_value(""),
 		 "Path to the file specifying tensor renames to be carried out")
+		("itf-out", boost::program_options::value<std::filesystem::path>(&args.itfOutputFile)->default_value(""),
+		 "The path to which the generated ITF code shall be written. If this is empty, no export to ITF will happen.")
 		("ascii-only", boost::program_options::value<bool>(&args.asciiOnlyOutput)->default_value(false)->zero_tokens(),
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
 		("restricted-orbitals", boost::program_options::value<bool>(&args.restrictedOrbitals)->default_value(false)->zero_tokens(),
 		 "Using this flag tells the program that restricted orbitals are used where the spatial parts of alpha/beta pairs is equal")
 		("select-term", boost::program_options::value<unsigned int>(&args.selectedTerm)->default_value(0),
 		 "Out of the read terms, only the term at this posititon (1-based) will be processed. 0 will cause all terms to be processed")
+		("itf-code-block", boost::program_options::value<std::string>(&args.itfCodeBlock)->default_value("Residual"),
+		 "The name of the \"CODE_BLOCK\" to use when exporting to ITF")
 	;
 	// clang-format on
 
@@ -806,17 +812,22 @@ int main(int argc, const char **argv) {
 
 
 	// Conversion to ITF
-	std::unordered_set< std::string_view > nonIntermediateNames;
-	nonIntermediateNames.reserve(resultTensorNames.size() + baseTensorNames.size());
+	if (!args.itfOutputFile.empty()) {
+		std::ofstream itfOut(args.itfOutputFile);
 
-	nonIntermediateNames.insert(resultTensorNames.begin(), resultTensorNames.end());
-	nonIntermediateNames.insert(baseTensorNames.begin(), baseTensorNames.end());
+		std::unordered_set< std::string_view > nonIntermediateNames;
+		nonIntermediateNames.reserve(resultTensorNames.size() + baseTensorNames.size());
 
-	cf::ITFExporter exporter(resolver, std::cout, "Residual", [nonIntermediateNames](const std::string_view &name) {
-		return nonIntermediateNames.find(name) == nonIntermediateNames.end();
-	});
-	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
-		exporter.addComposites(currentGroup.getTerms());
+		nonIntermediateNames.insert(resultTensorNames.begin(), resultTensorNames.end());
+		nonIntermediateNames.insert(baseTensorNames.begin(), baseTensorNames.end());
+
+		cf::ITFExporter exporter(resolver, itfOut, args.itfCodeBlock,
+								 [nonIntermediateNames](const std::string_view &name) {
+									 return nonIntermediateNames.find(name) == nonIntermediateNames.end();
+								 });
+		for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+			exporter.addComposites(currentGroup.getTerms());
+		}
 	}
 
 	return Contractor::ExitCodes::OK;
