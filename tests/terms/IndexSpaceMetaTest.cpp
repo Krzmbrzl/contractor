@@ -21,8 +21,8 @@ TEST(IndexSpaceMetaTest, getter) {
 }
 
 TEST(IndexSpaceMetaTest, spaces) {
-	// Note that the seeming equality of the meta objects does not mean that the produced spaces are equal. Each meta instances
-	// must produce a distinct IndexSpace object
+	// Note that the seeming equality of the meta objects does not mean that the produced spaces are equal. Each meta
+	// instances must produce a distinct IndexSpace object
 	ct::IndexSpaceMeta meta1("first", 'F', 100, ct::Index::Spin::Both);
 	ct::IndexSpaceMeta meta2("first", 'F', 100, ct::Index::Spin::Both);
 
@@ -42,8 +42,8 @@ TEST(IndexSpaceMetaTest, equality) {
 								for (ct::Index::Spin spin2 : { ct::Index::Spin::Alpha, ct::Index::Spin::None }) {
 									bool equals =
 										name1 == name2 && label1 == label2 && size1 == size2 && spin1 == spin2;
-									// Consecutively created IndexSpaceMeta objects will produce different spaces, regardless of the
-									// other parameters
+									// Consecutively created IndexSpaceMeta objects will produce different spaces,
+									// regardless of the other parameters
 									ct::IndexSpaceMeta meta1(name1, label1, size1, spin1);
 									ct::IndexSpaceMeta meta2(name2, label2, size2, spin2);
 

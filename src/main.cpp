@@ -158,7 +158,8 @@ void applySymmetry(std::vector< ct::TensorDecomposition > &decompositions,
 	}
 }
 
-void renameDecompositionTensors(std::vector<ct::TensorDecomposition> &decompositions, const std::vector<ct::TensorRename> &renames) {
+void renameDecompositionTensors(std::vector< ct::TensorDecomposition > &decompositions,
+								const std::vector< ct::TensorRename > &renames) {
 	for (ct::TensorDecomposition &currentDecomposition : decompositions) {
 		for (ct::GeneralTerm &currentTerm : currentDecomposition.accessSubstitutions()) {
 			for (const ct::TensorRename &currentRename : renames) {

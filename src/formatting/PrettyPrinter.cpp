@@ -1,10 +1,10 @@
 #include "formatting/PrettyPrinter.hpp"
 #include "terms/Index.hpp"
 #include "terms/IndexSubstitution.hpp"
-#include "terms/TensorRename.hpp"
 #include "terms/PermutationGroup.hpp"
 #include "terms/Tensor.hpp"
 #include "terms/TensorDecomposition.hpp"
+#include "terms/TensorRename.hpp"
 #include "terms/TensorSubstitution.hpp"
 #include "utils/IndexSpaceResolver.hpp"
 

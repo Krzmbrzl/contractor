@@ -4,7 +4,8 @@ namespace Contractor::Terms {
 IndexSpace::id_t IndexSpaceMeta::s_nextID = 0;
 
 bool operator==(const IndexSpaceMeta &lhs, const IndexSpaceMeta &rhs) {
-	return lhs.m_name == rhs.m_name && lhs.m_label == rhs.m_label && lhs.m_size == rhs.m_size && lhs.m_space == rhs.m_space;
+	return lhs.m_name == rhs.m_name && lhs.m_label == rhs.m_label && lhs.m_size == rhs.m_size
+		   && lhs.m_space == rhs.m_space;
 }
 
 bool operator!=(const IndexSpaceMeta &lhs, const IndexSpaceMeta &rhs) {

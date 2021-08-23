@@ -4,7 +4,7 @@
 #include <istream>
 
 namespace Contractor::Utils {
-	class IndexSpaceResolver;
+class IndexSpaceResolver;
 };
 
 namespace Contractor::Parser {

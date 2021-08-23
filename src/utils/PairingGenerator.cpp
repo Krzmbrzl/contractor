@@ -23,7 +23,7 @@ namespace Contractor::Utils {
 //
 // The size of the stack is a measure for which pair we are currently working on (e.g. swapping the
 // second part of it). The stack size is the 1-based index for currently worked on pair (in the list
-// of pairs as shown above). That means that the 0-based index of the second entry in the current pair 
+// of pairs as shown above). That means that the 0-based index of the second entry in the current pair
 // in the list of all indices is obtained as 2 * stackSize - 1.
 //
 // In general the process works by swapping indices in the index array and then producing pairings from
@@ -124,8 +124,9 @@ void PairingGenerator::step() {
 }
 
 void PairingGenerator::revertIndexLevel() {
-	// If the current loop variable has reached its maximum value, the current loop is done. In our stack formalism this means
-	// that we'll pop the counter from the stack but before we do that, we have to undo the swaps performed within this loop.
+	// If the current loop variable has reached its maximum value, the current loop is done. In our stack formalism this
+	// means that we'll pop the counter from the stack but before we do that, we have to undo the swaps performed within
+	// this loop.
 	while (!m_loopVars.empty() && m_loopVars.top() + 1 == m_indices.size()) {
 		std::size_t refIndex = m_loopVars.size() * 2 - 1;
 
