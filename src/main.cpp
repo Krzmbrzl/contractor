@@ -99,8 +99,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 	}
 
 	// Verify that the file paths actually exist (empty path means optional)
-	for (const std::filesystem::path &currentPath :
-		 { args.symmetryFile, args.decompositionFile, args.geccoExportFile, args.indexSpaceFile }) {
+	for (const std::filesystem::path &currentPath : { args.symmetryFile, args.decompositionFile, args.geccoExportFile,
+													  args.indexSpaceFile, args.tensorRenameFile }) {
 		if (!currentPath.empty() && !std::filesystem::is_regular_file(currentPath)) {
 			std::cerr << "The file " << currentPath << " does not exist or is not a file" << std::endl;
 			return Contractor::ExitCodes::FILE_NOT_FOUND;
