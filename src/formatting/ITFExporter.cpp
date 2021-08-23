@@ -2,6 +2,7 @@
 
 #include "terms/Index.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <stdexcept>
 
@@ -74,7 +75,22 @@ void ITFExporter::writeTerm(const ct::BinaryTerm &term) {
 void ITFExporter::writeTensor(const ct::Tensor &tensor) {
 	assert(m_sink != nullptr);
 
-	std::string spinString = getSpinString(tensor.getIndices());
+	// Sort indices such that the ones belonging to the biggest index space are located to the left. We assume that the
+	// Tensors have been renamed in such a way that this reordering of indices does not cause change ambiguity as to
+	// which Tensor is being referenced.
+	std::vector< std::reference_wrapper< const ct::Index > > indices(tensor.getIndices().begin(),
+																	 tensor.getIndices().end());
+	std::vector< std::reference_wrapper< const ct::Index > > originalIndices = indices;
+	std::stable_sort(indices.begin(), indices.end(), [this](const ct::Index &left, const ct::Index &right) {
+		if (m_resolver.getMeta(left.getSpace()).getSize() != m_resolver.getMeta(right.getSpace()).getSize()) {
+			return m_resolver.getMeta(left.getSpace()).getSize() > m_resolver.getMeta(right.getSpace()).getSize();
+		}
+
+		return left < right;
+	});
+
+	std::string spinString         = getSpinString(indices);
+	std::string originalSpinString = getSpinString(originalIndices);
 
 	*m_sink << tensor.getName();
 	if (m_isIntermediate(tensor.getName())) {
@@ -82,19 +98,20 @@ void ITFExporter::writeTensor(const ct::Tensor &tensor) {
 		*m_sink << "_STIN";
 	}
 	if (!spinString.empty()) {
-		// Mark explicit spin cases
-		*m_sink << "_" << spinString;
+		// Mark explicit spin cases (before and after sorting)
+		*m_sink << "_" << originalSpinString << "_" << spinString;
 	}
 
 	// Print list of indices
 	*m_sink << "[";
-	for (const ct::Index &currentIndex : tensor.getIndices()) {
+
+	for (const ct::Index &currentIndex : indices) {
 		*m_sink << getIndexName(currentIndex);
 	}
 	*m_sink << "]";
 }
 
-std::string ITFExporter::getSpinString(const ct::Tensor::index_list_t &indices) {
+std::string ITFExporter::getSpinString(const std::vector< std::reference_wrapper< const ct::Index > > &indices) {
 	std::string string;
 	bool onlyNone = true;
 

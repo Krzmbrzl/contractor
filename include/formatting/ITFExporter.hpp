@@ -52,7 +52,7 @@ protected:
 
 	void writeTerm(const Terms::BinaryTerm &term);
 	void writeTensor(const Terms::Tensor &tensor);
-	std::string getSpinString(const Terms::Tensor::index_list_t &indices);
+	std::string getSpinString(const std::vector< std::reference_wrapper< const Terms::Index > > &indices);
 	char getIndexName(const Terms::Index &index) const;
 };
 
