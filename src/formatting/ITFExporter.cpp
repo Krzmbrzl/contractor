@@ -82,11 +82,7 @@ void ITFExporter::writeTensor(const ct::Tensor &tensor) {
 																	 tensor.getIndices().end());
 	std::vector< std::reference_wrapper< const ct::Index > > originalIndices = indices;
 	std::stable_sort(indices.begin(), indices.end(), [this](const ct::Index &left, const ct::Index &right) {
-		if (m_resolver.getMeta(left.getSpace()).getSize() != m_resolver.getMeta(right.getSpace()).getSize()) {
-			return m_resolver.getMeta(left.getSpace()).getSize() > m_resolver.getMeta(right.getSpace()).getSize();
-		}
-
-		return left < right;
+		return m_resolver.getMeta(left.getSpace()).getSize() > m_resolver.getMeta(right.getSpace()).getSize();
 	});
 
 	std::string spinString         = getSpinString(indices);
