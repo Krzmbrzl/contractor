@@ -82,58 +82,16 @@ void SpinIntegrator::process(const Terms::Tensor &tensor) {
 		}
 	}
 
-	std::vector< IndexGroup > groups;
-	if (tensor.isPartiallyAntisymmetrized()) {
-		// Checking for partial antisymmetrization only makes sense for an equal amount of creators and annihialtors
-		assert(creators.size() == annihilators.size());
+	IndexGroup group = {std::move(creators), std::move(annihilators)};
 
-		// If the Tensor is (partially) anti-symmetrized, there is only a single index group (all creators
-		// and all annihilators)
-		groups.push_back({ std::move(creators), std::move(annihilators) });
-	} else {
-		// For non-antisymmetrized Tensors we assume that the first creator belongs to the same
-		// particle as the first annihilator (forming a goup) and so on.
-		std::size_t minSize = std::min(creators.size(), annihilators.size());
-
-		// First group the paired indices
-		for (std::size_t i = 0; i < minSize; ++i) {
-			IndexGroup currentGroup;
-			currentGroup.creator.push_back(std::move(creators[i]));
-			currentGroup.annihilator.push_back(std::move(annihilators[i]));
-
-			groups.push_back(std::move(currentGroup));
-		}
-
-		// Then collect the unpaired ones
-		if (creators.size() > annihilators.size()) {
-			// There are more creators than annihilors
-			for (std::size_t i = minSize; i < creators.size(); ++i) {
-				IndexGroup currentGroup;
-
-				currentGroup.creator.push_back(std::move(creators[i]));
-
-				groups.push_back(std::move(currentGroup));
-			}
-		} else if (creators.size() < annihilators.size()) {
-			// There are more annihilators than creators
-			for (std::size_t i = minSize; i < annihilators.size(); ++i) {
-				IndexGroup currentGroup;
-
-				currentGroup.annihilator.push_back(std::move(annihilators[i]));
-
-				groups.push_back(std::move(currentGroup));
-			}
-		}
-	}
 
 	if (m_substitutions.empty()) {
 		// Initialize with an empty (no-op) substitution
 		m_substitutions.push_back(ct::IndexSubstitution());
 	}
 
-	for (const IndexGroup &currentGroup : groups) {
-		process(currentGroup);
-	}
+	process(group);
+
 
 	if (m_substitutions.size() == 1 && m_substitutions[0].getSubstitutions().empty()) {
 		// This is still the same no-op substitution we added above -> remove it again

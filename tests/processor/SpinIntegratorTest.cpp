@@ -48,12 +48,9 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2));
 	}
 	{
-		// A Tensor with two creator/annihilator pairs that posesses full anti-symmetry with respect to exchange of
-		// creator or annihilator indices. For this we expect 6 cases: aa/aa, ab/ab, ab/ba, ba/ba, ba/ab, bb/bb
+		// A Tensor with two creator/annihilator pairs.
+		// For this we expect 6 cases: aa/aa, ab/ab, ab/ba, ba/ba, ba/ab, bb/bb
 		ct::Tensor tensor("S", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-
-		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(tensor, 1.0, { tensor });
 
@@ -94,50 +91,12 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));
 	}
 	{
-		// Same as above but this time the Tensor shall not be antisymmetrized. That reduces the possibilities
-		// to aa/aa ab/ab ba/ba bb/bb
-		ct::Tensor tensor("S", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		ct::GeneralTerm term(tensor, 1.0, { tensor });
-
-		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
-
-		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
-
-		// aa/aa
-		ct::IndexSubstitution sub1({ { idx("a+"), idx("a+/") },
-									 { idx("b+"), idx("b+/") },
-									 { idx("i-"), idx("i-/") },
-									 { idx("j-"), idx("j-/") } });
-		// ab/ab
-		ct::IndexSubstitution sub2({ { idx("a+"), idx("a+/") },
-									 { idx("b+"), idx("b+\\") },
-									 { idx("i-"), idx("i-/") },
-									 { idx("j-"), idx("j-\\") } });
-		// ba/ba
-		ct::IndexSubstitution sub3({ { idx("a+"), idx("a+\\") },
-									 { idx("b+"), idx("b+/") },
-									 { idx("i-"), idx("i-\\") },
-									 { idx("j-"), idx("j-/") } });
-		// bb/bb
-		ct::IndexSubstitution sub4({ { idx("a+"), idx("a+\\") },
-									 { idx("b+"), idx("b+\\") },
-									 { idx("i-"), idx("i-\\") },
-									 { idx("j-"), idx("j-\\") } });
-
-		ASSERT_EQ(substitutions.size(), 4);
-		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4));
-	}
-	{
 		// A term that is composed of a product of two Tensors: H[ab,ij] = T[a,i,q] T[b,j,q]
-		// We assume that the Term was not anti-symmetrized and therefore we expect the
-		// following spin cases for ij/ab: aa/bb, ab/ab, ba/ba, bb/bb
-		// Note that this is equal to the version of a single non-symmetrized 4-index Tensor
+		// We expect the following spin cases for ij/ab: aa/bb, ab/ab, ba/ba, bb/bb
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 		ct::GeneralTerm term(tensor, 1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("i-"), idx("q!") }),
 							   ct::Tensor("T", { idx("b+"), idx("j-"), idx("q!") }) });
-
-		ASSERT_FALSE(tensor.isPartiallyAntisymmetrized());
 
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
 
@@ -177,9 +136,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// Note that the other spin-cases or not zero for the result Tensor as a whole (because
 		// it was anti-symmetrized) but it is for this specific part of the Term.
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-
-		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(tensor, 1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("i-"), idx("q!") }),
@@ -216,9 +172,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// Term (with i and j exchanged): H[ab,ij] = - T[a,j,q] T[b,i,q]
 		// Therefore we expect the spin-cases for ab/ij aa/aa, ba/ab, ab/ba, bb/bb
 		ct::Tensor tensor("H", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
-		tensor.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-
-		ASSERT_TRUE(tensor.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(tensor, -1.0,
 							 { ct::Tensor("T", { idx("a+"), idx("j-"), idx("q!") }),
@@ -252,7 +205,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 	}
 	{
 		// A little more complex example of a Term: R[ab,ij] = G[ca,ki] T[kb,cj]
-		// We assume the result Tensor has been anti-symmetrized
 		// This yields the following spin-cases for abc/ijk:
 		// aaa/aaa, aab/aab
 		// baa/baa, bab/bab
@@ -263,14 +215,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor R("R", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 		ct::Tensor G("G", { idx("c+"), idx("a+"), idx("k-"), idx("i-") });
 		ct::Tensor T("T", { idx("k+"), idx("b+"), idx("c-"), idx("j-") });
-
-		R.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-		G.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("c"), idx("a") } }, -1));
-		T.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("k"), idx("b") } }, -1));
-
-		ASSERT_TRUE(R.isPartiallyAntisymmetrized());
-		ASSERT_TRUE(G.isPartiallyAntisymmetrized());
-		ASSERT_TRUE(T.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(R, 1.0, { G, T });
 
@@ -377,13 +321,6 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		ct::Tensor H("O2", { idx("k+"), idx("j-") });
 		ct::Tensor T2("O2", { idx("a+"), idx("b+"), idx("i-"), idx("k-") });
 
-		O2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-		T2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-
-		ASSERT_TRUE(O2.isPartiallyAntisymmetrized());
-		ASSERT_TRUE(H.isPartiallyAntisymmetrized());
-		ASSERT_TRUE(T2.isPartiallyAntisymmetrized());
-
 		ct::GeneralTerm term(O2, -1.0, { H, T2 });
 
 		const std::vector< ct::IndexSubstitution > &substitutions = integrator.spinIntegrate(term, false);
@@ -440,18 +377,17 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 		// aaaa/aa
 		// abab/ba
 		// abab/ab
+		// abba/ba
+		// abba/ab
+		// baab/ba
+		// baab/ab
 		// baba/ba
 		// baba/ab
 		// bbbb/bb
+
 		ct::Tensor O2("O2", { idx("a+"), idx("b+"), idx("i-"), idx("j-") });
 		ct::Tensor T2("T2", { idx("c+"), idx("d+"), idx("i-"), idx("j-") });
 		ct::Tensor B_B("B_B", { idx("a+"), idx("b+"), idx("c-"), idx("d-") });
-
-		O2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("a"), idx("b") } }, -1));
-		T2.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation({ { idx("c"), idx("d") } }, -1));
-
-		ASSERT_TRUE(O2.isPartiallyAntisymmetrized());
-		ASSERT_TRUE(T2.isPartiallyAntisymmetrized());
 
 		ct::GeneralTerm term(O2, -0.5, { T2, B_B });
 
@@ -481,8 +417,40 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 									 { idx("i-"), idx("i-/") },
 									 { idx("j-"), idx("j-\\") } });
 
+		// abba/ba
+		ct::IndexSubstitution sub4({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("c-"), idx("c-\\") },
+									 { idx("d-"), idx("d-/") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") } });
+
+		// abba/ab
+		ct::IndexSubstitution sub5({ { idx("a+"), idx("a+/") },
+									 { idx("b+"), idx("b+\\") },
+									 { idx("c-"), idx("c-\\") },
+									 { idx("d-"), idx("d-/") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") } });
+
+		// baab/ba
+		ct::IndexSubstitution sub6({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("c-"), idx("c-/") },
+									 { idx("d-"), idx("d-\\") },
+									 { idx("i-"), idx("i-\\") },
+									 { idx("j-"), idx("j-/") } });
+
+		// baab/ab
+		ct::IndexSubstitution sub7({ { idx("a+"), idx("a+\\") },
+									 { idx("b+"), idx("b+/") },
+									 { idx("c-"), idx("c-/") },
+									 { idx("d-"), idx("d-\\") },
+									 { idx("i-"), idx("i-/") },
+									 { idx("j-"), idx("j-\\") } });
+
 		// baba/ba
-		ct::IndexSubstitution sub4({ { idx("a+"), idx("a+\\") },
+		ct::IndexSubstitution sub8({ { idx("a+"), idx("a+\\") },
 									 { idx("b+"), idx("b+/") },
 									 { idx("c-"), idx("c-\\") },
 									 { idx("d-"), idx("d-/") },
@@ -490,7 +458,7 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 									 { idx("j-"), idx("j-/") } });
 
 		// baba/ab
-		ct::IndexSubstitution sub5({ { idx("a+"), idx("a+\\") },
+		ct::IndexSubstitution sub9({ { idx("a+"), idx("a+\\") },
 									 { idx("b+"), idx("b+/") },
 									 { idx("c-"), idx("c-\\") },
 									 { idx("d-"), idx("d-/") },
@@ -498,15 +466,16 @@ TEST(SpinIntegratorTest, spinIntegrate) {
 									 { idx("j-"), idx("j-\\") } });
 
 		// bbbb/bb
-		ct::IndexSubstitution sub6({ { idx("a+"), idx("a+\\") },
-									 { idx("b+"), idx("b+\\") },
-									 { idx("c-"), idx("c-\\") },
-									 { idx("d-"), idx("d-\\") },
-									 { idx("i-"), idx("i-\\") },
-									 { idx("j-"), idx("j-\\") } });
+		ct::IndexSubstitution sub10({ { idx("a+"), idx("a+\\") },
+									  { idx("b+"), idx("b+\\") },
+									  { idx("c-"), idx("c-\\") },
+									  { idx("d-"), idx("d-\\") },
+									  { idx("i-"), idx("i-\\") },
+									  { idx("j-"), idx("j-\\") } });
 
-		ASSERT_EQ(substitutions.size(), 6);
-		ASSERT_THAT(substitutions, ::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6));
+		ASSERT_EQ(substitutions.size(), 10);
+		ASSERT_THAT(substitutions,
+					::testing::UnorderedElementsAre(sub1, sub2, sub3, sub4, sub5, sub6, sub7, sub8, sub9, sub10));
 	}
 }
 
