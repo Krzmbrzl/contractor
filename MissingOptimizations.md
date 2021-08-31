@@ -64,3 +64,20 @@ H_T2[i⁺a⁺b⁻j⁻](////) += H[i⁺k⁺c⁻b⁻](....) T2[a⁺c⁺k⁻j⁻](.
 That means the first three contractions can be saved by recognizing that these are exactly what already has been calculated for
 `H_T2[i⁺a⁺b⁻j⁻](/\/\)`.
 
+
+# General simplification
+
+At the moment the program does not detect that in
+```
+- 1: {
+  H_T1[i⁺j⁺a⁻k⁻](/\/\) += - H[i⁺j⁺a⁻b⁻](....) T1[b⁺k⁻](..)
+}
+- 2: {
+  H_T1[i⁺j⁺a⁻k⁻](/\\/) += H[i⁺j⁺b⁻a⁻](....) T1[b⁺k⁻](..)
+}
+```
+One can see that
+```
+H_T1[i⁺j⁺a⁻k⁻](/\\/) = - H_T1[j⁺i⁺a⁻k⁻](/\/\)
+```
+
