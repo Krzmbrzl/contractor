@@ -52,8 +52,14 @@ protected:
 
 	void writeTerm(const Terms::BinaryTerm &term);
 	void writeTensor(const Terms::Tensor &tensor);
+	bool writeSpecialTensor(const Terms::Tensor &tensor);
 	std::string getSpinString(const std::vector< std::reference_wrapper< const Terms::Index > > &indices);
 	char getIndexName(const Terms::Index &index) const;
+	std::string getIndexPatternString(const Terms::Tensor &tensor) const;
+	std::string getIndexPatternString(const std::vector< Terms::Index > &indices) const;
+	void writeTensorName(const std::string_view &name);
+	void writeIndexSequence(const std::vector< Terms::Index > &indices);
+	void writeIndexSequence(const std::vector< std::reference_wrapper< const Terms::Index > > &indices);
 };
 
 }; // namespace Contractor::Formatting
