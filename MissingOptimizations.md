@@ -67,6 +67,7 @@ That means the first three contractions can be saved by recognizing that these a
 
 # General simplification
 
+## 1
 At the moment the program does not detect that in
 ```
 - 1: {
@@ -80,6 +81,10 @@ One can see that
 ```
 H_T1[i⁺j⁺a⁻k⁻](/\\/) = - H_T1[j⁺i⁺a⁻k⁻](/\/\)
 ```
+
+## 2
+It sometimes happens that different term groups require the same intermediates. Currently they will be calculated for each group individually instead
+of calculating it once and then using this precalculated intermediate whereever needed.
 
 # Tensor symmetries in ITF
 
