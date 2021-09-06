@@ -96,6 +96,8 @@ bool TensorSubstitution::apply(Term &term, bool replaceResult) const {
 
 	if (replaceResult && term.getResult().refersToSameElement(m_originalTensor)) {
 		IndexSubstitution mapping = m_originalTensor.getIndexMapping(term.getResult());
+		// This is supposed to be a mapping of the index names only
+		mapping.setRespectSpin(false);
 
 		term.setResult(m_substitution);
 
@@ -113,6 +115,8 @@ bool TensorSubstitution::apply(Term &term, bool replaceResult) const {
 	for (auto it = tensors.begin(); it != tensors.end(); ++it) {
 		if (it->refersToSameElement(m_originalTensor)) {
 			IndexSubstitution mapping = m_originalTensor.getIndexMapping(*it);
+			// This is supposed to be a mapping of the index names only
+			mapping.setRespectSpin(false);
 
 			*it = m_substitution;
 

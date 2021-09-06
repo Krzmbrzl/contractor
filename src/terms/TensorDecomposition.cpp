@@ -144,6 +144,12 @@ TensorDecomposition::decomposed_terms_t TensorDecomposition::apply(const Term &t
 				// only that they refer to the same element which does not uniquely define the actual index IDs)
 				IndexSubstitution mapping = currentSubstitution.getResult().getIndexMapping(currentTensor);
 
+				// We want the mapping to be understood as a mapping of index-names only (that means regardless of an
+				// index's type or spin). The underlying assumption here is that we don't have substitutions in which an
+				// index is present in multiple spin-cases but we only want to selectively replace the spin-case as used
+				// in the result tensor.
+				mapping.setRespectSpin(false);
+
 				for (Tensor &subTensor : currentSubstitution.accessTensors()) {
 					mapping.apply(subTensor);
 				}

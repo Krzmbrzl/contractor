@@ -221,3 +221,28 @@ TEST(TensorDecompositionTest, apply) {
 		ASSERT_EQ(decomposedTerms[0], expected);
 	}
 }
+
+TEST(TensorDecompositionTest, realWorldExamples) {
+	{
+		// Apply DF_DF[i⁺j⁺a⁻b⁻](////) = DF_DF[i⁺j⁺a⁻b⁻](/\/\)
+		// to DF_DF_T2[a⁺i⁺j⁻b⁻](////) += - DF_DF[k⁺i⁺b⁻c⁻](////) T2[a⁺c⁺k⁻j⁻](....)
+		// and expect DF_DF_T2[a⁺i⁺j⁻b⁻](////) += - DF_DF[k⁺i⁺b⁻c⁻](/\/\) T2[a⁺c⁺k⁻j⁻](....)
+		ct::Tensor DF_DF_aaaa("DF_DF", { idx("i+/"), idx("j+/"), idx("a-/"), idx("b-/") });
+		ct::Tensor DF_DF_abab("DF_DF", { idx("i+/"), idx("j+\\"), idx("a-/"), idx("b-\\") });
+
+		ct::TensorDecomposition decomposition({ ct::GeneralTerm(DF_DF_aaaa, 1, { DF_DF_abab }) });
+
+		ct::GeneralTerm originalTerm(ct::Tensor("DF_DF_T2", { idx("a+/"), idx("i+/"), idx("j-/"), idx("b-/") }), 1,
+									 { ct::Tensor("DF_DF", { idx("k+/"), idx("i+/"), idx("b-/"), idx("c-/") }),
+									   ct::Tensor("T2", { idx("a+|"), idx("c+|"), idx("k-|"), idx("j-|") }) });
+
+		ct::GeneralTerm expectedTerm(ct::Tensor("DF_DF_T2", { idx("a+/"), idx("i+/"), idx("j-/"), idx("b-/") }), 1,
+									 { ct::Tensor("DF_DF", { idx("k+/"), idx("i+\\"), idx("b-/"), idx("c-\\") }),
+									   ct::Tensor("T2", { idx("a+|"), idx("c+|"), idx("k-|"), idx("j-|") }) });
+
+		ct::TensorDecomposition::decomposed_terms_t decomposedTerms = decomposition.apply(originalTerm);
+
+		ASSERT_EQ(decomposedTerms.size(), 1);
+		ASSERT_EQ(decomposedTerms[0], expectedTerm);
+	}
+}
