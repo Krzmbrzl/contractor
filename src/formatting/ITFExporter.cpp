@@ -349,7 +349,9 @@ std::string ITFExporter::getIndexPatternString(const std::vector< ct::Index > &i
 
 void ITFExporter::writeTensorName(const std::string_view &name) {
 	bool firstChar = true;
-	for (char c : name) {
+	for (std::size_t i = 0; i < name.size(); ++i) {
+		char c = name[i];
+
 		if (firstChar && !std::isalpha(c)) {
 			throw std::runtime_error("In ITF a Tensor name must start with one of [a-zA-Z]");
 		}
@@ -369,6 +371,25 @@ void ITFExporter::writeTensorName(const std::string_view &name) {
 			case '-':
 				c = '1';
 				break;
+			case '\'': {
+				// Apostrophes are used if two tensors would otherwise end up having the same name.
+				// Since they are not valid in tensor names, replace the amount of apostrophes (plus one) by
+				// a simple number preceded by "v". E.g. T' -> Tv2
+				std::size_t tensorVariant = 2;
+				while (i + 1 < name.size() && name[i + 1] == '\'') {
+					tensorVariant++;
+					i++;
+				}
+
+				std::string strNum = std::to_string(tensorVariant);
+				*m_sink << "v";
+				if (strNum.size() > 1) {
+					// This requires more than one character -> write all but the last one to the stream here already
+					*m_sink << std::string_view(strNum).substr(0, strNum.size() - 2);
+				}
+				c = strNum[strNum.size() - 1];
+				break;
+			}
 			default:
 				throw std::runtime_error(std::string("ITFExporter: Encountered unexpected character '") + c
 										 + "' in tensor name");
