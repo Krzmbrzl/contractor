@@ -618,6 +618,83 @@ int main(int argc, const char **argv) {
 	printer << factorizedTermGroups << "\n\n";
 
 
+	// Since during spin-integration we don't check whether any given spin-case for any given tensor actually exists
+	// (only that it may exist is checked), we have to do this in a post-processing step here. The spin-integration has
+	// produced all actually existing spin-cases for any given result tensor. Therefore we can go through each group,
+	// collect all result tensors and then go through the group again and remove all terms that reference a tensor that
+	// is not in our result-list (and is also not a base or result tensor).
+	printer.printHeadline("Removing zero-contributions");
+	bool removedAnything = false;
+	for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		bool completelyRemovedResult;
+		do {
+			completelyRemovedResult = false;
+
+			std::unordered_set< ct::Tensor, ct::Tensor::tensor_element_hash, ct::Tensor::is_same_tensor_element >
+				existingResultTensors;
+
+			for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+				existingResultTensors.insert(currentComposite.getResult());
+			}
+
+			std::vector< ct::BinaryCompositeTerm > keptComposites;
+			keptComposites.reserve(currentGroup.size());
+
+			for (ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+				std::vector< ct::BinaryTerm > keptTerms;
+				keptTerms.reserve(currentComposite.size());
+
+				for (ct::BinaryTerm &currentTerm : currentComposite) {
+					bool keep = true;
+
+					for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+						bool isBaseTensor = baseTensorNames.find(currentTensor.getName()) != baseTensorNames.end();
+						bool isResultTensor =
+							isBaseTensor || resultTensorNames.find(currentTensor.getName()) != resultTensorNames.end();
+						bool isExistingIntermediate =
+							isResultTensor || existingResultTensors.find(currentTensor) != existingResultTensors.end();
+
+						keep = isBaseTensor || isResultTensor || isExistingIntermediate;
+
+						if (!keep) {
+							removedAnything = true;
+							printer << "- Removed zero-valued spin-case " << currentTensor << "\n";
+							break;
+						}
+					}
+
+					if (keep) {
+						keptTerms.push_back(std::move(currentTerm));
+					}
+				}
+
+				if (!keptTerms.empty()) {
+					currentComposite.setTerms(std::move(keptTerms));
+					keptComposites.push_back(std::move(currentComposite));
+				} else {
+					completelyRemovedResult = true;
+				}
+			}
+
+			if (keptComposites.empty()) {
+				throw std::runtime_error(
+					"Entire group consisted of terms containin zero-valued tensors - this seems wrong");
+			}
+			currentGroup.setTerms(std::move(keptComposites));
+		} while (completelyRemovedResult);
+	}
+
+	if (!removedAnything) {
+		printer << "  Nothing to do\n";
+	} else {
+		printer << "\n\n";
+		printer.printHeadline("Spin-integrated terms without zero-contributions");
+		printer << factorizedTermGroups << "\n";
+	}
+
+	printer << "\n\n";
+
+
 	simplify(factorizedTermGroups, printer);
 
 
