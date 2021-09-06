@@ -80,7 +80,7 @@ std::ostream &operator<<(std::ostream &stream, const PermutationGroup &group) {
 void PermutationGroup::addGenerator(const IndexSubstitution &generator, bool regenerate) {
 	IndexSubstitution copy = generator;
 
-	addGenerator(std::move(copy));
+	addGenerator(std::move(copy), regenerate);
 }
 
 void PermutationGroup::addGenerator(IndexSubstitution &&generator, bool regenerate) {

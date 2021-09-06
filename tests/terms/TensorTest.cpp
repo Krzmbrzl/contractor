@@ -558,6 +558,7 @@ TEST(TensorTest, contractWithSymmetry) {
 		ct::PermutationGroup expectedSymmetry(expectedResult.getIndices());
 		expectedSymmetry.addGenerator(perm1, false);
 		expectedSymmetry.addGenerator(perm2, false);
+		expectedSymmetry.regenerateGroup();
 		expectedResult.setSymmetry(expectedSymmetry);
 
 		ct::ContractionResult result = t1.contract(t2, resolver);
