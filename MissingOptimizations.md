@@ -81,3 +81,8 @@ One can see that
 H_T1[i⁺j⁺a⁻k⁻](/\\/) = - H_T1[j⁺i⁺a⁻k⁻](/\/\)
 ```
 
+# Tensor symmetries in ITF
+
+Currently the tensor symmetries are implicit for a few selected tensors and all other tensors (especially the intermediates) are treated as asymmetric
+tensors. However the program knows the exact symmetry for every single tensor which could be specified in the ITF output in order for Molpro to take
+advantage of any additional symmetries.
