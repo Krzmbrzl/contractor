@@ -504,6 +504,7 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 
 				Terms::TensorDecomposition::decomposed_terms_t newResults;
 
+				bool furtherSubstitutionApplied = false;
 				for (const Terms::GeneralTerm &current : results) {
 					Terms::TensorDecomposition::decomposed_terms_t currentResults =
 						decompositions[i].apply(current, &successful);
@@ -511,13 +512,18 @@ std::vector< term_t > sum(const std::vector< term_t > &terms,
 					// A decomposition can fail to apply if e.g. a previous decomposition already
 					// replaced the Tensor, the current decomposition would apply to
 					if (successful) {
+						furtherSubstitutionApplied = true;
 						for (auto &current : currentResults) {
 							newResults.addTerm(std::move(current));
 						}
 					}
 				}
 
-				results = std::move(newResults);
+				if (furtherSubstitutionApplied) {
+					// Only overwrite results with newResults if at least one of the additional decompositions (if any)
+					// actually applied and therefore populated newResults.
+					results = std::move(newResults);
+				}
 			}
 
 			printer << "which yields\n" << results << "\n";

@@ -40,7 +40,7 @@ ct::Tensor createAntisymmetricTensor(std::string_view name, const std::vector< c
 	return tensor;
 }
 
-static std::unordered_set< std::string_view > nonIntermediateNames = { "H", "T", "O" };
+static std::unordered_set< std::string_view > nonIntermediateNames = { "H", "T", "O", "DF" };
 
 #define LIST(...) \
 	{ __VA_ARGS__ }
@@ -547,6 +547,31 @@ TEST(SpinSummationTest, canonicalSpinCase) {
 			ASSERT_EQ(summedTerms.size(), 1);
 			ASSERT_EQ(summedTerms[0], expectedTerm);
 		}
+	}
+}
+
+TEST(SpinSummationTest, realWorldExamples) {
+	{
+		// DF_DF[i⁺j⁺a⁻b⁻](////) += DF[i⁺a⁻q](//.) DF[j⁺b⁻q](//.)
+		// DF are assumed to be base tensors (thus: no intermediates). Therefore we expect this to be
+		// changed to
+		// DF_DF[i⁺j⁺a⁻b⁻](////) += DF[i⁺a⁻q](...) DF[j⁺b⁻q](...)
+		ASSERT_TRUE(nonIntermediateNames.find("DF") != nonIntermediateNames.end());
+
+		ct::BinaryTerm originalTerm(ct::Tensor("DF_DF", { idx("i+/"), idx("j+/"), idx("a-/"), idx("b-/") }), 1,
+									ct::Tensor("DF", { idx("i+/"), idx("a-/"), idx("q!|") }),
+									ct::Tensor("DF", { idx("j+/"), idx("b-/"), idx("q!|") }));
+
+		std::vector<ct::BinaryTerm> terms = { originalTerm };
+
+		std::vector< ct::BinaryTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
+
+		ct::BinaryTerm expectedTerm(ct::Tensor("DF_DF", { idx("i+/"), idx("j+/"), idx("a-/"), idx("b-/") }), 1,
+									ct::Tensor("DF", { idx("i+|"), idx("a-|"), idx("q!|") }),
+									ct::Tensor("DF", { idx("j+|"), idx("b-|"), idx("q!|") }));
+
+		ASSERT_EQ(summedTerms.size(), 1);
+		ASSERT_EQ(summedTerms[0], expectedTerm);
 	}
 }
 
