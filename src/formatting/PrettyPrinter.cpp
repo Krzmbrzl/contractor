@@ -132,7 +132,11 @@ void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 
 	*m_stream << " ";
 	if (printPlusEqual) {
-		*m_stream << "+";
+		if (term.getPrefactor() >= 0) {
+			*m_stream << "+";
+		} else {
+			*m_stream << "-";
+		}
 	}
 	*m_stream << "= ";
 
@@ -141,10 +145,16 @@ void PrettyPrinter::print(const Terms::Term &term, bool printPlusEqual) {
 		return;
 	}
 
-	if (term.getPrefactor() == -1) {
-		*m_stream << "- ";
-	} else if (term.getPrefactor() != 1) {
-		*m_stream << term.getPrefactor() << " * ";
+	if (printPlusEqual) {
+		if (std::abs(term.getPrefactor()) != 1) {
+			*m_stream << std::abs(term.getPrefactor()) << " * ";
+		}
+	} else {
+		if (term.getPrefactor() == -1) {
+			*m_stream << "- ";
+		} else if (term.getPrefactor() != 1) {
+			*m_stream << term.getPrefactor() << " * ";
+		}
 	}
 
 	std::size_t counter = 0;
