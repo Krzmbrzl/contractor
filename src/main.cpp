@@ -889,6 +889,51 @@ int main(int argc, const char **argv) {
 	printer << factorizedTermGroups << "\n\n";
 
 
+	// Verify that all tensors that are referenced actually exist (and are declared before they are referenced)
+	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		std::unordered_set< ct::Tensor, ct::Tensor::tensor_element_hash, ct::Tensor::is_same_tensor_element >
+			definedIntermediates;
+
+		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			for (const ct::BinaryTerm &currentTerm : currentComposite) {
+				for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+					bool isBaseTensor = baseTensorNames.find(currentTensor.getName()) != baseTensorNames.end();
+					bool isResultTensor =
+						isBaseTensor || resultTensorNames.find(currentTensor.getName()) != resultTensorNames.end();
+					bool isExistingIntermediate =
+						isResultTensor || definedIntermediates.find(currentTensor) != definedIntermediates.end();
+
+					if (!(isBaseTensor || isResultTensor || isExistingIntermediate)) {
+						printer << "[ERROR]: Undefined tensor " << currentTensor << " in term\n  " << currentTerm
+								<< "\n  encountered in group that belongs to the original term\n"
+								<< currentGroup.getOriginalTerm() << "\n";
+
+						return Contractor::ExitCodes::UNDEFINED_TENSOR_USED;
+					}
+				}
+			}
+
+			definedIntermediates.insert(currentComposite.getResult());
+		}
+	}
+
+
+	// Perform some consistency checks on the terms produced
+	for (const ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+		for (const ct::BinaryCompositeTerm &currentComposite : currentGroup) {
+			for (const ct::Term &currentTerm : currentComposite) {
+				try {
+					currentTerm.assertIsValid();
+				} catch (const std::runtime_error &e) {
+					printer << "[ERROR]: Encountered invalid term: " << currentTerm << "\n  Problem: " << e.what()
+							<< "\n";
+					return Contractor::ExitCodes::INVALID_TERM_PRODUCED;
+				}
+			}
+		}
+	}
+
+
 	// Conversion to ITF
 	if (!args.itfOutputFile.empty()) {
 		std::ofstream itfOut(args.itfOutputFile);
