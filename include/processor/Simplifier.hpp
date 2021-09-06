@@ -61,7 +61,7 @@ namespace details {
 
 	struct compatible_term {
 		bool operator()(const Terms::Term &lhs, const Terms::Term &rhs) const {
-			// Terms are considered to be "compsatible" if they are equal up to the prefactor
+			// Terms are considered to be "compatible" if they are equal up to the prefactor
 			return lhs.getResult() == rhs.getResult()
 				   && std::equal(lhs.getTensors().begin(), lhs.getTensors().end(), rhs.getTensors().begin(),
 								 rhs.getTensors().end());
@@ -122,7 +122,7 @@ bool simplify(std::vector< term_t > &terms, bool independentTerms = true, Printe
 	std::size_t originalAmountOfTerms = terms.size();
 
 	if (independentTerms) {
-		// If the Terms are independent from one another, we can start simplication by deleting
+		// If the Terms are independent from one another, we can start simplify by deleting
 		// exact duplicates
 		terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
 
@@ -192,7 +192,7 @@ bool simplify(std::vector< Terms::CompositeTerm< term_t > > &composites, Printer
 				// that the list really is one element shorter
 				if (*outerIt != *innerIt) {
 					// We only bother substituting if there actually is a difference in these two Tensors. If they
-					// are the same already, we can simply dicard the second one.
+					// are the same already, we can simply discard the second one.
 					Terms::TensorSubstitution sub = innerIt->getRelation(*outerIt);
 
 					printer << "Found a relation such that " << sub << "\n";
