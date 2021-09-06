@@ -253,9 +253,7 @@ bool Tensor::refersToSameElement(const Tensor &other, bool accountForSymmetry) c
 	if (m_indices.size() != other.m_indices.size() || getName() != other.getName()) {
 		return false;
 	}
-	if (accountForSymmetry
-		&& (m_symmetry.getCanonicalRepresentationFactor() != other.getSymmetry().getCanonicalRepresentationFactor()
-			|| m_symmetry.size() != other.getSymmetry().size())) {
+	if (accountForSymmetry && (m_symmetry.size() != other.getSymmetry().size())) {
 		// We don't compare the symmetry itself, since as of now the symmetry compares indices "name-sensitively" thus i
 		// and j are always considered to be different, regardless of context
 		return false;
