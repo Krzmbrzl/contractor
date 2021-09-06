@@ -152,6 +152,18 @@ public:
 	 */
 	virtual void sort() = 0;
 
+	/**
+	 * @returns Whether the internal consistency check thinks that this term is in a valid (consistent) state
+	 */
+	bool isValid() const;
+
+	/**
+	 * Performs an internal consistency check of this term
+	 *
+	 * @throws std::runtime_error if an invalid state is detected
+	 */
+	void assertIsValid() const;
+
 protected:
 	Tensor m_result;
 	factor_t m_prefactor;

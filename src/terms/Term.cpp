@@ -1,6 +1,8 @@
 #include "terms/Term.hpp"
 
 #include <algorithm>
+#include <stdexcept>
+#include <unordered_map>
 
 namespace Contractor::Terms {
 
@@ -158,6 +160,48 @@ Term::FormalScalingMap Term::getFormalScaling() const {
 	}
 
 	return scaling;
+}
+
+bool Term::isValid() const {
+	try {
+		assertIsValid();
+
+		return true;
+	} catch (const std::runtime_error &) {
+		return false;
+	}
+}
+
+void Term::assertIsValid() const {
+	// Count how often each index occurs
+	std::unordered_map< Index, unsigned int, Index::type_and_spin_insensitive_hasher, Index::index_has_same_name >
+		indices;
+
+	for (const Tensor &currentTensor : getTensors()) {
+		for (const Index &currentIndex : currentTensor.getIndices()) {
+			indices[currentIndex]++;
+		}
+	}
+
+	Tensor::index_list_t resultIndices;
+
+	for (const auto &currentPair : indices) {
+		if (currentPair.second > 2) {
+			// Indices can't occur more than twice
+			throw std::runtime_error("Index occurs more than twice");
+		}
+		if (currentPair.second == 1) {
+			// This is a result index
+			resultIndices.push_back(currentPair.first);
+		}
+	}
+
+	if (getResult().getIndices().size() != resultIndices.size()
+		|| !std::is_permutation(resultIndices.begin(), resultIndices.end(), getResult().getIndices().begin(),
+								Index::index_has_same_name{})) {
+		// Inconsistent result indices
+		throw std::runtime_error("Result indices are inconsistent");
+	}
 }
 
 }; // namespace Contractor::Terms
