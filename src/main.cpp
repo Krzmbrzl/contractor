@@ -506,6 +506,7 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
 	ct::ContractionResult::cost_t totalCost = 0;
+	std::size_t totalScalingExponent = 0;
 
 	std::vector< ct::BinaryTermGroup > factorizedTermGroups;
 
@@ -526,6 +527,15 @@ int main(int argc, const char **argv) {
 					printer << "  -> ";
 					printer.printScaling(current.getFormalScaling(), resolver);
 					printer << "\n";
+
+					std::size_t currentTotalScaling = 0;
+					for (const auto &currentPair : current.getFormalScaling()) {
+						currentTotalScaling += currentPair.second;
+					}
+
+					printer << "  -> Total scaling of this term: N^" << currentTotalScaling << "\n";
+
+					totalScalingExponent = std::max(totalScalingExponent, currentTotalScaling);
 
 					producedTerms.push_back(current);
 
@@ -556,7 +566,7 @@ int main(int argc, const char **argv) {
 		factorizedTermGroups.push_back(std::move(currentFactorizedGroup));
 	}
 
-	printer << "Total # of operations: " << totalCost << "\n\n\n";
+	printer << "Total # of operations: " << totalCost << "\nFormal scaling: N^" << totalScalingExponent << "\n\n\n";
 
 	printer.printHeadline("Factorized Terms");
 	printer << factorizedTermGroups << "\n\n";
