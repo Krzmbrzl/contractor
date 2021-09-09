@@ -763,8 +763,6 @@ int main(int argc, const char **argv) {
 
 	printer.printHeadline("Symmetrization of results");
 
-	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
-
 	std::unordered_set< ct::Tensor, ct::Tensor::tensor_name_hash, ct::Tensor::has_same_name >
 		toBeSymmetrizedResultTensors;
 	for (const ct::BinaryTermGroup currentGroup : factorizedTermGroups) {
@@ -798,6 +796,8 @@ int main(int argc, const char **argv) {
 			}
 		}
 	}
+
+	cpr::Symmetrizer< ct::BinaryTerm > symmetrizer;
 
 	for (const ct::Tensor &currentResult : toBeSymmetrizedResultTensors) {
 		assert(boost::algorithm::ends_with(currentResult.getName(), "-u"));
