@@ -183,7 +183,7 @@ void SpinIntegrator::process(const IndexGroup &group) {
 
 		if (diff > 0) {
 			// It is impossible to balance this case. That means that this will inevitably result in
-			// a zero-contribution due to the orthogionality of spin-cases.
+			// a zero-contribution due to the orthogonality of spin-cases.
 			currentSubstitution.setFactor(0);
 
 			continue;
@@ -283,7 +283,7 @@ void SpinIntegrator::process(const IndexGroup &group) {
 
 		assert(!containsDuplicate(addedSubstitutions));
 
-		// Step 4: Extend the known subsitutions by the findings of the current processing run.
+		// Step 4: Extend the known substitutions by the findings of the current processing run.
 		// That means that the current substitution is extended with the new indices that got
 		// fixed in this run and if there is more than one allowed substitution for the new indices,
 		// we also add new substitutions to our list such that all possible combinations are

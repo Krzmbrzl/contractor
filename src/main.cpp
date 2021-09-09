@@ -337,11 +337,11 @@ int main(int argc, const char **argv) {
 			case 2:
 				resultTensorNameStrings.insert(std::string(currentTerm.getResult().getName()));
 
-				// These are expected quantities that don't need any antisymmtrization
+				// These are expected quantities that don't need any antisymmetrization
 				termGroups.push_back(ct::GeneralTermGroup::from(currentTerm));
 				break;
 			case 4: {
-				// This is an expected quantity that does need antisymmtrization
+				// This is an expected quantity that does need antisymmetrization
 				// We expect the result Tensor to be of type [PP,HH]
 				bool isCorrect = currentTerm.getResult().getIndices()[0].getSpace() == resolver.resolve("virtual")
 								 && currentTerm.getResult().getIndices()[1].getSpace() == resolver.resolve("virtual")
@@ -781,7 +781,7 @@ int main(int argc, const char **argv) {
 					// result Tensor as the least symmetric contribution to a Tensor determines its overall symmetry
 					if (!it->hasColumnSymmetry() && currentComposite.getResult().hasColumnSymmetry()) {
 						// Since column symmetry is what this is all about here, make sure that we always use the result
-						// Tensor wich doesn't have it yet since if there exists such a contribution, the overall result
+						// Tensor which doesn't have it yet since if there exists such a contribution, the overall result
 						// doesn't show this either.
 						continue;
 					}

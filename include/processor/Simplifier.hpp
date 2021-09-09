@@ -235,7 +235,7 @@ bool simplify(std::vector< Terms::CompositeTerm< term_t > > &composites, Printer
 		}
 
 		// As long as we performed some substitutions, it could be that by doing this we
-		// allowed for further simplications to be performed.
+		// allowed for further simplifications to be performed.
 		simplify(composites, printer);
 	}
 

@@ -128,7 +128,7 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			resultTerm.setResult(term.getResult());
 			resultTerm.setPrefactor(term.getPrefactor());
 
-			// Exchaning the result Tensor might change how the index names have to be canonicalized
+			// Exchanging the result Tensor might change how the index names have to be canonicalized
 			canonicalizeIndexIDs(resultTerm);
 		}
 

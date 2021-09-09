@@ -51,7 +51,7 @@ public:
 	 * @param wasSuccessful An optional pointer to a boolean flag that will hold whether or not
 	 * the decomposition was successfully applied to the given Term.
 	 * @returns A list of GeneralTerm objects representing the decomposed parts of the
-	 * original part. If this decoposition does not involve substitutiing for a sum of
+	 * original part. If this decomposition does not involve substituting for a sum of
 	 * Tensor products, the length of the returned list is 1.
 	 */
 	decomposed_terms_t apply(const Term &term, bool *wasSuccessful = nullptr) const;

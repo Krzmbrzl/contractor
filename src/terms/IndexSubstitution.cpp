@@ -93,7 +93,7 @@ std::ostream &operator<<(std::ostream &stream, const IndexSubstitution &sub) {
 IndexSubstitution operator*(const IndexSubstitution &lhs, const IndexSubstitution &rhs) {
 	assert(lhs.isRespectingSpin() == rhs.isRespectingSpin());
 
-	// The produce of two substiutions is given by first letting rhs act on an imaginary target
+	// The product of two substitutions is given by first letting rhs act on an imaginary target
 	// index sequence and then letting lhs act on the result of that
 	IndexSubstitution result = rhs;
 

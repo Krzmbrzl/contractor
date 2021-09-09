@@ -15,7 +15,7 @@ namespace Contractor::Utils {
 //
 // This leads to nested loops of swap indices that can easily be implemented in a recursive algorithm
 // as is demonstrated at https://stackoverflow.com/q/37447697/3907364.
-// However such a recursive algorithm does not lend itself to being extecuted step-by-step where each
+// However such a recursive algorithm does not lend itself to being executed step-by-step where each
 // step creates one pairing and then stops, only to continue from that point when invoked again.
 // Thus this implementation does not use the recursive form.
 // Instead the recursion is "simulated" by using a Stack of loop variables (can be seen as the loop
