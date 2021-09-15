@@ -81,23 +81,8 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 							 const ct::ContractionResult::cost_t &biggestIntermediate,
 							 std::vector< ct::Tensor > &tensors, std::vector< ct::BinaryTerm > &factorizedTerms,
 							 const ct::GeneralTerm &term, const std::vector< ct::BinaryTerm > &previousTerms) {
-	if (tensors.size() == 0) {
-		// Nothing to factorize anymore
-		if (costSoFar < m_bestCost || (costSoFar == m_bestCost && biggestIntermediate < m_biggestIntermediateSize)) {
-			// Save factorized terms
-			m_bestFactorization.clear();
-			m_bestFactorization.reserve(factorizedTerms.size());
-
-			m_bestFactorization.insert(m_bestFactorization.begin(), factorizedTerms.begin(), factorizedTerms.end());
-
-			m_bestCost                = costSoFar;
-			m_biggestIntermediateSize = biggestIntermediate;
-
-			return true;
-		} else {
-			return false;
-		}
-	} else if (tensors.size() == 1) {
+	if (tensors.size() == 1) {
+		// Factorization finished
 		ct::ContractionResult::cost_t cost = costSoFar;
 
 		if (factorizedTerms.empty()) {
@@ -118,6 +103,10 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			}
 			cost += costSoFar;
 
+			ct::ContractionResult::cost_t biggestIntermediate = 1;
+			for (const ct::Index &current : resultTerm.getResult().getIndices()) {
+				biggestIntermediate *= m_resolver.getMeta(current.getSpace()).getSize();
+			}
 		} else {
 			// The factorization has completed since the last Tensor that remains is only the result
 			// of the last contraction. Since there are no other Tensors left to contract with, we have
@@ -132,51 +121,34 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			canonicalizeIndexIDs(resultTerm);
 		}
 
-		ct::Tensor copy = std::move(tensors[0]);
-		tensors.pop_back();
+		if (cost < m_bestCost || (cost == m_bestCost && biggestIntermediate < m_biggestIntermediateSize)) {
+			// Save factorized terms
+			m_bestFactorization.clear();
+			m_bestFactorization.reserve(factorizedTerms.size());
 
-		// Call the final iteration of this function
-		bool result = doFactorize(cost, biggestIntermediate, tensors, factorizedTerms, term, previousTerms);
+			m_bestFactorization.insert(m_bestFactorization.end(), factorizedTerms.begin(), factorizedTerms.end());
 
-		// Back-insert the Tensor again
-		tensors.push_back(std::move(copy));
+			m_bestCost                = cost;
+			m_biggestIntermediateSize = biggestIntermediate;
 
-		return result;
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	bool foundBetterFactorization = false;
-
-	cu::PairingGenerator generator(tensors.size());
-
-	// Generate a list of all complete pairings of the current tensor list. A complete pairing is one where each
-	// Tensor is paired with another one (even number of tensors) or at most one Tensor remains unpaired (odd
-	// number of Tensors). Note that the order of pairs and the order within the pairs does not matter here and
-	// is therefore ignored.
-	// Thus for ABCD this will generate
-	// (AB)(CD)
-	// (AC)(BD)
-	// (AD)(BC)
-	while (generator.hasNext()) {
-		cu::PairingGenerator::pairing_t currentPairings = generator.nextPairing();
-
-		for (const cu::PairingGenerator::pair_t &currentPair : currentPairings) {
-			if (currentPair.unpaired) {
-				// This is an unpaired Tensor. In this context we can ignore this one as we are looking for all
-				// possible contractions in this loop (and a single Tensor can't be contracted). Because we are
-				// iterating over all possible pairings, this Tensor will participate in pairings in different
-				// pairings and therefore ignoring it here does not discard it entirely
-				continue;
-			}
-
+	for (std::size_t i = 0; i < tensors.size(); ++i) {
+		for (std::size_t j = i + 1; j < tensors.size(); j++) {
 			cost_t cost = costSoFar;
 
 			// Move the respective Tensors out of the list
-			auto itLeft = tensors.begin() + currentPair.first;
+			auto itLeft = tensors.begin() + i;
 			assert(itLeft != tensors.end());
 			ct::Tensor left = std::move(*itLeft);
 			tensors.erase(itLeft);
 
-			auto itRight = tensors.begin() + currentPair.second - (currentPair.first < currentPair.second ? 1 : 0);
+			auto itRight = tensors.begin() + j - 1;
 			assert(itRight != tensors.end());
 			ct::Tensor right = std::move(*itRight);
 			tensors.erase(itRight);
@@ -239,7 +211,7 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 
 				// Factorize the remaining Tensors recursively
 				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms, term,
-								previousTerms)) {
+								 previousTerms)) {
 					foundBetterFactorization = true;
 				}
 			}
@@ -255,9 +227,8 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 			// Insert the Tensors back at their original position (if the right Tensor was originally to the
 			// left of the left one (index-wise in the tensors list), then we have to correct the insertion
 			// index for this Tensor that is still missing at this point (we have removed it above).
-			tensors.insert(tensors.begin() + currentPair.first - (currentPair.first > currentPair.second ? 1 : 0),
-						   std::move(left));
-			tensors.insert(tensors.begin() + currentPair.second, std::move(right));
+			tensors.insert(tensors.begin() + i, std::move(left));
+			tensors.insert(tensors.begin() + j, std::move(right));
 		}
 	}
 
