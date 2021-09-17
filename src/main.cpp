@@ -169,6 +169,19 @@ void renameDecompositionTensors(std::vector< ct::TensorDecomposition > &decompos
 	}
 }
 
+void insertToNameSet(const std::string_view name, std::unordered_set< std::string > &nameSet,
+					 std::unordered_set< std::string_view > &viewSet) {
+	std::string strName(name);
+
+	if (nameSet.insert(std::move(strName)).second) {
+		// The name was inserted because it did not exist in the set before
+		// Potentially this has caused the container to reallocate invalidating all views in viewSet. Thus we have to
+		// repopulate it with known to be valid views.
+		viewSet.clear();
+		viewSet.insert(nameSet.begin(), nameSet.end());
+	}
+}
+
 int main(int argc, const char **argv) {
 	// First parse the command line arguments
 	CommandLineArguments args;
@@ -474,10 +487,7 @@ int main(int argc, const char **argv) {
 					// Add the tensors from the decomposition to the list of known "base Tensors"
 					for (const ct::GeneralTerm &current : currentDecomposition.getSubstitutions()) {
 						for (const ct::Tensor currentTensor : current.getTensors()) {
-							std::string name(currentTensor.getName());
-
-							baseTensorNameStrings.insert(name);
-							baseTensorNames.insert(*baseTensorNameStrings.find(name));
+							insertToNameSet(currentTensor.getName(), baseTensorNameStrings, baseTensorNames);
 						}
 					}
 				}
@@ -506,7 +516,7 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Factorization");
 	cpr::Factorizer factorizer(resolver);
 	ct::ContractionResult::cost_t totalCost = 0;
-	std::size_t totalScalingExponent = 0;
+	std::size_t totalScalingExponent        = 0;
 
 	std::vector< ct::BinaryTermGroup > factorizedTermGroups;
 
@@ -783,14 +793,15 @@ int main(int argc, const char **argv) {
 				if (it == toBeSymmetrizedResultTensors.end()) {
 					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
 				} else {
-					// We already have an entry for this result Tensor. However it could happen that the term from which
-					// this Tensor is calculated happens to be more symmetric than other contributions to it. Therefore
-					// we have to check for that in order to make sure to store the least symmetric version of this
-					// result Tensor as the least symmetric contribution to a Tensor determines its overall symmetry
+					// We already have an entry for this result Tensor. However it could happen that the term from
+					// which this Tensor is calculated happens to be more symmetric than other contributions to it.
+					// Therefore we have to check for that in order to make sure to store the least symmetric
+					// version of this result Tensor as the least symmetric contribution to a Tensor determines its
+					// overall symmetry
 					if (!it->hasColumnSymmetry() && currentComposite.getResult().hasColumnSymmetry()) {
-						// Since column symmetry is what this is all about here, make sure that we always use the result
-						// Tensor which doesn't have it yet since if there exists such a contribution, the overall result
-						// doesn't show this either.
+						// Since column symmetry is what this is all about here, make sure that we always use the
+						// result Tensor which doesn't have it yet since if there exists such a contribution, the
+						// overall result doesn't show this either.
 						continue;
 					}
 					if (it->getSymmetry().size() <= currentComposite.getResult().getSymmetry().size()) {
@@ -798,8 +809,8 @@ int main(int argc, const char **argv) {
 						continue;
 					}
 
-					// We have to erase first, because an unordered_set doesn't overwrite the old value, if it thinks
-					// this element already exists
+					// We have to erase first, because an unordered_set doesn't overwrite the old value, if it
+					// thinks this element already exists
 					toBeSymmetrizedResultTensors.erase(it);
 					toBeSymmetrizedResultTensors.insert(currentComposite.getResult());
 				}
@@ -817,8 +828,7 @@ int main(int argc, const char **argv) {
 			std::string(currentResult.getName().substr(0, currentResult.getName().size() - 2));
 		symmetricResult.setName(symmetrizedTensorName);
 
-		resultTensorNameStrings.insert(symmetrizedTensorName);
-		resultTensorNames.insert(*resultTensorNameStrings.find(symmetrizedTensorName));
+		insertToNameSet(symmetrizedTensorName, resultTensorNameStrings, resultTensorNames);
 
 		ct::BinaryTerm term(symmetricResult, 1, currentResult);
 
@@ -865,8 +875,8 @@ int main(int argc, const char **argv) {
 			}
 		}
 
-		// Then iterate which Tensors are produced by a term and if it is not in referencedTensors, we can discard the
-		// corresponding composite as long as it's not the result Tensor for the current group
+		// Then iterate which Tensors are produced by a term and if it is not in referencedTensors, we can discard
+		// the corresponding composite as long as it's not the result Tensor for the current group
 		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
 			auto it = currentGroup.begin();
 			while (it != currentGroup.end()) {
@@ -884,8 +894,8 @@ int main(int argc, const char **argv) {
 			}
 		}
 
-		// Since it could be that the terms that have been removed were the only ones that referenced another Tensor, we
-		// have to repeat until we remove no more Terms
+		// Since it could be that the terms that have been removed were the only ones that referenced another
+		// Tensor, we have to repeat until we remove no more Terms
 	} while (changed);
 
 	if (!didChange) {
