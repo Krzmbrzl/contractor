@@ -83,6 +83,15 @@ public:
 	const Tensor &getResult() const {
 		assert(size() > 0);
 
+		// TODO: This does not yet handle the case in which the different contributions to the result tensor represented by this composite show
+		// different symmetry. Consider for instance the hypothetical example
+		// O2[abij] += H[abcd] T[cdij]
+		// O2[abij] += H[ai] T[bj]
+		// where we assume H[abcd] and T[cdij] to be fully antisymmetric. Thus the result tensor of the first contribution inherits this antisymmetry
+		// whereas the result tensor of the second contribution does not show such a symmetry. For this reason the overall result tensor when grouping
+		// these contributions together in a CompositeTerm should also not show any symmetry but by only return the result tensor of the first
+		// contribution it would show full antisymmetry, which is wrong.
+
 		return m_terms[0].getResult();
 	}
 
