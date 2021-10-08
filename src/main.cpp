@@ -48,6 +48,7 @@ struct CommandLineArguments {
 	std::string itfCodeBlock;
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
+	bool useKext;
 	unsigned int selectedTerm;
 };
 
@@ -83,6 +84,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "Out of the read terms, only the term at this posititon (1-based) will be processed. 0 will cause all terms to be processed")
 		("itf-code-block", boost::program_options::value<std::string>(&args.itfCodeBlock)->default_value("Residual"),
 		 "The name of the \"CODE_BLOCK\" to use when exporting to ITF")
+		("kext", boost::program_options::value<bool>(&args.useKext)->default_value(false)->zero_tokens(),
+		 "Replace contributions containing 4-virtual-2-electron integrals with K4E")
 	;
 	// clang-format on
 
@@ -180,6 +183,20 @@ void insertToNameSet(const std::string_view name, std::unordered_set< std::strin
 		viewSet.clear();
 		viewSet.insert(nameSet.begin(), nameSet.end());
 	}
+}
+
+bool isFourVirtualTwoElectronIntegral(const ct::Tensor &tensor, const cu::IndexSpaceResolver &resolver) {
+	if (tensor.getName() != "H" || tensor.getIndices().size() != 4) {
+		return false;
+	}
+
+	for (const ct::Index &currentIndex : tensor.getIndices()) {
+		if (currentIndex.getSpace() != resolver.resolve("virtual")) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 int main(int argc, const char **argv) {
@@ -460,34 +477,48 @@ int main(int argc, const char **argv) {
 
 		ct::GeneralCompositeTerm newComposite;
 		for (const ct::GeneralTerm &currentTerm : currentComposite) {
-			bool wasDecomposed = false;
+			bool wasDecomposed        = false;
+			bool attemptDecomposition = true;
 
-			for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
-				bool decompositionApplied = false;
-				ct::TensorDecomposition::decomposed_terms_t decTerms =
-					currentDecomposition.apply(currentTerm, &decompositionApplied);
-
-				if (decompositionApplied) {
-					// Only print the decomposed terms if the decomposition actually applied
-					printer << currentTerm << " expands to\n";
-
-					for (ct::GeneralTerm &current : decTerms) {
-						printer << "  " << current << "\n";
-
-						newComposite.addTerm(std::move(current));
+			if (args.useKext) {
+				for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+					if (isFourVirtualTwoElectronIntegral(currentTensor, resolver)) {
+						// This term is going to be replaced with the K4E contribution and thus we don't want
+						// to apply any decompositions to it
+						attemptDecomposition = false;
+						break;
 					}
+				}
+			}
 
-					if (wasDecomposed) {
-						throw std::runtime_error(
-							"Multiple decompositions applying to one and the same Term is not yet supported");
-					}
+			if (attemptDecomposition) {
+				for (const ct::TensorDecomposition &currentDecomposition : decompositions) {
+					bool decompositionApplied = false;
+					ct::TensorDecomposition::decomposed_terms_t decTerms =
+						currentDecomposition.apply(currentTerm, &decompositionApplied);
 
-					wasDecomposed = true;
+					if (decompositionApplied) {
+						// Only print the decomposed terms if the decomposition actually applied
+						printer << currentTerm << " expands to\n";
 
-					// Add the tensors from the decomposition to the list of known "base Tensors"
-					for (const ct::GeneralTerm &current : currentDecomposition.getSubstitutions()) {
-						for (const ct::Tensor currentTensor : current.getTensors()) {
-							insertToNameSet(currentTensor.getName(), baseTensorNameStrings, baseTensorNames);
+						for (ct::GeneralTerm &current : decTerms) {
+							printer << "  " << current << "\n";
+
+							newComposite.addTerm(std::move(current));
+						}
+
+						if (wasDecomposed) {
+							throw std::runtime_error(
+								"Multiple decompositions applying to one and the same Term is not yet supported");
+						}
+
+						wasDecomposed = true;
+
+						// Add the tensors from the decomposition to the list of known "base Tensors"
+						for (const ct::GeneralTerm &current : currentDecomposition.getSubstitutions()) {
+							for (const ct::Tensor currentTensor : current.getTensors()) {
+								insertToNameSet(currentTensor.getName(), baseTensorNameStrings, baseTensorNames);
+							}
 						}
 					}
 				}
@@ -754,6 +785,57 @@ int main(int argc, const char **argv) {
 
 
 		simplify(factorizedTermGroups, printer);
+	}
+
+
+	if (args.useKext) {
+		printer.printHeadline("Applying Kext");
+
+		for (ct::BinaryTermGroup &currentGroup : factorizedTermGroups) {
+			const ct::GeneralTerm &currentTerm = currentGroup.getOriginalTerm();
+			bool replaceWithKext               = false;
+
+			for (const ct::Tensor &currentTensor : currentTerm.getTensors()) {
+				if (isFourVirtualTwoElectronIntegral(currentTensor, resolver)) {
+					replaceWithKext = true;
+					break;
+				}
+			}
+
+			if (replaceWithKext) {
+				ct::Tensor K4E(
+					"K4E",
+					{ ct::Index(resolver.resolve("virtual"), 0, ct::Index::Type::Creator, ct::Index::Spin::None),
+					  ct::Index(resolver.resolve("virtual"), 1, ct::Index::Type::Creator, ct::Index::Spin::None),
+					  ct::Index(resolver.resolve("occupied"), 0, ct::Index::Type::Annihilator, ct::Index::Spin::None),
+					  ct::Index(resolver.resolve("occupied"), 1, ct::Index::Type::Annihilator,
+								ct::Index::Spin::None) });
+				// K4E is a skeleton Tensor and thus fully column-symmetric
+				K4E.accessSymmetry().addGenerator(ct::IndexSubstitution::createPermutation(
+					{ { K4E.getIndices()[0], K4E.getIndices()[1] }, { K4E.getIndices()[2], K4E.getIndices()[3] } }));
+
+				printer << "Expressing " << currentTerm << " via K4E:\n";
+				// The last term in a group is the actual term that calculates the end result of that term (everything before are potential
+				// intermediates)
+				ct::BinaryTerm replacement(
+					currentGroup[currentGroup.size() - 1][0].getResult(),
+					currentTerm.getPrefactor(), K4E);
+				printer << " -> " << replacement << "\n";
+
+				assert(replacement.getResult().getName() == currentTerm.getResult().getName());
+				assert(replacement.getResult().getIndices() == K4E.getIndices());
+
+				ct::BinaryCompositeTerm replacmentComp(std::move(replacement));
+
+				currentGroup.accessTerms().clear();
+				currentGroup.accessTerms().push_back(std::move(replacmentComp));
+
+				// Let the rest of the program know, that K4E is supposed to be a base (predefined) tensor
+				insertToNameSet(K4E.getName(), baseTensorNameStrings, baseTensorNames);
+			}
+		}
+
+		printer << "\n\n";
 	}
 
 
