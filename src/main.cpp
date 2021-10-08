@@ -815,11 +815,10 @@ int main(int argc, const char **argv) {
 					{ { K4E.getIndices()[0], K4E.getIndices()[1] }, { K4E.getIndices()[2], K4E.getIndices()[3] } }));
 
 				printer << "Expressing " << currentTerm << " via K4E:\n";
-				// The last term in a group is the actual term that calculates the end result of that term (everything before are potential
-				// intermediates)
-				ct::BinaryTerm replacement(
-					currentGroup[currentGroup.size() - 1][0].getResult(),
-					currentTerm.getPrefactor(), K4E);
+				// The last term in a group is the actual term that calculates the end result of that term (everything
+				// before are potential intermediates)
+				ct::BinaryTerm replacement(currentGroup[currentGroup.size() - 1][0].getResult(),
+										   currentTerm.getPrefactor(), K4E);
 				printer << " -> " << replacement << "\n";
 
 				assert(replacement.getResult().getName() == currentTerm.getResult().getName());

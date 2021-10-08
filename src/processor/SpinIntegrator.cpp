@@ -82,7 +82,7 @@ void SpinIntegrator::process(const Terms::Tensor &tensor) {
 		}
 	}
 
-	IndexGroup group = {std::move(creators), std::move(annihilators)};
+	IndexGroup group = { std::move(creators), std::move(annihilators) };
 
 
 	if (m_substitutions.empty()) {

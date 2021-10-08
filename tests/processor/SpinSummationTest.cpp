@@ -562,7 +562,7 @@ TEST(SpinSummationTest, realWorldExamples) {
 									ct::Tensor("DF", { idx("i+/"), idx("a-/"), idx("q!|") }),
 									ct::Tensor("DF", { idx("j+/"), idx("b-/"), idx("q!|") }));
 
-		std::vector<ct::BinaryTerm> terms = { originalTerm };
+		std::vector< ct::BinaryTerm > terms = { originalTerm };
 
 		std::vector< ct::BinaryTerm > summedTerms = cp::SpinSummation::sum(terms, nonIntermediateNames);
 

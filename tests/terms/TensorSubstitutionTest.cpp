@@ -91,11 +91,11 @@ TEST(TensorSubstitutionTest, realWorldExamples) {
 		ct::Tensor DF_DF_aaaa("DF_DF", { idx("i+/"), idx("j+/"), idx("a-/"), idx("b-/") });
 		ct::Tensor DF_DF_abab("DF_DF", { idx("i+/"), idx("j+\\"), idx("a-/"), idx("b-\\") });
 
-		ct::TensorSubstitution substitution(DF_DF_aaaa, DF_DF_abab );
+		ct::TensorSubstitution substitution(DF_DF_aaaa, DF_DF_abab);
 
 		ct::GeneralTerm term(ct::Tensor("DF_DF_T2", { idx("a+/"), idx("i+/"), idx("j-/"), idx("b-/") }), 1,
-									 { ct::Tensor("DF_DF", { idx("k+/"), idx("i+/"), idx("b-/"), idx("c-/") }),
-									   ct::Tensor("T2", { idx("a+|"), idx("c+|"), idx("k-|"), idx("j-|") }) });
+							 { ct::Tensor("DF_DF", { idx("k+/"), idx("i+/"), idx("b-/"), idx("c-/") }),
+							   ct::Tensor("T2", { idx("a+|"), idx("c+|"), idx("k-|"), idx("j-|") }) });
 
 		ct::GeneralTerm expectedTerm(ct::Tensor("DF_DF_T2", { idx("a+/"), idx("i+/"), idx("j-/"), idx("b-/") }), 1,
 									 { ct::Tensor("DF_DF", { idx("k+/"), idx("i+\\"), idx("b-/"), idx("c-\\") }),

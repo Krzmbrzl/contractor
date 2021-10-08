@@ -211,7 +211,7 @@ bool Factorizer::doFactorize(const ct::ContractionResult::cost_t &costSoFar,
 
 				// Factorize the remaining Tensors recursively
 				if (doFactorize(cost, std::max(biggestIntermediate, intermediateSize), tensors, factorizedTerms, term,
-								 previousTerms)) {
+								previousTerms)) {
 					foundBetterFactorization = true;
 				}
 			}
