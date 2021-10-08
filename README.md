@@ -7,12 +7,28 @@
 - A cpp17 conform compiler
 - cmake v3.15 or newer
 - Boost (headers + program_options)
+- An active internet connection (only needed for first build)
 
 ### Instructions
 
-Start out that the repository's root directory.
+Start out at the repository's root directory.
 
 1. Create a build directory: `mkdir build`
 2. Switch into that directory: `cd build`
 3. Invoke cmake: `cmake ..`
 4. Build from the generated build files: `cmake --build .` (or use native build system directly, e.g. on Unix `make`)
+
+
+## Testing
+
+Build the application with tests enabled:
+```bash
+cmake -Dtests=ON ..
+cmake --build .
+```
+
+Then run the test cases:
+```bash
+ctest --output-on-failure
+```
+

@@ -58,8 +58,12 @@ jobs:
           # file set by run-vcpkg.
           useVcpkgToolchainFile: true
           buildWithCMake: true
-          cmakeAppendedArgs: -Dtests=ON
+          cmakeAppendedArgs: -Dtests=ON -DCMAKE_BUILD_TYPE=Debug
 
       - name: Test
         run: cd "${{ env.buildDir }}"; ctest --output-on-failure --timeout 10
+        shell: bash
+
+      - name: Check main application
+        run: cd samples && ./run_samples.sh
         shell: bash

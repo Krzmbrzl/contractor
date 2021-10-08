@@ -1,0 +1,17 @@
+{
+	"Virtual": {
+		"label": "P",
+		"size": 100,
+		"defaultSpin": "Both"
+	},
+	"Occupied": {
+		"label": "H",
+		"size": 10,
+		"defaultSpin": "Both"
+	},
+	"DensityFitting": {
+		"label": "Q",
+		"size": 200,
+		"defaultSpin": "None"
+	}
+}

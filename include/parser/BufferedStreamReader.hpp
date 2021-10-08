@@ -1,5 +1,5 @@
-#ifndef CONTRACTOR_PARSER_PARSER_HPP_
-#define CONTRACTOR_PARSER_PARSER_HPP_
+#ifndef CONTRACTOR_PARSER_BUFFEREDSTREAMREADER_HPP_
+#define CONTRACTOR_PARSER_BUFFEREDSTREAMREADER_HPP_
 
 #include "Literals.hpp"
 
@@ -25,42 +25,35 @@ protected:
 
 
 /**
- * Abstract base class for parsers that are supposed to extract
- * information about terms (diagrams) from an input stream.
+ * This class is a wrapper around any kind of input stream. The input
+ * stream is always accessed in chunks which are then buffered for further
+ * processing.
+ * Additionally this reader implements several convenience functions that
+ * should allow for very symbolic interaction with the underlaying stream.
  *
- * The parser is designed to work unidirectional. That means that it can
+ * The reader is designed to work unidirectional. That means that it can
  * read an input only a single time. Once a character has been consumed
- * by the parser, it can't be accessed anymore. Therefore any concrete
+ * by the reader, it can't be accessed anymore. Therefore any user
  * implementation must be able to parse its input without backtracking
  * (or has to buffer the consumed chars itself).
  */
-class Parser {
+class BufferedStreamReader {
 public:
 	/**
 	 * @param bufferSize The size (in bytes) of the internal buffer that is used
 	 * during IO.
 	 */
-	Parser(std::size_t bufferSize = 1_KB);
-	~Parser();
-
-	/**
-	 * Parses the given input stream
-	 *
-	 * @throws ParseException if invalid input is encountered
-	 */
-	virtual void parse(std::istream &inputStream) = 0;
+	BufferedStreamReader(std::size_t bufferSize = 1_KB);
+	~BufferedStreamReader();
 
 	/**
 	 * @returns The overall size of the used internal buffer (in bytes)
 	 */
 	std::size_t bufferSize() const;
-
 	/**
 	 * @returns Whether there is any input left in the buffer
 	 */
 	bool hasInput() const;
-
-protected:
 	/**
 	 * Init the internal buffer for the given source
 	 *
@@ -138,11 +131,17 @@ protected:
 	 *
 	 * @throws ParseException If there is no integer to be parsed at this position
 	 */
-	int32_t parseInt();
-
+	int parseInt();
+	/**
+	 * Parses a floating point number starting from the current position
+	 *
+	 * @returns The parsed number
+	 *
+	 * @throws ParseException If there is no floating point number at this position
+	 */
 	double parseDouble();
 
-private:
+protected:
 	std::istream *m_source = nullptr;
 	std::string m_buffer;
 	std::size_t m_bufferSize;
@@ -157,4 +156,4 @@ private:
 
 }; // namespace Contractor::Parser
 
-#endif // CONTRACTOR_PARSER_PARSER_HPP_
+#endif // CONTRACTOR_PARSER_BUFFEREDSTREAMREADER_HPP_

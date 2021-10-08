@@ -1,4 +1,4 @@
-#include "parser/Parser.hpp"
+#include "parser/BufferedStreamReader.hpp"
 
 #include <cassert>
 #include <cctype>
@@ -16,18 +16,18 @@ const char *ParseException::what() const noexcept {
 	return m_msg.c_str();
 }
 
-Parser::Parser(std::size_t bufferSize) : m_bufferSize(bufferSize) {
+BufferedStreamReader::BufferedStreamReader(std::size_t bufferSize) : m_bufferSize(bufferSize) {
 	assert(bufferSize > 0);
 }
 
-Parser::~Parser() {
+BufferedStreamReader::~BufferedStreamReader() {
 }
 
-std::size_t Parser::bufferSize() const {
+std::size_t BufferedStreamReader::bufferSize() const {
 	return m_bufferSize;
 }
 
-bool Parser::hasInput() const {
+bool BufferedStreamReader::hasInput() const {
 	if (m_currentPosition < m_buffer.size()) {
 		return true;
 	}
@@ -35,7 +35,7 @@ bool Parser::hasInput() const {
 	return m_source && !m_source->eof() && m_source->good();
 }
 
-void Parser::initSource(std::istream &source) {
+void BufferedStreamReader::initSource(std::istream &source) {
 	m_source = &source;
 	m_buffer.resize(m_bufferSize);
 
@@ -46,15 +46,15 @@ void Parser::initSource(std::istream &source) {
 	refillBuffer();
 }
 
-void Parser::clearSource() {
+void BufferedStreamReader::clearSource() {
 	m_source = nullptr;
 	m_buffer.clear();
 }
 
-char Parser::peek() {
+char BufferedStreamReader::peek() {
 	if (m_currentPosition >= m_buffer.size()) {
 		if (!refillBuffer()) {
-			throw ParseException("Parser has run out of characters!");
+			throw ParseException("BufferedStreamReader has run out of characters!");
 		} else {
 			return m_buffer[m_currentPosition];
 		}
@@ -63,7 +63,7 @@ char Parser::peek() {
 	}
 }
 
-char Parser::read() {
+char BufferedStreamReader::read() {
 	char c = peek();
 
 	m_currentPosition++;
@@ -71,7 +71,7 @@ char Parser::read() {
 	return c;
 }
 
-bool Parser::skip(std::size_t amount) {
+bool BufferedStreamReader::skip(std::size_t amount) {
 	for (std::size_t i = 0; i < amount; i++) {
 		if (!hasInput()) {
 			return false;
@@ -83,7 +83,7 @@ bool Parser::skip(std::size_t amount) {
 	return true;
 }
 
-std::size_t Parser::read(char *buffer, std::size_t length) {
+std::size_t BufferedStreamReader::read(char *buffer, std::size_t length) {
 	assert(length <= m_bufferSize);
 
 	int64_t delta = length - (m_buffer.size() - m_currentPosition);
@@ -112,7 +112,7 @@ std::size_t Parser::read(char *buffer, std::size_t length) {
 	}
 }
 
-std::size_t Parser::skipWS(bool skipNewline) {
+std::size_t BufferedStreamReader::skipWS(bool skipNewline) {
 	if (!hasInput()) {
 		return 0;
 	}
@@ -134,7 +134,7 @@ std::size_t Parser::skipWS(bool skipNewline) {
 	return skippedChars;
 }
 
-void Parser::expect(const std::string_view sequence) {
+void BufferedStreamReader::expect(const std::string_view sequence) {
 	for (std::size_t i = 0; i < sequence.size(); i++) {
 		char c = peek();
 
@@ -147,7 +147,7 @@ void Parser::expect(const std::string_view sequence) {
 	}
 }
 
-std::size_t Parser::skipBehind(const std::string_view sequence) {
+std::size_t BufferedStreamReader::skipBehind(const std::string_view sequence) {
 	std::size_t skippedChars = 0;
 
 	if (sequence.size() == 0) {
@@ -191,7 +191,7 @@ std::size_t Parser::skipBehind(const std::string_view sequence) {
 	return skippedChars;
 }
 
-int32_t Parser::parseInt() {
+int BufferedStreamReader::parseInt() {
 	std::stringstream buffer;
 	std::size_t size = 0;
 
@@ -206,7 +206,7 @@ int32_t Parser::parseInt() {
 
 	assert(buffer.tellg() == 0);
 
-	int32_t i;
+	int i;
 	buffer >> i;
 
 	assert(buffer.eof());
@@ -214,7 +214,7 @@ int32_t Parser::parseInt() {
 	return i;
 }
 
-double Parser::parseDouble() {
+double BufferedStreamReader::parseDouble() {
 	std::stringstream buffer;
 	std::size_t size   = 0;
 	bool matchedPeriod = false;
@@ -242,7 +242,7 @@ double Parser::parseDouble() {
 	return f;
 }
 
-std::size_t Parser::refillBuffer() {
+std::size_t BufferedStreamReader::refillBuffer() {
 	std::size_t remnants = m_buffer.size() - std::min(m_currentPosition, m_buffer.size());
 	std::size_t amount   = m_buffer.size() - remnants;
 

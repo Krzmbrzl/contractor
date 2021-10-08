@@ -1,0 +1,21 @@
+# These symmetry files are a means to explicitly specify a Tensor's symmetry.
+# Lines starting with a # can be used for comments as they are ignored by the parser
+
+# A general symmetry specification looks like this (parenthesis are to be interpreted as in RegEx):
+# <name>[<creators>,<annihilator>]: (<IndexPair>(&<IndexPair>)* -> <Factor> (, <IndexPair>(&<IndexPair>)* -> <Factor>)*)?
+# where
+# - <name> is the name of the Tensor this symmetry specification is for
+# - <creators> is the list of creator indices (potentially empty)
+# - <annihilators> is the list of annihilator indices (potentially empty)
+# - index list is a string of consective H (= hole/occupied index) or P (= particle/virtual index) characters
+# - <IndexPair> is of form n-k meaning that the n-th index in the Tensor's index list may be exchanged with the k-th index.
+#     Indices are numbered starting from one and are just enumerated from left to right through the index spec. That means
+#     that [HH,PP] as indices 1, 2, 3 and 4. The exchange 2-3 would then produce [HP,HP].
+# - <Factor> is the factor that has to be applied to the Tensor when performing this particular index exchange(s)
+# - <Int> Is an integer
+# When using the & character to combine IndexPairs, this means that the pairwise index permutations must only be executed
+# together. Thus 1-2&3-4 means "Exchange of 1-2 and at the same time exchange of 3-4".
+
+H[(H|P)(H|P),(H|P)(H|P)]: 1-2 -> -1, 3-4 -> -1
+T2[PP,HH]: 1-2 -> -1, 3-4 -> -1
+T2[HH,PP]: 1-2 -> -1, 3-4 -> -1
