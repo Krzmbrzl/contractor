@@ -14,12 +14,15 @@ for dir in $(find . -maxdepth 1 -mindepth 1 -type d); do
 
 	for export_file in $(find "./$dir_name" -maxdepth 1 -mindepth 1 -type f -iname "*.EXPORT"); do
 		out_file="${dir_name}_$(basename $export_file .EXPORT).out"
+		out_file_df="${dir_name}_$(basename $export_file .EXPORT)_DF.out"
 		symmetry_file="$(find ./$dir_name -type f -iname "*.symmetry")"
 		symmetry_file="$(find ./$dir_name -type f -iname "*.symmetry")"
 
 		echo "Processing '$export_file' - output goes to '$out_file' ..."
 
 		"$program" --decomposition "./density_fitting.decomposition" --symmetry "$symmetry_file" --index-spaces \
+			"./index_spaces.json" --gecco-export "$export_file" --renaming "./sample_renaming.json" --restricted-orbitals > "$out_file_df"
+		"$program" --symmetry "$symmetry_file" --index-spaces \
 			"./index_spaces.json" --gecco-export "$export_file" --renaming "./sample_renaming.json" --restricted-orbitals > "$out_file"
 	done
 done
