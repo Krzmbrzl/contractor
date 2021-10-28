@@ -11,6 +11,10 @@ project(masters_thesis_program,
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (NOT MSVC)
+	link_libraries(stdc++fs)
+endif()
+
 
 # Make sure cmake finds the extra scripts in the cmake subdirectory
 list(APPEND CMAKE_MODULE_PATH
