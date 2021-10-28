@@ -4,7 +4,7 @@ add_executable(${MAIN_EXECUTABLE_NAME}
 
 target_link_libraries(${MAIN_EXECUTABLE_NAME}
 	PUBLIC Boost::program_options
-	PUBLIC Boost::headers
+	PUBLIC Boost::boost
 )
 
 target_include_directories(${MAIN_EXECUTABLE_NAME}

@@ -17,5 +17,5 @@ target_link_libraries(${LIB_NAME}
 )
 
 target_link_libraries(${LIB_NAME}
-	PUBLIC Boost::headers
+	PUBLIC Boost::boost
 )

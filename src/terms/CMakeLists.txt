@@ -18,7 +18,7 @@ add_library(${MAIN_EXECUTABLE_NAME}::${LIB_ALIAS} ALIAS ${LIB_NAME})
 
 target_link_libraries(${LIB_NAME}
 	# Required for the multiprecision integer type
-	PUBLIC Boost::headers
+	PUBLIC Boost::boost
 )
 
 target_include_directories(${LIB_NAME}
