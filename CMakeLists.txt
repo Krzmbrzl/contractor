@@ -11,15 +11,14 @@ project(masters_thesis_program,
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (NOT MSVC)
-	link_libraries(stdc++fs)
-endif()
-
-
-# Make sure cmake finds the extra scripts in the cmake subdirectory
 list(APPEND CMAKE_MODULE_PATH
 	"${CMAKE_SOURCE_DIR}/cmake"
 )
+
+find_package(Filesystem REQUIRED)
+
+link_libraries(std::filesystem)
+
 
 # Make sure that libraries and executables end up in the correct directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
