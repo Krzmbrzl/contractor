@@ -31,6 +31,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace ct  = Contractor::Terms;
 namespace cu  = Contractor::Utils;
@@ -49,7 +50,7 @@ struct CommandLineArguments {
 	bool asciiOnlyOutput;
 	bool restrictedOrbitals;
 	bool useKext;
-	unsigned int selectedTerm;
+	std::vector< unsigned int > selectedTerms;
 };
 
 template< typename term_t > bool is_empty(const ct::CompositeTerm< term_t > &composite) {
@@ -80,8 +81,8 @@ int processCommandLine(int argc, const char **argv, CommandLineArguments &args) 
 		 "If this flag is used, the output printed to the console will only contain ASCII characters")
 		("restricted-orbitals", boost::program_options::value<bool>(&args.restrictedOrbitals)->default_value(false)->zero_tokens(),
 		 "Using this flag tells the program that restricted orbitals are used where the spatial parts of alpha/beta pairs is equal")
-		("select-term", boost::program_options::value<unsigned int>(&args.selectedTerm)->default_value(0),
-		 "Out of the read terms, only the term at this posititon (1-based) will be processed. 0 will cause all terms to be processed")
+		("select-terms", boost::program_options::value<decltype(args.selectedTerms)>(&args.selectedTerms)->multitoken(),
+		 "Out of the read terms, only the terms at these positions (1-based) will be processed.")
 		("itf-code-block", boost::program_options::value<std::string>(&args.itfCodeBlock)->default_value("Residual"),
 		 "The name of the \"CODE_BLOCK\" to use when exporting to ITF")
 		("kext", boost::program_options::value<bool>(&args.useKext)->default_value(false)->zero_tokens(),
@@ -255,21 +256,26 @@ int main(int argc, const char **argv) {
 	printer.printHeadline("Read terms");
 	printer << initialTerms << "\n\n";
 
-	if (args.selectedTerm != 0) {
-		if (args.selectedTerm > initialTerms.size()) {
-			printer << "[ERROR]: Can't select term at positition " << args.selectedTerm << " if there are only "
-					<< initialTerms.size() << " terms\n";
-			return Contractor::ExitCodes::INVALID_TERM_SELECTED;
+	if (!args.selectedTerms.empty()) {
+		decltype(initialTerms) selectedTerms;
+		selectedTerms.reserve(args.selectedTerms.size());
+
+		for (unsigned int selectedTerm : args.selectedTerms) {
+			if (selectedTerm > initialTerms.size()) {
+				printer << "[ERROR]: Can't select term at position " << selectedTerm << " if there are only "
+						<< initialTerms.size() << " terms\n";
+				return Contractor::ExitCodes::INVALID_TERM_SELECTED;
+			}
+
+			printer << "Selecting term " << selectedTerm << ":\n";
+			printer << "  " << initialTerms[selectedTerm - 1] << "\n";
+
+			selectedTerms.push_back(std::move(initialTerms[selectedTerm - 1]));
 		}
 
-		printer << "Selecting only term " << args.selectedTerm << ":\n";
+		initialTerms = std::move(selectedTerms);
 
-		// Bring the selected term to the front
-		std::swap(initialTerms[0], initialTerms[args.selectedTerm - 1]);
-		// Remove all but the selected Term
-		initialTerms.erase(initialTerms.begin() + 1, initialTerms.end());
-
-		printer << initialTerms[0] << "\n\n\n";
+		printer << "\n\n";
 	}
 
 	// Print decomposition
